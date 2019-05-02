@@ -42,7 +42,7 @@ Please note the installation instructions regsarding the default maximum *k*-mer
 ## Usage:
 
 ```
-Sans
+SANS
 ```
 
 displays the command line interface:
@@ -88,13 +88,13 @@ Usage: SANS [PARAMETERS]
 
 1. **Determine splits from assemblies**
    ```
-   Sans -t 4 -k 31 -o splits.txt -r list.txt
+   SANS -t 4 -k 31 -o splits.txt -r list.txt
    ```
    The colored de-Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-s list.txt`). Splits are determined and written to *splits.txt* (`-o splits.txt`)
 
 2. **Determine splits from read files**
    ```
-   Sans -t 4 -k 31 -o splits.txt -s list.txt
+   SANS -t 4 -k 31 -o splits.txt -s list.txt
    ```
    The colored de-Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-s list.txt`). By using parameter `-s`, all files are filtered: k-mers occurring exactly once in a file are discarded from the construction.  Splits are determined and written to *splits.txt* (`-o splits.txt`).
 
