@@ -9,11 +9,12 @@
 
 ## Table of Contents
 
-* [Requirements](https://github.com/pmelsted/bifrost#requirements)
-* [Compilation and Installation](https://github.com/pmelsted/bifrost#compilation-and-installation)
-* [Usage](https://github.com/pmelsted/bifrost#binary-usage)
-* [Contact](https://github.com/pmelsted/bifrost#contact)
-* [License](https://github.com/pmelsted/bifrost#license)
+* [Requirements](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#requirements)
+* [Compilation](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#compilation-and-installation)
+* [Usage](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#binary-usage)
+* [FAQ](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#faq)
+* [Contact](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#contact)
+* [License](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#license)
 
 ## Requirements
 
@@ -24,7 +25,7 @@ From the given genomes, a **colored de-Bruijn graph** is built to efficiently ex
 * To filter (greedy tree/compatible, greedy weakly compatible) or visualize the splits, the tool [SplitsTree](http://www.splitstree.org/) can be used.
 
 
-## Compilation and Installation
+## Compilation
 
 ```
 cd <sans_directory>
@@ -123,7 +124,7 @@ For any question, feedback or problem, please feel free to file an issue on this
 
 * The CRoaring library is Apache 2.0 licensed (https://github.com/RoaringBitmap/CRoaring)
 
-* Bifrost is BSD-2 licensed [LICENSE](https://github.com/pmelsted/bifrost/blob/master/LICENSE)
+* Bifrost is BSD-2 licensed (https://github.com/pmelsted/bifrost)
 
 * SANS is BSD-2 licensed [LICENSE](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans/blob/master/LICENSE)
 
