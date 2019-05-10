@@ -98,7 +98,33 @@ Usage: SANS [PARAMETERS]
    ```
    The colored de-Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-s list.txt`). By using parameter `-s`, all files are filtered: k-mers occurring exactly once in a file are discarded from the construction.  Splits are determined and written to *splits.txt* (`-o splits.txt`).
 
-
+3. **Drosophila example data**
+   ```
+   # go to example directory
+   cd <SANS dir>
+   cd example_data/drosophila
+   
+   # download data
+   ./download.sh
+   
+   # run SANS
+   cd fa
+   SANS -r list.txt -o ../sans.splits -T 130 -t 4 -v
+   cd ..
+   
+   # greedy tree
+   ../../scripts/sans2nexus.py sans.splits fa/list.txt > sans.nexus
+   # open sans.nexus in Splitstree (splitstree.org)
+   # -> Data -> Greedily Make Compatible
+   # -> File -> Save As "sans_greedytree.nexus" (or export the tree in newick format)
+   # results is prepared in folder
+   ../../scripts/nexus2sans.py sans_greedytree.nexus > sans_greedytree.splits
+      
+   #compare to reference
+   ../../scripts/newick2sans.py Reference.new > Reference.splits
+   ../../scripts/comp.py sans_greedytree.splits Reference.splits fa/list.txt
+   
+   ```
 
 
 
