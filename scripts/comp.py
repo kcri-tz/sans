@@ -47,6 +47,7 @@ def readfile(filename,taxa,add_weight):
                 exit(1)
         split=unify(split,taxa)
         if len(split)==0:
+            eprint("ignored split \"all vs. none\"")
             continue
         split_txt="/".join(split)
         #update or store split
