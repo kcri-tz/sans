@@ -98,10 +98,6 @@ eprint("read:")
 l=len(splitlist)
 eprint(l)
 
-#eprint("filter top 10*n, i.e. "+str(ntax*10))
-#sorted_splits=sorted([(w,s) for (s,w) in splitlist.iteritems()], reverse=True)
-#splitlist=sorted_splits[:(ntax*10)]
-
    
 # output nexus format stuff
 print("#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=%s;\nTAXLABELS"%(ntax))
@@ -113,12 +109,12 @@ for tupel in sorted( ((v,k) for k,v in taxa.items())):
 # prepare output of splits and count
 nsplits=0
 splitstring=""
-for (weight,split_str) in splitlist:
+for (split_str,weight) in splitlist.iteritems():
     if split_str=="":
         split=[]
     else:
         split=split_str.split('/')
-    if (weight>min_weight or len(split)==1 or len(split)==ntax-1) and len(split)>0: #don't output split all versus none and too small splits
+    if (float(weight)>min_weight or len(split)==1 or len(split)==ntax-1) and len(split)>0: #don't output split all versus none and too small splits
         nsplits+=1
         #splitstring+="%s\t%s\n"%(len(split),weight)
         #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),log(weight)*len(split),' '.join(map(str,split)))

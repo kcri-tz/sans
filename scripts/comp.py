@@ -46,6 +46,8 @@ def readfile(filename,taxa,add_weight):
                 eprint("taxa from split not in taxa: "+f)
                 exit(1)
         split=unify(split,taxa)
+        if len(split)==0:
+            continue
         split_txt="/".join(split)
         #update or store split
         if split_txt in splits:
@@ -131,7 +133,7 @@ else:
 if len(sys.argv)<4:
     eprint("Usage: sans2nexus.py <list of splits 1> <list of splits 2> <list of genomes (file names)>")
     eprint("list of splits in SANS output format: Per split one line: weight genomeA genomeB ...")
-    eprint("Output on stdout.")
+    eprint("Output on stdout: precision and recall of splits1 w.r.t. splits2 in terms of topological RF-distance")
     sys.exit(1)
 
 
