@@ -33,7 +33,7 @@ make
 ```
 
 By default, the installation creates:
-* a binary (*Sans*)
+* a binary (*SANS*)
 
 You may want to make the binary (*SANS*) accessible via your (*PATH*) variable.
 
@@ -66,7 +66,7 @@ Usage: SANS [PARAMETERS]
   -t, --threads           Number of threads (default: 1)
   -T, --top               Output the top T splits sorted by weight descending (default: all)
   -k, --kmer-length       Length of k-mers (default: 31)
-  -m, --min-length        Length of minimizers (default: 23)
+  -m, --min-length        Length of minimizers (auto-adjusted by default: see verbose output)
   -b, --bloom-bits        Number of Bloom filter bits per k-mer with 1+ occurrences (default: 14)
   -B, --bloom-bits2       Number of Bloom filter bits per k-mer with 2+ occurrences (default: 14)
   -l, --load-mbbf         Input Blocked Bloom Filter file, skips filter step (default: no input)
