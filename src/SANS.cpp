@@ -52,7 +52,7 @@ void PrintUsage() {
     cout << "  -t, --threads           Number of threads (default: 1)" << endl;
     cout << "  -T, --top               Output the top T splits sorted by weight descending (default: all)" << endl;
     cout << "  -k, --kmer-length       Length of k-mers (default: 31)" << endl;
-    cout << "  -m, --min-length        Length of minimizers (default: 23)" << endl;
+    cout << "  -m, --min-length        Length of minimizers (auto-adjusted by default: see verbose output)" << endl;
     cout << "  -b, --bloom-bits        Number of Bloom filter bits per k-mer with 1+ occurrences (default: 14)" << endl;
     cout << "  -B, --bloom-bits2       Number of Bloom filter bits per k-mer with 2+ occurrences (default: 14)" << endl;
     cout << "  -l, --load-mbbf         Input Blocked Bloom Filter file, skips filter step (default: no input)" << endl;
@@ -96,6 +96,7 @@ void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
 
     opt.build = true;
     opt.outputColors = true;
+    opt.g=0;
 
     while ((c = getopt_long(argc, argv, opt_string, long_options, &option_index)) != -1) {
         switch (c) {
@@ -238,9 +239,9 @@ bool check_ProgramOptions(SANS_opt& opt) {
         ret = false;
     }
 
-    if (opt.k <= 0){
+    if (opt.k <= 3){
 
-        cerr << "Error: Length k of k-mers cannot be less than or equal to 0." << endl;
+        cerr << "Error: Length k of k-mers cannot be less than or equal to 3." << endl;
         ret = false;
     }
 
@@ -254,8 +255,7 @@ bool check_ProgramOptions(SANS_opt& opt) {
     if (opt.g == 0) {
         if (opt.k >= 29) opt.g = 23;
         else if (opt.k > 14) opt.g = opt.k - 8;
-        else if (opt.k > 8) opt.g = opt.k - 5;
-        else opt.g = opt.k - 3;
+        else opt.g = opt.k/2;
         if (opt.verbose) {
             cout << "Length of minimizer auto-adjusted to " << opt.g << "." << endl;
         }
