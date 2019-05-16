@@ -10,8 +10,8 @@
 ## Table of Contents
 
 * [Requirements](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#requirements)
-* [Compilation](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#compilation-and-installation)
-* [Usage](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#binary-usage)
+* [Compilation](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#compilation)
+* [Usage](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#usage)
 * [FAQ](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#faq)
 * [Contact](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#contact)
 * [License](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#license)
@@ -135,7 +135,7 @@ We recommend to have a look at the [FAQs of Bifrost](https://github.com/pmelsted
 
 ## Contact
 
-For any question, feedback or problem, please feel free to file an issue on this GitHub repository and we will get back to you as soon as possible.
+For any question, feedback or problem, please feel free to file an issue on this Git repository and we will get back to you as soon as possible.
 
 ## License
 
