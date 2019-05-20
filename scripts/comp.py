@@ -96,6 +96,8 @@ def split_comp(donor,reference):
     w_corr=0.
     num_all=0
     num_corr=0
+
+    print("#precision\trecall")
     for (w,s) in donor_sorted:
         w_all+=w
         num_all+=1
@@ -113,10 +115,9 @@ def split_comp(donor,reference):
         #print("\t".join(["-1","-1","-1",str(len(r.split('/')))]))
     #eprint(w_all,w_corr,num_all,num_corr,w)
 
-    print("#precision\trecall")
-    precision=(1.0*num_corr)/(1.0*num_all)
-    recall=(1.0*num_corr)/(1.0*n)
-    print("\t".join([str(precision),str(recall)]))
+        precision=(1.0*num_corr)/(1.0*num_all)
+        recall=(1.0*num_corr)/(1.0*n)
+        print("\t".join([str(precision),str(recall)]))
                      
     return w_corr
 
@@ -134,7 +135,7 @@ else:
 if len(sys.argv)<4:
     eprint("Usage: sans2nexus.py <list of splits 1> <list of splits 2> <list of genomes (file names)>")
     eprint("list of splits in SANS output format: Per split one line: weight genomeA genomeB ...")
-    eprint("Output on stdout: precision and recall of splits1 w.r.t. splits2 in terms of topological RF-distance")
+    eprint("Output on stdout: precision and recall of splits1 w.r.t. splits2 in terms of topological RF-distance for increasing number of splits considered, i.e., precision and recall for *all* splits are in last line.")
     sys.exit(1)
 
 
