@@ -38,6 +38,8 @@ By default, the installation creates:
 You may want to make the binary (*SANS*) accessible via your (*PATH*) variable.
 
 Please note the installation instructions regsarding the default maximum *k*-mer size of Bifrost in its README.
+If your Bifrost libraries have been compiled for 64 bit, change the SANS makefile accordingly (easy to see how).
+
 
 ## Usage:
 
@@ -126,7 +128,27 @@ Usage: SANS [PARAMETERS]
    
    ```
 
+3. **Virus example data**
+   ```
+   # go to example directory
+   cd <SANS dir>
+   cd example_data/prasinoviruses
+   
+   
+   # download data
+   ./download.sh
+   
+   # run SANS
+   cd fa
+   SANS -r list.txt -o ../sans.splits -T 130 -t 4 -v -k11
+   cd ..
 
+    #compare to references
+    ../../scripts/newick2sans.py Reference_Fig3.new > Reference_Fig3.splits
+    ../../scripts/comp.py sans.splits Reference_Fig3.splits 
+    ../../scripts/newick2sans.py Reference_Fig4.new > Reference_Fig4.splits
+    ../../scripts/comp.py sans.splits Reference_Fig4.splits 
+   ```
 
 ## FAQ
 
