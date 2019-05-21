@@ -128,7 +128,7 @@ Usage: SANS [PARAMETERS]
    
    ```
 
-3. **Virus example data**
+4. **Virus example data**
    ```
    # go to example directory
    cd <SANS dir>
@@ -143,12 +143,13 @@ Usage: SANS [PARAMETERS]
    SANS -r list.txt -o ../sans.splits -T 130 -t 4 -v -k11
    cd ..
 
-    #compare to references
-    ../../scripts/newick2sans.py Reference_Fig3.new > Reference_Fig3.splits
-    ../../scripts/comp.py sans.splits Reference_Fig3.splits 
-    ../../scripts/newick2sans.py Reference_Fig4.new > Reference_Fig4.splits
-    ../../scripts/comp.py sans.splits Reference_Fig4.splits 
+   #compare to references
+   ../../scripts/newick2sans.py Reference_Fig3.new > Reference_Fig3.splits
+   ../../scripts/comp.py sans.splits Reference_Fig3.splits fa/list.txt
+   ../../scripts/newick2sans.py Reference_Fig4.new > Reference_Fig4.splits
+   ../../scripts/comp.py sans.splits Reference_Fig4.splits fa/list.txt
    ```
+
 
 ## FAQ
 

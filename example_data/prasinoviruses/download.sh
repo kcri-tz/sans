@@ -1,9 +1,11 @@
 mkdir -p fa;
 cd fa;
 rm -f list.txt;
-for nc in `cut -f1 ../IDs.tsv`;
+cat ../IDs.txt | while read l;
 do
-	../../../scripts/download_ncbi.pl $nc > $nc.fasta;
-	echo "$nc.fasta" >> list.txt	
+	NC=$(echo $l | cut -f1 -d" "); 
+	TAX=$(echo $l | cut -f2 -d " "); 
+        ../../../scripts/download_ncbi.pl $NC > $TAX.fasta;
+        echo "$TAX.fasta" >> list.txt
 done;
-
+cd ..;
