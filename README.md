@@ -92,7 +92,7 @@ Usage: SANS [PARAMETERS]
    ```
    SANS -t 4 -k 31 -o splits.txt -r list.txt
    ```
-   The colored de-Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-s list.txt`). Splits are determined and written to *splits.txt* (`-o splits.txt`)
+   The colored de-Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-r list.txt`). Splits are determined and written to *splits.txt* (`-o splits.txt`)
 
 2. **Determine splits from read files**
    ```
@@ -125,7 +125,6 @@ Usage: SANS [PARAMETERS]
    #compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
    ../../scripts/comp.py sans_greedytree.splits Reference.splits fa/list.txt
-   
    ```
 
 4. **Virus example data**
@@ -133,8 +132,7 @@ Usage: SANS [PARAMETERS]
    # go to example directory
    cd <SANS dir>
    cd example_data/prasinoviruses
-   
-   
+      
    # download data
    ./download.sh
    
