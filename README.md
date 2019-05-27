@@ -7,6 +7,11 @@
 * Assembled genomes or reads as input
 * Phylogenetic splits as output
 
+### Publication
+
+Preprint: Wittler, R.: Alignment- and reference-free phylogenomics with colored de-Bruijn graphs. [arXiv:1905.04165](https://arxiv.org/abs/1905.04165). (2019). 
+
+
 ## Table of Contents
 
 * [Requirements](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans#requirements)
