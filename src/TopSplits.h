@@ -1,13 +1,13 @@
 #ifndef BIFROST_TOPSPLITS_H
 #define BIFROST_TOPSPLITS_H
 
-#include "TopTrie.cpp"
+#include "TopTrie.h"
 
 using namespace std;
 
-void searchGraph(ColoredCDBG<> &graph, unsigned int top_num, string file_name);
+void searchGraph(ColoredCDBG<> &graph, const SANS_opt& opt);
 
-void addColors(TopTrie *trie, ColoredCDBG<> &graph,
+void addColors(TopTrie *trie, ColoredCDBG<> &graph, const SANS_opt& opt,
                UnitigColors::const_iterator it, UnitigColors::const_iterator end, unsigned int value);
 
 void printSplits(TopTrie *trie, ostream &out);

@@ -85,6 +85,7 @@ Usage: SANS [PARAMETERS]
   -i, --clip-tips         Clip tips shorter than k k-mers in length
   -d, --del-isolated      Delete isolated contigs shorter than k k-mers in length
   -y, --keep-mercy        Keep low coverage k-mers connecting tips
+  -a, --allow-asym        Do not discard asymmetric splits completely
   -v, --verbose           Print information messages during execution
 
 

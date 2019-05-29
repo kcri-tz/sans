@@ -1,9 +1,10 @@
 #include "TopSplits.h"
+#include "TopTrie.cpp"
 
-void searchGraph(ColoredCDBG<> &graph, unsigned int top_num, string file_name) {
-
-    TopTrie *trie = new TopTrie(top_num);
-    ofstream file_out(file_name);
+void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
+    
+    TopTrie *trie = new TopTrie(opt.top_splits);
+    ofstream file_out(opt.prefixFilenameOut);
     ostream out(file_out.rdbuf());
 
     for (auto &unitig : graph) {
@@ -45,12 +46,12 @@ void searchGraph(ColoredCDBG<> &graph, unsigned int top_num, string file_name) {
 
             if (split) {
 
-                addColors(trie, graph, uc_kmers[i - 1].begin(unitig_map), uc_kmers[i - 1].end(), len_segment);
+                addColors(trie, graph, opt, uc_kmers[i - 1].begin(unitig_map), uc_kmers[i - 1].end(), len_segment);
                 len_segment = 0;
             }
         }
 
-        addColors(trie, graph, uc_kmers[num_kmers - 1].begin(unitig_map), uc_kmers[num_kmers - 1].end(), len_segment);
+        addColors(trie, graph, opt, uc_kmers[num_kmers - 1].begin(unitig_map), uc_kmers[num_kmers - 1].end(), len_segment);
         len_segment = 0;
 
         delete[] uc_kmers;
@@ -59,7 +60,7 @@ void searchGraph(ColoredCDBG<> &graph, unsigned int top_num, string file_name) {
     printSplits(trie, out);
 }
 
-void addColors(TopTrie *trie, ColoredCDBG<> &graph,
+void addColors(TopTrie *trie, ColoredCDBG<> &graph, const SANS_opt& opt,
                UnitigColors::const_iterator it, UnitigColors::const_iterator end, unsigned int value) {
 
     vector<string> graph_colors = graph.getColorNames();
@@ -96,7 +97,7 @@ void addColors(TopTrie *trie, ColoredCDBG<> &graph,
         }
     }
 
-    trie->addNodes(split_colors, weight, inverse);
+    trie->addNodes(split_colors, weight, inverse, opt);
 }
 
 void printSplits(TopTrie *trie, ostream &out) {

@@ -18,7 +18,7 @@ TopTrie::~TopTrie() {
     delete root;
 }
 
-void TopTrie::addNodes(vector<string> &objects, unsigned int weight, unsigned int inverse) {
+void TopTrie::addNodes(vector<string> &objects, unsigned int weight, unsigned int inverse, const SANS_opt& opt) {
 
     node *subtrie = root;
     for (string &obj : objects) {
@@ -30,7 +30,13 @@ void TopTrie::addNodes(vector<string> &objects, unsigned int weight, unsigned in
 
     subtrie->weight += weight;
     subtrie->inverse += inverse;
-    auto new_value = sqrt(subtrie->weight) * sqrt(subtrie->inverse);
+    
+    auto new_value = 0.0;
+    if (opt.allow_asym) {
+        new_value = sqrt(subtrie->weight+1) * sqrt(subtrie->inverse+1);
+    } else {
+        new_value = sqrt(subtrie->weight) * sqrt(subtrie->inverse);
+    }
 
     if (new_value > 0) {
         if (list.erase(subtrie->value) == 1) {

@@ -7,6 +7,7 @@
 #include <map>
 #include <unordered_map>
 
+
 using namespace std;
 
 class TopTrie {
@@ -37,7 +38,7 @@ public:
     TopTrie(unsigned int size);
     ~TopTrie();
 
-    void addNodes(vector<string> &objects, unsigned int weight, unsigned int inverse);
+    void addNodes(vector<string> &objects, unsigned int weight, unsigned int inverse, const SANS_opt& opt);
     map<double, vector<string>, greater<double>> list;
 };
 

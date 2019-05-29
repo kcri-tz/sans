@@ -1,19 +1,13 @@
 #include <bifrost/CompactedDBG.hpp>
 #include <bifrost/ColoredCDBG.hpp>
+#include "SansOpt.h"
 #include "TopSplits.cpp"
 
 #define SANS_VERSION "0.9"
 
 using namespace std;
 
-struct SANS_opt : CCDBG_Build_opt {
 
-    string filename_colors_in;
-
-    size_t top_splits;
-
-    SANS_opt() :  top_splits(0) {}
-};
 
 // use:  PrintVersion();
 // post: The version of the program has been printed to cout
@@ -24,7 +18,8 @@ void PrintVersion() {
 // use:  PrintCite();
 // post: Information of how to cite this software has been printed to cerr
 void PrintCite() {
-    cout << "The paper describing this software has not been published." << endl;
+    cout << "The paper describing this software has been published as preprint: " << endl;
+    cout << "Wittler, R.: Alignment- and reference-free phylogenomics with colored de-Bruijn graphs. arXiv:1905.04165. (2019)." << endl;
 }
 
 void PrintUsage() {
@@ -64,6 +59,7 @@ void PrintUsage() {
     cout << "  -i, --clip-tips         Clip tips shorter than k k-mers in length" << endl;
     cout << "  -d, --del-isolated      Delete isolated contigs shorter than k k-mers in length" << endl;
     cout << "  -y, --keep-mercy        Keep low coverage k-mers connecting tips" << endl;
+    cout << "  -a, --allow-asym        Do not discard asymmetric splits completely" << endl;
     cout << "  -v, --verbose           Print information messages during execution" << endl;
     cout << endl;
     cout << endl;
@@ -72,7 +68,7 @@ void PrintUsage() {
 void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
 
     int option_index = 0, c;
-    const char *opt_string = "s:r:o:t:T:k:m:n:N:b:B:l:w:u:idvy";
+    const char *opt_string = "s:r:o:t:T:k:m:n:N:b:B:l:w:u:idvay";
 
     static struct option long_options[] = {
             {"input-seq-files",  required_argument, 0, 's'},
@@ -90,6 +86,7 @@ void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
             {"clip-tips",        no_argument,       0, 'i'},
             {"del-isolated",     no_argument,       0, 'd'},
             {"verbose",          no_argument,       0, 'v'},
+            {"allow-asym",       no_argument,       0, 'a'},
             {"keep-mercy",       no_argument,       0, 'y'},
             {0, 0,                                  0, 0}
     };
@@ -151,6 +148,9 @@ void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
                 break;
             case 'y':
                 opt.useMercyKmers = true;
+                break;
+            case 'a':
+                opt.allow_asym = true;
                 break;
             default: break;
         }
@@ -373,7 +373,7 @@ int main(int argc, char **argv){
             cout << "SANS.cpp(): traversing graph and outputting splits..." << endl;
         }
 
-        searchGraph(cdbg, opt.top_splits, opt.prefixFilenameOut);
+        searchGraph(cdbg, opt);
 
     }
 }
