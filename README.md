@@ -45,6 +45,9 @@ You may want to make the binary (*SANS*) accessible via your (*PATH*) variable.
 Please note the installation instructions regsarding the default maximum *k*-mer size of Bifrost in its README.
 If your Bifrost libraries have been compiled for 64 bit, change the SANS makefile accordingly (easy to see how).
 
+If during the compilation, the bifrost library files are not found, make sure that the corresponding folder is found as include path by the C++ compiler. You may have to add
+`-I/usr/local/include` (with the corresponding folder) to the CFLAGS in the makefile.
+
 
 ## Usage:
 
