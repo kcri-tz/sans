@@ -184,4 +184,3 @@ For any question, feedback or problem, please feel free to file an issue on this
 
 * SANS is BSD-2 licensed [LICENSE](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans/blob/master/LICENSE)
 
-
