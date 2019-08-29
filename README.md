@@ -27,7 +27,7 @@ From the given genomes, a **colored de-Bruijn graph** is built to efficiently ex
 
 * To convert the output into NEXUS format, the provided script requires Phython 3.
 
-* To filter (greedy tree/compatible, greedy weakly compatible) or visualize the splits, the tool [SplitsTree](http://www.splitstree.org/) can be used.
+* To visualize the splits, we recommend the tool [SplitsTree](http://www.splitstree.org/).
 
 
 ## Compilation
@@ -125,12 +125,8 @@ Usage: SANS [PARAMETERS]
    
    # greedy tree
    ../../scripts/sans2nexus.py sans.splits fa/list.txt > sans.nexus
-   # open sans.nexus in Splitstree (splitstree.org)
-   # -> Data -> Greedily Make Compatible
-   # -> File -> Save As "sans_greedytree.nexus" (or export the tree in newick format)
-   # results is prepared in folder
-   ../../scripts/nexus2sans.py sans_greedytree.nexus > sans_greedytree.splits
-      
+   ../../scripts/sans2new.py sans.splits -g sans_greedytree.splits > sans_greedytree.new
+
    #compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
    ../../scripts/comp.py sans_greedytree.splits Reference.splits fa/list.txt
