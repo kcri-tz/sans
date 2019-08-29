@@ -23,7 +23,7 @@ Preprint: Wittler, R.: Alignment- and reference-free phylogenomics with colored 
 
 ## Requirements
 
-From the given genomes, a **colored de-Bruijn graph** is built to efficiently extract common subsequences. To this end, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost). Apart from the requirements of Bifrost (c++ and cmake), there are no further strict dependencies.
+From the given genomes, a **colored de Bruijn graph** is built to efficiently extract common subsequences. To this end, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost). Apart from the requirements of Bifrost (c++ and cmake), there are no further strict dependencies.
 
 * To convert the output into NEXUS format, the provided script requires Phython 3.
 
@@ -40,7 +40,7 @@ make
 By default, the installation creates:
 * a binary (*SANS*)
 
-You may want to make the binary (*SANS*) accessible via your (*PATH*) variable.
+You may want to make the binary (*SANS*) accessible via your *PATH* variable.
 
 Please note the installation instructions regsarding the default maximum *k*-mer size of Bifrost in its README.
 If your Bifrost libraries have been compiled for 64 bit, change the SANS makefile accordingly (easy to see how).
@@ -99,15 +99,20 @@ Usage: SANS [PARAMETERS]
 
 1. **Determine splits from assemblies**
    ```
-   SANS -t 4 -k 31 -o splits.txt -r list.txt
+   SANS -t 4 -k 31 -o sans.splits -r list.txt
    ```
-   The colored de-Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-r list.txt`). Splits are determined and written to *splits.txt* (`-o splits.txt`)
+   The colored de Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-r list.txt`). Splits are determined and written to *sans.splits* (`-o sans.splits`)
+
+   To extract a tree in newick format, use the filter script:
+   ```
+   scripts/sans2new.py sans.splits > sans_greedytree.new 
+   ```
 
 2. **Determine splits from read files**
    ```
-   SANS -t 4 -k 31 -o splits.txt -s list.txt
+   SANS -t 4 -k 31 -o sans.splits -s list.txt
    ```
-   The colored de-Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-s list.txt`). By using parameter `-s`, all files are filtered: k-mers occurring exactly once in a file are discarded from the construction.  Splits are determined and written to *splits.txt* (`-o splits.txt`).
+   The colored de Bruijn graph is built with Bifrost using 4 threads (`-t 4`) from the 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt*  (`-s list.txt`). By using parameter `-s`, all files are filtered: k-mers occurring exactly once in a file are discarded from the construction.  Splits are determined and written to *sans.splits* (`-o sans.splits`).
 
 3. **Drosophila example data**
    ```
@@ -124,10 +129,9 @@ Usage: SANS [PARAMETERS]
    cd ..
    
    # greedy tree
-   ../../scripts/sans2nexus.py sans.splits fa/list.txt > sans.nexus
    ../../scripts/sans2new.py sans.splits -g sans_greedytree.splits > sans_greedytree.new
 
-   #compare to reference
+   # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
    ../../scripts/comp.py sans_greedytree.splits Reference.splits fa/list.txt
    ```
@@ -146,7 +150,7 @@ Usage: SANS [PARAMETERS]
    SANS -r list.txt -o ../sans.splits -T 130 -t 4 -v -k11
    cd ..
 
-   #compare to references
+   # compare to references
    ../../scripts/newick2sans.py Reference_Fig3.new > Reference_Fig3.splits
    ../../scripts/comp.py sans.splits Reference_Fig3.splits fa/list.txt
    ../../scripts/newick2sans.py Reference_Fig4.new > Reference_Fig4.splits
