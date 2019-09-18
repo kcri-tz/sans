@@ -11,8 +11,8 @@ from math import sqrt
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
-if len(sys.argv)!=2 and (len(sys.argv)>=3 and sys.argv[2]!="-g") and len(sys.argv)>4:
-    eprint("Usage: sans2newick.py <SANS file> [-g]")
+if len(sys.argv)<2 or (len(sys.argv)>=3 and sys.argv[2]!="-g") or len(sys.argv)>4:
+    eprint("Usage: sans2new.py <SANS file> [-g]")
     eprint("SANS file = tab separated list of splits: <weight> <tax1> <tax2> ...")
     eprint("-g [<filename>] greedy filter compatible subset of splits [and write splits to <filename>]")
     eprint("Output in NEWICK format on stdout.")
