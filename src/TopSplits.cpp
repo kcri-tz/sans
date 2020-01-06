@@ -1,5 +1,4 @@
 #include "TopSplits.h"
-#include "TopTrie.cpp"
 
 void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
     
@@ -8,6 +7,7 @@ void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
     ostream out(file_out.rdbuf());
 
     for (auto &unitig : graph) {
+        string unitig_sequence = unitig.mappedSequenceToString();
 
         auto num_kmers = unitig.size - Kmer::k + 1;
         auto *uc_kmers = new UnitigColors[num_kmers];
@@ -22,14 +22,14 @@ void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
             uc_kmers[it.getKmerPosition()].add(unitig_map, it.getColorID());
         }
 
-        unsigned int len_segment = 1;
+        unsigned int len_segment = 0;
+        string color_sequence = unitig_sequence.substr(0, Kmer::k);
+        ++len_segment;
 
-        for (unsigned int i = 1; i != num_kmers; ++i, ++len_segment) {
-
+        for (unsigned int i = 1; i != num_kmers; ++i) {
             bool split = (uc_kmers[i].size(unitig_map) != uc_kmers[i - 1].size(unitig_map));
 
             if (!split) {
-
                 auto curr_it = uc_kmers[i].begin(unitig_map);
                 auto curr_end = uc_kmers[i].end();
 
@@ -37,7 +37,6 @@ void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
                 auto prev_end = uc_kmers[i - 1].end();
 
                 for (; !split && curr_it != curr_end && prev_it != prev_end; ++curr_it, ++prev_it) {
-
                     if (curr_it.getColorID() != prev_it.getColorID()) {
                         split = true;
                     }
@@ -45,29 +44,38 @@ void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
             }
 
             if (split) {
+                addColors(trie, graph, opt, uc_kmers[i - 1].begin(unitig_map), uc_kmers[i - 1].end(), color_sequence, len_segment);
 
-                addColors(trie, graph, opt, uc_kmers[i - 1].begin(unitig_map), uc_kmers[i - 1].end(), len_segment);
                 len_segment = 0;
+                color_sequence = unitig_sequence.substr(i, Kmer::k+i);
+            } else {
+                color_sequence += unitig_sequence[Kmer::k+i-1];
             }
+            ++len_segment;
         }
 
-        addColors(trie, graph, opt, uc_kmers[num_kmers - 1].begin(unitig_map), uc_kmers[num_kmers - 1].end(), len_segment);
-        len_segment = 0;
-
+        addColors(trie, graph, opt, uc_kmers[num_kmers - 1].begin(unitig_map), uc_kmers[num_kmers - 1].end(), color_sequence, len_segment);
         delete[] uc_kmers;
     }
 
-    printSplits(trie, out);
+    if (opt.filter == "strict") {
+        trie->filterStrict();
+    }
+    else if (opt.filter == "weakly") {
+        trie->filterWeakly();
+    }
+    printSplits(trie, out, opt);
 }
 
 void addColors(TopTrie *trie, ColoredCDBG<> &graph, const SANS_opt& opt,
-               UnitigColors::const_iterator it, UnitigColors::const_iterator end, unsigned int value) {
+               UnitigColors::const_iterator it, UnitigColors::const_iterator end,
+               string& sequence, unsigned int value) {
 
     vector<string> graph_colors = graph.getColorNames();
     vector<string> split_colors;
 
-    signed int num = (signed int)distance(it, end);
-    signed max = (signed int)graph_colors.size();
+    auto num = (int) distance(it, end);
+    auto max = (int) graph_colors.size();
 
     unsigned int weight = 0;
     unsigned int inverse = 0;
@@ -97,16 +105,31 @@ void addColors(TopTrie *trie, ColoredCDBG<> &graph, const SANS_opt& opt,
         }
     }
 
+    if (opt.output_sequences) {
+        split_colors.push_back(sequence);
+    }
     trie->addNodes(split_colors, weight, inverse, opt);
 }
 
-void printSplits(TopTrie *trie, ostream &out) {
+void printSplits(TopTrie *trie, ostream &out, const SANS_opt& opt) {
 
-    for (auto &split : trie->list) {
-        out << split.first;
-        for (auto &color : split.second) {
-            out << "\t" << color;
+    if (!opt.output_sequences) {
+        for (auto &split : trie->list) {
+            out << split.first;
+            for (auto &color : split.second) {
+                out << "\t" << color;
+            }
+            out << endl;
         }
-        out << endl;
+    } else {
+        for (auto &split : trie->list) {
+            out << ">" << split.first;
+            auto it = split.second.begin();
+            auto end = --split.second.end();
+            for (; it != end; ++it) {
+                out << "\t" << *it;
+            }
+            out << endl << split.second.back() << endl;
+        }
     }
 }

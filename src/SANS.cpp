@@ -1,7 +1,4 @@
-#include <bifrost/CompactedDBG.hpp>
-#include <bifrost/ColoredCDBG.hpp>
-#include "SansOpt.h"
-#include "TopSplits.cpp"
+#include "TopSplits.h"
 
 #define SANS_VERSION "0.9"
 
@@ -53,6 +50,7 @@ void PrintUsage() {
     cout << "  -l, --load-mbbf         Input Blocked Bloom Filter file, skips filter step (default: no input)" << endl;
     cout << "  -w, --write-mbbf        Output Blocked Bloom Filter file (default: no output)" << endl;
     cout << "  -u, --chunk-size        Read chunk size per thread (default: 64)" << endl;
+    cout << "  -f, --filter            Output a maximum weight compatible subset (options: weakly/strict)" << endl;
     cout << endl;
     cout << "  > Optional with no argument:" << endl;
     cout << endl;
@@ -60,6 +58,7 @@ void PrintUsage() {
     cout << "  -d, --del-isolated      Delete isolated contigs shorter than k k-mers in length" << endl;
     cout << "  -y, --keep-mercy        Keep low coverage k-mers connecting tips" << endl;
     cout << "  -a, --allow-asym        Do not discard asymmetric splits completely" << endl;
+    cout << "  -S, --output-sequences  Output the conserved subsequences the splits are derived from" << endl;
     cout << "  -v, --verbose           Print information messages during execution" << endl;
     cout << endl;
     cout << endl;
@@ -68,7 +67,7 @@ void PrintUsage() {
 void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
 
     int option_index = 0, c;
-    const char *opt_string = "s:r:o:t:T:k:m:n:N:b:B:l:w:u:idvay";
+    const char *opt_string = "s:r:o:t:T:k:m:b:B:l:w:u:f:idyaSv";
 
     static struct option long_options[] = {
             {"input-seq-files",  required_argument, 0, 's'},
@@ -83,11 +82,13 @@ void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
             {"load-mbbf",        required_argument, 0, 'l'},
             {"write-mbbf",       required_argument, 0, 'w'},
             {"chunk-size",       required_argument, 0, 'u'},
+            {"filter",           required_argument, 0, 'f'},
             {"clip-tips",        no_argument,       0, 'i'},
             {"del-isolated",     no_argument,       0, 'd'},
-            {"verbose",          no_argument,       0, 'v'},
-            {"allow-asym",       no_argument,       0, 'a'},
             {"keep-mercy",       no_argument,       0, 'y'},
+            {"allow-asym",       no_argument,       0, 'a'},
+            {"output-sequences", no_argument,       0, 'S'},
+            {"verbose",          no_argument,       0, 'v'},
             {0, 0,                                  0, 0}
     };
 
@@ -113,6 +114,9 @@ void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
             case 't':
                 opt.nb_threads = atoi(optarg);
                 break;
+            case 'T':
+                opt.top_splits = atoi(optarg);
+                break;
             case 'k':
                 opt.k = atoi(optarg);
                 break;
@@ -125,17 +129,17 @@ void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
             case 'B':
                 opt.nb_bits_non_unique_kmers_bf = atoi(optarg);
                 break;
-            case 'w':
-                opt.outFilenameBBF = optarg;
-                break;
             case 'l':
                 opt.inFilenameBBF = optarg;
+                break;
+            case 'w':
+                opt.outFilenameBBF = optarg;
                 break;
             case 'u':
                 opt.read_chunksize = atoi(optarg);
                 break;
-            case 'T':
-                opt.top_splits = atoi(optarg);
+            case 'f':
+                opt.filter = optarg;
                 break;
             case 'i':
                 opt.clipTips = true;
@@ -143,14 +147,17 @@ void parse_ProgramOptions(int argc, char **argv, SANS_opt& opt) {
             case 'd':
                 opt.deleteIsolated = true;
                 break;
-            case 'v':
-                opt.verbose = true;
-                break;
             case 'y':
                 opt.useMercyKmers = true;
                 break;
             case 'a':
                 opt.allow_asym = true;
+                break;
+            case 'S':
+                opt.output_sequences = true;
+                break;
+            case 'v':
+                opt.verbose = true;
                 break;
             default: break;
         }

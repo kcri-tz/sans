@@ -82,6 +82,7 @@ Usage: SANS [PARAMETERS]
   -l, --load-mbbf         Input Blocked Bloom Filter file, skips filter step (default: no input)
   -w, --write-mbbf        Output Blocked Bloom Filter file (default: no output)
   -u, --chunk-size        Read chunk size per thread (default: 64)
+  -f, --filter            Output a maximum weight compatible subset (options: weakly/strict)
 
   > Optional with no argument:
 
@@ -89,6 +90,7 @@ Usage: SANS [PARAMETERS]
   -d, --del-isolated      Delete isolated contigs shorter than k k-mers in length
   -y, --keep-mercy        Keep low coverage k-mers connecting tips
   -a, --allow-asym        Do not discard asymmetric splits completely
+  -S, --output-sequences  Output the conserved subsequences the splits are derived from
   -v, --verbose           Print information messages during execution
 
 

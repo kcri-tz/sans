@@ -7,6 +7,7 @@
 #include <map>
 #include <unordered_map>
 
+#include "SansOpt.h"
 
 using namespace std;
 
@@ -38,8 +39,14 @@ public:
     TopTrie(unsigned int size);
     ~TopTrie();
 
-    void addNodes(vector<string> &objects, unsigned int weight, unsigned int inverse, const SANS_opt& opt);
     map<double, vector<string>, greater<double>> list;
+
+    void addNodes(vector<string> &objects, unsigned int weight, unsigned int inverse, const SANS_opt& opt);
+
+    void filterStrict();
+    void filterWeakly();
+
+    static bool compatible(vector<string>&, vector<vector<string>>&);
 };
 
 #endif //BIFROST_TOPTRIE_H
