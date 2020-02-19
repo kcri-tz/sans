@@ -182,5 +182,5 @@ For any question, feedback or problem, please feel free to file an issue on this
 
 * Bifrost is BSD-2 licensed (https://github.com/pmelsted/bifrost)
 
-* SANS is BSD-2 licensed [LICENSE](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans/blob/master/LICENSE)
+* SANS is under [GNU general public license](https://gitlab.ub.uni-bielefeld.de/roland.wittler/sans/blob/master/LICENSE)
 
