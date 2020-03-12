@@ -33,12 +33,13 @@ def readtaxa(filename):
     return(taxa)
 
 
-def readfile(filename,taxa,add_weight):
+def readfile(filename,taxa,min_size):
     splits=pygtrie.StringTrie()
+    printmin=True
     for line in (s.strip() for s in open(filename)):
         #split line
         fields = line.split('\t')
-        weight = float(fields[0])+add_weight
+        weight = float(fields[0])
         split = fields[1:]
         #store tax names if necessary
         for f in split:
@@ -46,8 +47,13 @@ def readfile(filename,taxa,add_weight):
                 eprint("taxa from split not in taxa: "+f)
                 exit(1)
         split=unify(split,taxa)
-        if len(split)==0:
-            eprint("ignored split \"all vs. none\"")
+        if  len(split)<min_size:
+            if len(split)==0:
+                eprint("ignored split \"all vs. none\"")
+                continue
+            if printmin: #print only on first occurrence
+                eprint("ignored split smaller than specified minimum size of ", min_size)
+                printmin=False
             continue
         split_txt="/".join(split)
         #update or store split
@@ -127,14 +133,15 @@ def split_comp(donor,reference):
     
 
 if len(sys.argv)>4:
-    add_weight=float(sys.argv[4])
+    min_size=int(sys.argv[4])
 else:
-    add_weight=0
+    min_size=1
 
 
 if len(sys.argv)<4:
-    eprint("Usage: sans2nexus.py <list of splits 1> <list of splits 2> <list of genomes (file names)>")
+    eprint("Usage: sans2nexus.py <list of splits 1> <list of splits 2> <list of genomes (file names)>  [minimum split size]")
     eprint("list of splits in SANS output format: Per split one line: weight genomeA genomeB ...")
+    eprint("Only splits of size at least <minimum split size> are considered (default = 1, i.e. all; choose 2 to ignore trivial splits, i.e. leaf edges).")
     eprint("Output on stdout: precision and recall of splits1 w.r.t. splits2 in terms of topological RF-distance for increasing number of splits considered, i.e., precision and recall for *all* splits are in last line.")
     sys.exit(1)
 
@@ -145,9 +152,9 @@ taxa=readtaxa(sys.argv[3])
 eprint(len(taxa))
 
 eprint("read split file 1")
-splitlist1=readfile(sys.argv[1],taxa,add_weight)
+splitlist1=readfile(sys.argv[1],taxa,min_size)
 eprint("read split file 2")
-splitlist2=readfile(sys.argv[2],taxa,add_weight)
+splitlist2=readfile(sys.argv[2],taxa,min_size)
 eprint("found:")
 l1=len(splitlist1)
 l2=len(splitlist2)
