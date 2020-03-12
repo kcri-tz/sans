@@ -58,10 +58,10 @@ void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
         delete[] uc_kmers;
     }
 
-    if (opt.filter == "strict") {
+    if (opt.filter == "1-tree") {
         trie->filterStrict();
     }
-    else if (opt.filter == "weakly") {
+    else if (opt.filter == "2-tree") {
         trie->filterWeakly();
     }
     printSplits(trie, out, opt);

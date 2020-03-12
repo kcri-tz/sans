@@ -69,10 +69,10 @@ void TopTrie::addNodes(vector<string> &objects, unsigned int weight, unsigned in
 }
 
 void TopTrie::filterStrict() {
-    auto strict = vector<vector<string>>();
+    auto tree1 = vector<vector<string>>();
     for (auto it = list.begin(); it != list.end(); ) {
-        if (compatible(it->second, strict)) {
-            strict.push_back(it->second);
+        if (compatible(it->second, tree1)) {
+            tree1.push_back(it->second);
             ++it;
         } else {
             it = list.erase(it);
@@ -81,14 +81,14 @@ void TopTrie::filterStrict() {
 }
 
 void TopTrie::filterWeakly() {
-    auto strict = vector<vector<string>>();
-    auto weakly = vector<vector<string>>();
+    auto tree1 = vector<vector<string>>();
+    auto tree2 = vector<vector<string>>();
     for (auto it = list.begin(); it != list.end(); ) {
-        if (compatible(it->second, strict)) {
-            strict.push_back(it->second);
+        if (compatible(it->second, tree1)) {
+            tree1.push_back(it->second);
             ++it;
-        } else if (compatible(it->second, weakly)) {
-            weakly.push_back(it->second);
+        } else if (compatible(it->second, tree2)) {
+            tree2.push_back(it->second);
             ++it;
         } else {
             it = list.erase(it);

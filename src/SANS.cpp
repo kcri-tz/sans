@@ -50,7 +50,9 @@ void PrintUsage() {
     cout << "  -l, --load-mbbf         Input Blocked Bloom Filter file, skips filter step (default: no input)" << endl;
     cout << "  -w, --write-mbbf        Output Blocked Bloom Filter file (default: no output)" << endl;
     cout << "  -u, --chunk-size        Read chunk size per thread (default: 64)" << endl;
-    cout << "  -f, --filter            Output a maximum weight compatible subset (options: weakly/strict)" << endl;
+    cout << "  -f, --filter            Output a greedy maximum weight subset" << endl;
+    cout << "                          options: 1-tree: compatible to a tree" << endl;
+    cout << "                                   2-tree: compatible to union of two trees (network)" << endl;
     cout << endl;
     cout << "  > Optional with no argument:" << endl;
     cout << endl;

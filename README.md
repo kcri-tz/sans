@@ -82,7 +82,9 @@ Usage: SANS [PARAMETERS]
   -l, --load-mbbf         Input Blocked Bloom Filter file, skips filter step (default: no input)
   -w, --write-mbbf        Output Blocked Bloom Filter file (default: no output)
   -u, --chunk-size        Read chunk size per thread (default: 64)
-  -f, --filter            Output a maximum weight compatible subset (options: weakly/strict)
+  -f, --filter            Output a greedy maximum weight subset
+                          options: 1-tree: compatible to a tree
+                                   2-tree: compatible to union of two trees (network)
 
   > Optional with no argument:
 
