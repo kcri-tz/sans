@@ -9,7 +9,8 @@
 
 ### Publication
 
-Preprint: Wittler, R.: Alignment- and reference-free phylogenomics with colored de-Bruijn graphs. [arXiv:1905.04165](https://arxiv.org/abs/1905.04165). (2019). 
+Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs.](http://drops.dagstuhl.de/opus/volltexte/2019/11032/pdf/LIPIcs-WABI-2019-2.pdf) In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Schloss Dagstuhl--Leibniz-Zentrum fuer Informatik, Dagstuhl, Germany (2019).
+
 
 
 ## Table of Contents
