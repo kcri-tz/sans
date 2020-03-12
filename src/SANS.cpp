@@ -1,6 +1,7 @@
 #include <bifrost/CompactedDBG.hpp>
 #include <bifrost/ColoredCDBG.hpp>
-#include "TopSplits.h"
+#include "SansOpt.h"
+#include "TopSplits.cpp"
 
 #define SANS_VERSION "0.9"
 

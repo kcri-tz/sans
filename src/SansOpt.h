@@ -1,4 +1,3 @@
-#include <bifrost/ColoredCDBG.hpp>
 
 struct SANS_opt : CCDBG_Build_opt {
 

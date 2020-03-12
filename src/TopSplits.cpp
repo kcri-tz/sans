@@ -1,4 +1,5 @@
 #include "TopSplits.h"
+#include "TopTrie.cpp"
 
 void searchGraph(ColoredCDBG<> &graph,  const SANS_opt& opt){
     

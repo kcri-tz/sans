@@ -7,8 +7,6 @@
 #include <map>
 #include <unordered_map>
 
-#include "SansOpt.h"
-
 using namespace std;
 
 class TopTrie {
