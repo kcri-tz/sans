@@ -3,7 +3,7 @@
 #include "SansOpt.h"
 #include "TopSplits.cpp"
 
-#define SANS_VERSION "0.9"
+#define SANS_VERSION "1.1"
 
 using namespace std;
 
@@ -18,8 +18,8 @@ void PrintVersion() {
 // use:  PrintCite();
 // post: Information of how to cite this software has been printed to cerr
 void PrintCite() {
-    cout << "The paper describing this software has been published as preprint: " << endl;
-    cout << "Wittler, R.: Alignment- and reference-free phylogenomics with colored de-Bruijn graphs. arXiv:1905.04165. (2019)." << endl;
+    cout << "The paper describing this software has been published at WABI 2019: " << endl;
+    cout << "Wittler, R.: Alignment- and reference-free phylogenomics with colored de Bruijn graphs. In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Schloss Dagstuhl--Leibniz-Zentrum fuer Informatik, Dagstuhl, Germany (2019)." << endl;
 }
 
 void PrintUsage() {
@@ -382,7 +382,7 @@ int main(int argc, char **argv){
         cdbg.buildColors(opt);
 
         if (opt.verbose) {
-            cout << "SANS.cpp(): traversing graph and outputting splits..." << endl;
+            cout << "SANS.cpp(): traversing graph and extracting..." << endl;
         }
 
         searchGraph(cdbg, opt);
