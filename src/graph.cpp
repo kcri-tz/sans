@@ -71,6 +71,103 @@ void graph::add_kmers(string& str, uint64_t& color) {
 }
 
 /**
+ * This function extracts k-mers from a sequence and adds them to the hash table.
+ *
+ * @param str dna sequence
+ * @param color color flag
+ * @param max_iupac allowed number of ambiguous k-mers per position
+ */
+void graph::add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac) {
+
+    unordered_set<kmer_t> kmers;    // create a new empty set for the k-mers
+    kmer_t kmer0;    // create an empty bit sequence for the initial k-mer
+    kmer_t rcmer;    // create a bit sequence for the reverse complement
+
+    next_kmer:
+    if (str.length() < kmer::k) {
+        return;    // not enough characters for a k-mer, abort
+    }
+    uint64_t pos = 0;    // current position in the string, from 0 to length
+    kmers.clear();
+    kmers.emplace(kmer0);
+
+    for (; pos < kmer::k; ++pos) {    // collect the first k bases from the string
+        if (str[pos] == '.' || str[pos] == '-') {
+            str = str.substr(pos+1, string::npos);
+            goto next_kmer;    // gap character, start a new k-mer from the beginning
+        }
+        shift_right_iupac(kmers, str[pos]);    // resolve iupac character
+    }
+    if (kmers.size() <= max_iupac) {    // check if there are too many ambiguous k-mers
+        for (auto kmer : kmers) {    // iterate over the current set of ambiguous k-mers
+            rcmer = kmer;
+            kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+            color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+        }
+    }
+
+    for (; pos < str.length(); ++pos) {    // collect the remaining bases from the string
+        if (str[pos] == '.' || str[pos] == '-') {
+            str = str.substr(pos+1, string::npos);
+            goto next_kmer;    // gap character, start a new k-mer from the beginning
+        }
+        shift_right_iupac(kmers, str[pos]);    // resolve iupac character
+
+        if (kmers.size() <= max_iupac) {    // check if there are too many ambiguous k-mers
+            for (auto kmer : kmers) {    // iterate over the current set of ambiguous k-mers
+                rcmer = kmer;
+                kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+                color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+            }
+        }
+    }
+}
+
+/**
+ * This function shifts a set of iupac ambiguous k-mers to the right.
+ *
+ * @param prev set of k-mers
+ * @param input iupac character
+ */
+void graph::shift_right_iupac(unordered_set<kmer_t>& prev, char& input) {
+
+    unordered_set<kmer_t> next;    // create a new set for the next k-mers
+    kmer_t temp; char base;
+
+    for (auto kmer : prev) {    // extend each previous k-mer to the right
+        switch (input) {
+            case 'A': case 'R': case 'W': case 'M':
+            case 'D': case 'H': case 'V': case 'N':
+                temp = kmer; base = 'A';
+                kmer::shift_right(temp, base);
+                next.emplace(temp);
+        }
+        switch (input) {
+            case 'C': case 'Y': case 'S': case 'M':
+            case 'B': case 'H': case 'V': case 'N':
+                temp = kmer; base = 'C';
+                kmer::shift_right(temp, base);
+                next.emplace(temp);
+        }
+        switch (input) {
+            case 'G': case 'R': case 'S': case 'K':
+            case 'B': case 'D': case 'V': case 'N':
+                temp = kmer; base = 'G';
+                kmer::shift_right(temp, base);
+                next.emplace(temp);
+        }
+        switch (input) {
+            case 'T': case 'Y': case 'W': case 'K':
+            case 'B': case 'D': case 'H': case 'N':
+                temp = kmer; base = 'T';
+                kmer::shift_right(temp, base);
+                next.emplace(temp);
+        }
+    }
+    prev.clear(); prev = next; next.clear();    // update set and clean-up
+}
+
+/**
  * This function iterates over the hash table and calculates the split weights.
  *
  * @param mean weight function

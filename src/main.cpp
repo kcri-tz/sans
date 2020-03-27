@@ -31,6 +31,10 @@ int main(int argc, char* argv[]) {
         cout << "               \t options: 1-tree: compatible to a tree" << endl;
         cout << "               \t          2-tree: compatible to union of two trees (network)" << endl;
         cout << endl;
+        cout << " -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases" << endl;
+        cout << "               \t Specify a number to limit the k-mers per position" << endl;
+        cout << "               \t          (required, between 1 and 4^k)" << endl;
+        cout << endl;
         cout << " -v, --verbose \t Print messages during execution" << endl;
         cout << endl;
         cout << " -h, --help    \t Display this help page and quit" << endl;
@@ -46,6 +50,7 @@ int main(int argc, char* argv[]) {
     uint64_t top = 0;    // number of splits
     auto mean = util::geometric_mean;    // weight function
     auto filter = graph::filter_none;    // filter function
+    uint64_t iupac = 0;    // allow extended iupac characters
     bool verbose = false;    // print messages during execution
 
     // parse the command line arguments and update the variables above
@@ -98,6 +103,9 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
+        else if (strcmp(argv[i], "-x") == 0 || strcmp(argv[i], "--iupac") == 0) {
+            iupac = stoi(argv[++i]);    // Extended IUPAC alphabet, resolve ambiguous bases
+        }
         else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
             verbose = true;    // Print messages during execution
         }
@@ -148,7 +156,8 @@ int main(int argc, char* argv[]) {
         while (getline(file, line)) {
             if (line.length() > 0) {
                 if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
-                    graph::add_kmers(sequence, i);
+                    iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
+                              : graph::add_kmers(sequence, i);
                     sequence.clear();
 
                     if (verbose) {
@@ -163,7 +172,8 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-        graph::add_kmers(sequence, i);
+        iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
+                  : graph::add_kmers(sequence, i);
         sequence.clear();
 
         file.close();

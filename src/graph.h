@@ -2,6 +2,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <limits>
 
@@ -71,6 +72,15 @@ public:
     static void add_kmers(string& str, uint64_t& color);
 
     /**
+     * This function extracts k-mers from a sequence and adds them to the hash table.
+     *
+     * @param str dna sequence
+     * @param color color flag
+     * @param max_iupac allowed number of ambiguous k-mers per position
+     */
+    static void add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac);
+
+    /**
      * This function iterates over the hash table and calculates the split weights.
      *
      * @param mean weight function
@@ -110,5 +120,13 @@ protected:
      * @return true, if compatible
      */
     static bool test_set(color_t& color, vector<color_t>& color_set);
+
+    /**
+     * This function shifts a set of iupac ambiguous k-mers to the right.
+     *
+     * @param prev set of k-mers
+     * @param input iupac character
+     */
+    static void shift_right_iupac(unordered_set<kmer_t>& prev, char& input);
 
 };

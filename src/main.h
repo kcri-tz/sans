@@ -8,6 +8,10 @@
 
 using namespace std;
 
+#define SANS_VERSION "2.0_03A"    // SANS serif
+// Symmetric Alignment-free phylogeNomic Splits
+// simple efficient re-implementation + filters
+
 /**
  * This is the entry point of the program.
  *
