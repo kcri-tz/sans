@@ -156,6 +156,7 @@ int main(int argc, char* argv[]) {
         while (getline(file, line)) {
             if (line.length() > 0) {
                 if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
+                    transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
                     iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
                               : graph::add_kmers(sequence, i);
                     sequence.clear();
@@ -172,6 +173,7 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+        transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
         iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
                   : graph::add_kmers(sequence, i);
         sequence.clear();

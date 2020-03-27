@@ -2,13 +2,14 @@
 #include <fstream>
 #include <cstring>
 #include <chrono>
+#include <algorithm>
 
 #include "graph.h"
 #include "util.h"
 
 using namespace std;
 
-#define SANS_VERSION "2.0_03A"    // SANS serif
+#define SANS_VERSION "2.0_03B"    // SANS serif
 // Symmetric Alignment-free phylogeNomic Splits
 // simple efficient re-implementation + filters
 
