@@ -3,7 +3,7 @@
 using namespace std;
 
 /**
- * This class contains functions for working with k-mers (length <= 32).
+ * This class contains functions for working with k-mers (maxK <= 32).
  */
 class kmer32 {
 

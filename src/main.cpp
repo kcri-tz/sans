@@ -12,37 +12,45 @@ int main(int argc, char* argv[]) {
     // print a help message describing the program arguments
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;
-        cout << "Required arguments:" << endl;
+        cout << "Usage: SANS [PARAMETERS]" << endl;
         cout << endl;
-        cout << " -i, --input   \t Input file: list of sequence files, one per line" << endl;
+        cout << "  Required arguments:" << endl;
         cout << endl;
-        cout << " -o, --output  \t Output file: list of splits, sorted by weight desc." << endl;
+        cout << "    -i, --input   \t Input file: list of sequence files, one per line" << endl;
         cout << endl;
-        cout << "Optional arguments:" << endl;
+        cout << "    -g, --graph   \t Graph file: load a Biforst graph, file name prefix" << endl;
+        cout << "                  \t (either -i/--input or -g/--graph must be provided)" << endl;
         cout << endl;
-        cout << " -k, --kmer    \t Length of k-mers (default: 31)" << endl;
+        cout << "    -o, --output  \t Output file: list of splits, sorted by weight desc." << endl;
         cout << endl;
-        cout << " -t, --top     \t Number of splits (default: all)" << endl;
+        cout << "  Optional arguments:" << endl;
         cout << endl;
-        cout << " -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
-        cout << "               \t Possible values: arith/geom/geom2 (default: geom)" << endl;
+        cout << "    -k, --kmer    \t Length of k-mers (default: 31)" << endl;
         cout << endl;
-        cout << " -f, --filter  \t Output a greedy maximum weight subset" << endl;
-        cout << "               \t options: 1-tree: compatible to a tree" << endl;
-        cout << "               \t          2-tree: compatible to union of two trees (network)" << endl;
+        cout << "    -t, --top     \t Number of splits (default: all)" << endl;
         cout << endl;
-        cout << " -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases" << endl;
-        cout << "               \t Specify a number to limit the k-mers per position" << endl;
-        cout << "               \t          (required, between 1 and 4^k)" << endl;
+        cout << "    -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
+        cout << "                  \t options: arith: arithmetic mean" << endl;
+        cout << "                  \t          geom:  geometric mean (default)" << endl;
+        cout << "                  \t          geom2: geometric mean with pseudo-counts" << endl;
         cout << endl;
-        cout << " -v, --verbose \t Print messages during execution" << endl;
+        cout << "    -f, --filter  \t Output a greedy maximum weight subset" << endl;
+        cout << "                  \t options: 1-tree: compatible to a tree" << endl;
+        cout << "                  \t          2-tree: compatible to union of two trees (network)" << endl;
         cout << endl;
-        cout << " -h, --help    \t Display this help page and quit" << endl;
+        cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases" << endl;
+        cout << "                  \t Specify a number to limit the k-mers per position" << endl;
+        cout << "                  \t between 1 (no ambiguity) and 4^k (allows NNN...N)" << endl;
+        cout << endl;
+        cout << "    -v, --verbose \t Print information messages during execution" << endl;
+        cout << endl;
+        cout << "    -h, --help    \t Display this help page and quit" << endl;
         cout << endl;
         return 0;
     }
 
     string input;    // name of input file
+    string graph;    // name of graph file
     string output;    // name of output file
     uint64_t num = 0;    // number of input files
 
@@ -58,15 +66,18 @@ int main(int argc, char* argv[]) {
         if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0) {
             input = argv[++i];    // Input file: list of sequence files, one per line
         }
+        else if (strcmp(argv[i], "-g") == 0 || strcmp(argv[i], "--graph") == 0) {
+            graph = argv[++i];    // Graph file: load a Biforst graph, file name prefix
+            #ifndef useBF
+                cerr << "Error: requires compiler flag -DuseBF" << endl;
+                return 1;
+            #endif
+        }
         else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
             output = argv[++i];    // Output file: list of splits, sorted by weight desc.
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {
             kmer = stoi(argv[++i]);    // Length of k-mers (default: 31)
-            if (kmer > K) {
-                cerr << "Error: k-mer length exceeds MAX_K=" << K << endl;
-                return 1;
-            }
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
             top = stoi(argv[++i]);    // Number of splits (default: all)
@@ -115,17 +126,22 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (input.empty()) {
+    if (input.empty() && graph.empty()) {
         cerr << "Error: missing argument: --input <file_name>" << endl;
         return 1;
     }
-    else if (output.empty()) {
+    if (output.empty()) {
         cerr << "Error: missing argument: --output <file_name>" << endl;
+        return 1;
+    }
+    if (kmer > maxK) {
+        cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
         return 1;
     }
 
     // parse the list of input sequence files
-    vector<string> files; {
+    vector<string> files;
+    if (!input.empty()) {
         ifstream file(input);
         string line;
         while (getline(file, line)) {
@@ -133,11 +149,41 @@ int main(int argc, char* argv[]) {
             num++;
         }
         file.close();
+
+        if (num > maxN) {
+            cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl;
+            return 1;
+        }
     }
-    if (num > N) {
-        cerr << "Error: number of files exceeds MAX_N=" << N << endl;
-        return 1;
+
+#ifdef useBF
+    // load an existing Bifrost graph
+    ColoredCDBG<> cdbg(kmer);
+    if (!graph.empty()) {
+        if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) {
+            num += cdbg.getNbColors();
+        } else {
+            cerr << "Error: could not load Bifrost graph" << endl;
+            return 1;
+        }
+
+        if (kmer != cdbg.getK()) {
+            kmer = cdbg.getK();
+            if (kmer > maxK) {
+                cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
+                return 1;
+            }
+            cerr << "Warning: setting k-mer length to " << kmer << endl;
+        }
+        if (num > maxN) {
+            cerr << "Error: number of colors exceeds -DmaxN=" << maxN << endl;
+            return 1;
+        }
+        if (verbose) {
+            cout << endl;
+        }
     }
+#endif
 
     kmer::init(kmer);    // initialize the k-mer length
     color::init(num);    // initialize the color number
@@ -145,50 +191,114 @@ int main(int argc, char* argv[]) {
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
 
-    string sequence;    // read in the sequence files and extract the k-mers
-    for (uint64_t i = 0; i < color::n; ++i) {
+    if (!input.empty()) {
         if (verbose) {
-            cout << files[i] << " (" << i+1 << "/" << color::n << ")" << endl;    // print progress
+            cout << "SANS::main(): Reading input files..." << flush;
         }
-        ifstream file(files[i]);    // input file stream
+        string sequence;    // read in the sequence files and extract the k-mers
 
-        string line;    // read the file line by line
-        while (getline(file, line)) {
-            if (line.length() > 0) {
-                if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
-                    transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-                    iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
-                              : graph::add_kmers(sequence, i);
-                    sequence.clear();
+        for (uint64_t i = 0; i < files.size(); ++i) {
+            if (verbose) {
+                cout << "\33[2K\r" << files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
+            }
+            ifstream file(files[i]);    // input file stream
 
-                    if (verbose) {
-                        cout << line << endl;    // print progress
+            string line;    // read the file line by line
+            while (getline(file, line)) {
+                if (line.length() > 0) {
+                    if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
+                        transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
+                        iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
+                                  : graph::add_kmers(sequence, i);
+                        sequence.clear();
+
+                        if (verbose) {
+                            cout << "\33[2K\r" << line << flush;    // print progress
+                        }
+                    }
+                    else if (line[0] == '+') {    // FASTQ quality values -> ignore
+                        getline(file, line);
+                    }
+                    else {
+                        sequence += line;    // FASTA & FASTQ sequence -> read
                     }
                 }
-                else if (line[0] == '+') {    // FASTQ quality values -> ignore
-                    getline(file, line);
-                }
-                else {
-                    sequence += line;    // FASTA & FASTQ sequence -> read
-                }
+            }
+            transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
+            iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
+                      : graph::add_kmers(sequence, i);
+            sequence.clear();
+
+            if (verbose) {
+                cout << "\33[2K\r" << flush;
+            }
+            file.close();
+        }
+    }
+
+#ifdef useBF
+    if (!graph.empty()) {
+        if (verbose) {
+            cout << "SANS::main(): Processing unitigs..." << flush;
+        }
+        uint64_t cur = 0;
+        uint64_t max = cdbg.size();
+
+        for (auto& unitig : cdbg) {
+            if (verbose) {
+                cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
+            }
+            cur++;
+
+            auto sequence = unitig.mappedSequenceToString();
+            auto *colors = unitig.getData()->getUnitigColors(unitig);
+            auto it = colors->begin(unitig);
+            auto end = colors->end();
+
+            for (; it != end; ++it) {
+                auto seq = sequence.substr(it.getKmerPosition(), kmer);
+                auto col = files.size() + it.getColorID();
+                graph::add_kmers(seq, col);
             }
         }
-        transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-        iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
-                  : graph::add_kmers(sequence, i);
-        sequence.clear();
-
-        file.close();
+        if (verbose) {
+            cout << "\33[2K\r" << "Processed " << max << " unitigs (100%)" << endl;
+        }
     }
+#endif
 
     if (verbose) {
-        cout << "Please wait..." << flush;
+        cout << "Please wait." << flush;
     }
-    graph::add_weights(mean);filter();    // accumulate split weights and apply filter
+    graph::add_weights(mean);    // accumulate split weights
 
+    if (verbose) {
+        cout << "." << flush;
+    }
+    filter();    // apply n-tree filter
+
+    if (verbose) {
+        cout << "." << flush;
+    }
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());
-    graph::output_splits(stream, files);
+
+    uint64_t pos = 0;
+    for (auto& split : graph::split_list) {
+        stream << split.first;    // weight of the split
+        for (uint64_t i = 0; i < num; ++i) {
+            if (color::test(split.second, pos)) {
+                if (i < files.size())
+                    stream << "\t" << files[i];    // name of the file
+                #ifdef useBF
+                else
+                    stream << "\t" << cdbg.getColorName(i-files.size());
+                #endif
+            }
+            split.second >>= 01u;
+        }
+        stream << endl;
+    }
     file.close();
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time mesaurement

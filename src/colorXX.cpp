@@ -8,7 +8,7 @@ uint64_t colorXX::n;
 /**
  * This is a bit-mask to erase all bits that exceed the color number.
  */
-bitset<N> colorXX::mask;
+bitset<maxN> colorXX::mask;
 
 /**
  * This function initializes the color number and bit-mask.
@@ -30,7 +30,7 @@ void colorXX::init(uint64_t& color_number) {
  * @param color bit sequence
  * @param pos position
  */
-void colorXX::set(bitset<N>& color, uint64_t& pos) {
+void colorXX::set(bitset<maxN>& color, uint64_t& pos) {
     color.set(pos) &= mask;
 }
 
@@ -40,7 +40,7 @@ void colorXX::set(bitset<N>& color, uint64_t& pos) {
  * @param color bit sequence
  * @param pos position
  */
-void colorXX::erase(bitset<N>& color, uint64_t& pos) {
+void colorXX::erase(bitset<maxN>& color, uint64_t& pos) {
     color.reset(pos) &= mask;
 }
 
@@ -51,7 +51,7 @@ void colorXX::erase(bitset<N>& color, uint64_t& pos) {
  * @param pos position
  * @return 1 if bit is set, 0 otherwise
  */
-bool colorXX::test(bitset<N>& color, uint64_t& pos) {
+bool colorXX::test(bitset<maxN>& color, uint64_t& pos) {
     return color.test(pos);
 }
 
@@ -62,7 +62,7 @@ bool colorXX::test(bitset<N>& color, uint64_t& pos) {
  * @param minimize only invert, if smaller
  * @return 1 if inverted, 0 otherwise
  */
-bool colorXX::complement(bitset<N>& color, bool minimize) {
+bool colorXX::complement(bitset<maxN>& color, bool minimize) {
 
     uint64_t ones = color.count();    // count the number of ones
 
@@ -82,7 +82,7 @@ bool colorXX::complement(bitset<N>& color, bool minimize) {
  * @param c2 bit sequence
  * @return true, if c1 is a subset of c2
  */
-bool colorXX::is_subset(bitset<N>& c1, bitset<N>& c2) {
+bool colorXX::is_subset(bitset<maxN>& c1, bitset<maxN>& c2) {
     return (c1 & c2) == c1;
 }
 
@@ -93,7 +93,7 @@ bool colorXX::is_subset(bitset<N>& c1, bitset<N>& c2) {
  * @param c2 bit sequence
  * @return true, if c1 & c2 are disjoint
  */
-bool colorXX::is_disjoint(bitset<N>& c1, bitset<N>& c2) {
+bool colorXX::is_disjoint(bitset<maxN>& c1, bitset<maxN>& c2) {
     return (c1 & c2) == 0b0u;
 }
 
@@ -104,7 +104,7 @@ bool colorXX::is_disjoint(bitset<N>& c1, bitset<N>& c2) {
  * @param c2 bis sequence
  * @return true, if c1 & c2 are compatible
  */
-bool colorXX::is_compatible(bitset<N>& c1, bitset<N>& c2) {
-    bitset<N> intersect = c1 & c2;
+bool colorXX::is_compatible(bitset<maxN>& c1, bitset<maxN>& c2) {
+    bitset<maxN> intersect = c1 & c2;
     return intersect == 0b0u || intersect == c1 || intersect == c2;
 }

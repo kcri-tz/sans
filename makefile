@@ -1,4 +1,5 @@
-CC = g++ -D K=32 -D N=64 # MAX. K-MER LENGTH, NUMBER OF FILES, PLEASE EDIT HERE
+CC = g++ -DmaxK=32 -DmaxN=64 # MAX. K-MER LENGTH, NUMBER OF FILES, PLEASE EDIT HERE
+# CC = g++ -DmaxK=32 -DmaxN=64 -DuseBF -lbifrost -lpthread -lz # IF BIFROST IS USED
 
 SANS: main.o
 	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o color64.o colorXX.o util.o

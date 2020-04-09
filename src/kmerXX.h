@@ -6,12 +6,12 @@ using namespace std;
 /**
  * This is the max. k-mer length defined as a preprocessor directive.
  */
-#ifndef K
-#define K 32
+#ifndef maxK
+#define maxK 32
 #endif
 
 /**
- * This class contains functions for working with k-mers (length > 32).
+ * This class contains functions for working with k-mers (maxK > 32).
  */
 class kmerXX {
 
@@ -20,7 +20,7 @@ private:
     /**
      * This is a bit-mask to erase all bits that exceed the k-mer length.
      */
-    static bitset<2*K> mask;
+    static bitset<2*maxK> mask;
 
 public:
 
@@ -43,7 +43,7 @@ public:
      * @param c left character
      * @return right character
      */
-    static char shift_left(bitset<2*K>& kmer, char& c);
+    static char shift_left(bitset<2*maxK>& kmer, char& c);
 
     /**
      * This function shifts a k-mer adding a new character to the right.
@@ -52,7 +52,7 @@ public:
      * @param c right character
      * @return left character
      */
-    static char shift_right(bitset<2*K>& kmer, char& c);
+    static char shift_right(bitset<2*maxK>& kmer, char& c);
 
     /**
      * This function constructs the reverse complement of a given k-mer.
@@ -61,7 +61,7 @@ public:
      * @param minimize only invert, if smaller
      * @return 1 if inverted, 0 otherwise
      */
-    static bool reverse_complement(bitset<2*K>& kmer, bool minimize);
+    static bool reverse_complement(bitset<2*maxK>& kmer, bool minimize);
 
 protected:
 

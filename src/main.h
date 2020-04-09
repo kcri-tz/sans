@@ -1,15 +1,22 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <chrono>
 #include <algorithm>
 
 #include "graph.h"
 #include "util.h"
 
+#ifndef MAX_KMER_SIZE
+    #define MAX_KMER_SIZE maxK
+#endif
+#ifdef useBF
+    #include <bifrost/CompactedDBG.hpp>
+    #include <bifrost/ColoredCDBG.hpp>
+#endif
+
 using namespace std;
 
-#define SANS_VERSION "2.0_03B"    // SANS serif
+#define SANS_VERSION "2.0_04A"    // SANS serif
 // Symmetric Alignment-free phylogeNomic Splits
 // simple efficient re-implementation + filters
 

@@ -8,7 +8,7 @@ uint64_t kmerXX::k;
 /**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
-bitset<2*K> kmerXX::mask;
+bitset<2*maxK> kmerXX::mask;
 
 /**
  * This function initializes the k-mer length and bit-mask.
@@ -31,7 +31,7 @@ void kmerXX::init(uint64_t& kmer_length) {
  * @param c left character
  * @return right character
  */
-char kmerXX::shift_left(bitset<2*K>& kmer, char& c) {
+char kmerXX::shift_left(bitset<2*maxK>& kmer, char& c) {
 
     uint64_t left = char_to_bits(c);    // new leftmost character
     uint64_t right = 2*kmer[1]+kmer[0];    // old rightmost character
@@ -51,7 +51,7 @@ char kmerXX::shift_left(bitset<2*K>& kmer, char& c) {
  * @param c right character
  * @return left character
  */
-char kmerXX::shift_right(bitset<2*K>& kmer, char& c) {
+char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
 
     uint64_t left = 2*kmer[2*k-1]+kmer[2*k-2];    // old leftmost character
     uint64_t right = char_to_bits(c);    // new rightmost character
@@ -71,10 +71,10 @@ char kmerXX::shift_right(bitset<2*K>& kmer, char& c) {
  * @param minimize only invert, if smaller
  * @return 1 if inverted, 0 otherwise
  */
-bool kmerXX::reverse_complement(bitset<2*K>& kmer, bool minimize) {
+bool kmerXX::reverse_complement(bitset<2*maxK>& kmer, bool minimize) {
 
-    bitset<2*K> bits = kmer;    // copy the original k-mer
-    bitset<2*K> rcmp;    // empty reverse complement
+    bitset<2*maxK> bits = kmer;    // copy the original k-mer
+    bitset<2*maxK> rcmp;    // empty reverse complement
 
     for (uint64_t i = 0; i < k; ++i) {
         uint64_t base = 2*bits[1]+bits[0];
@@ -107,13 +107,13 @@ bool kmerXX::reverse_complement(bitset<2*K>& kmer, bool minimize) {
 uint64_t kmerXX::char_to_bits(char& c) {
 
     switch (c) {
-        case 'A': case 'a':
+        case 'A':
             return 0b00u;
-        case 'C': case 'c':
+        case 'C':
             return 0b01u;
-        case 'G': case 'g':
+        case 'G':
             return 0b10u;
-        case 'T': case 't':
+        case 'T':
             return 0b11u;
         default:
             cerr << "Error: Invalid character " << c << "." << endl;

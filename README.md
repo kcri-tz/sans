@@ -1,4 +1,4 @@
-# SANS
+# SANS *serif*
 
 ### Symmetric Alignment-free phylogeNomic Splits
 
@@ -58,46 +58,41 @@ SANS
 
 displays the command line interface:
 ```
+
 Usage: SANS [PARAMETERS]
 
-[PARAMETERS]:
+  Required arguments:
 
-  > Mandatory with required argument:
+    -i, --input   	 Input file: list of sequence files, one per line
 
-  -s, --input-seq-files   Input sequence files (FASTA/FASTQ possibly gzipped)
-                          Input files can be provided as a list in a TXT file (one file per line)
-                          K-mers with exactly 1 occurrence in the input files will be discarded
-  -r, --input-ref-files   Input reference files (FASTA/FASTQ possibly gzipped and GFA)
-                          Input files can be provided as a list in a TXT file (one file per line)
-                          All k-mers of the input reference files are used
-  -o, --output-file       name of output file
+    -g, --graph   	 Graph file: load a Biforst graph, file name prefix
+                  	 (either -i/--input or -g/--graph must be provided)
 
-  > Optional with required argument:
+    -o, --output  	 Output file: list of splits, sorted by weight desc.
 
-  -t, --threads           Number of threads (default: 1)
-  -T, --top               Output the top T splits sorted by weight descending (default: all)
-  -k, --kmer-length       Length of k-mers (default: 31)
-  -m, --min-length        Length of minimizers (auto-adjusted by default: see verbose output)
-  -b, --bloom-bits        Number of Bloom filter bits per k-mer with 1+ occurrences (default: 14)
-  -B, --bloom-bits2       Number of Bloom filter bits per k-mer with 2+ occurrences (default: 14)
-  -l, --load-mbbf         Input Blocked Bloom Filter file, skips filter step (default: no input)
-  -w, --write-mbbf        Output Blocked Bloom Filter file (default: no output)
-  -u, --chunk-size        Read chunk size per thread (default: 64)
-  -f, --filter            Output a greedy maximum weight subset
-                          options: 1-tree: compatible to a tree
-                                   2-tree: compatible to union of two trees (network)
+  Optional arguments:
 
-  > Optional with no argument:
+    -k, --kmer    	 Length of k-mers (default: 31)
 
-  -i, --clip-tips         Clip tips shorter than k k-mers in length
-  -d, --del-isolated      Delete isolated contigs shorter than k k-mers in length
-  -y, --keep-mercy        Keep low coverage k-mers connecting tips
-  -a, --allow-asym        Do not discard asymmetric splits completely
-  -S, --output-sequences  Output the conserved subsequences the splits are derived from
-  -v, --verbose           Print information messages during execution
+    -t, --top     	 Number of splits (default: all)
 
+    -m, --mean    	 Mean weight function to handle asymmetric splits
+                  	 options: arith: arithmetic mean
+                  	          geom:  geometric mean (default)
+                  	          geom2: geometric mean with pseudo-counts
 
-...
+    -f, --filter  	 Output a greedy maximum weight subset
+                  	 options: 1-tree: compatible to a tree
+                  	          2-tree: compatible to union of two trees (network)
+
+    -x, --iupac   	 Extended IUPAC alphabet, resolve ambiguous bases
+                  	 Specify a number to limit the k-mers per position
+                  	 between 1 (no ambiguity) and 4^k (allows NNN...N)
+
+    -v, --verbose 	 Print information messages during execution
+
+    -h, --help    	 Display this help page and quit
+
 ```
 
 ### Examples

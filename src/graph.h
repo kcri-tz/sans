@@ -11,9 +11,9 @@ using namespace std;
 #include "kmer32.h"
 #include "kmerXX.h"
 
-#if K > 32 // store k-mers in a bitset, allows larger k-mers
+#if maxK > 32 // store k-mers in a bitset, allows larger k-mers
     typedef kmerXX kmer;
-    typedef bitset<2*K> kmer_t;
+    typedef bitset<2*maxK> kmer_t;
 #else // store k-mer bits in an integer, optimizes performance
     typedef kmer32 kmer;
     typedef uint64_t kmer_t;
@@ -22,14 +22,17 @@ using namespace std;
 #include "color64.h"
 #include "colorXX.h"
 
-#if N > 64 // store colors in a bitset, allows more input files
+#if maxN > 64 // store colors in a bitset, allows more input files
     typedef colorXX color;
-    typedef bitset<N> color_t;
+    typedef bitset<maxN> color_t;
 #else // store color bits in an integer, optimizes performance
     typedef color64 color;
     typedef uint64_t color_t;
 #endif
 
+/**
+ * This class manages the k-mer/color hash tables and split list.
+ */
 class graph {
 
 private:
@@ -44,12 +47,12 @@ private:
      */
     static unordered_map<color_t, array<uint32_t,2>> color_table;
 
+public:
+
     /**
      * This is an ordered tree collecting the splits [O(log n)].
      */
     static multimap<double, color_t, greater<>> split_list;
-
-public:
 
     /**
      * This is the size of the top list.
@@ -101,14 +104,6 @@ public:
      * This function does not filter the splits in the output list.
      */
     static void filter_none();
-
-    /**
-     * This function prints the splits ordered by weight to an output file stream.
-     *
-     * @param out output stream
-     * @param names file names
-     */
-    static void output_splits(ostream& out, vector<string>& names);
 
 protected:
 

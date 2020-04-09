@@ -3,7 +3,7 @@
 using namespace std;
 
 /**
- * This class contains functions for working with color sets (size N <= 64).
+ * This class contains functions for working with color sets (maxN <= 64).
  */
 class color64 {
 

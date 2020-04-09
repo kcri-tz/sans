@@ -99,13 +99,13 @@ bool kmer32::reverse_complement(uint64_t& kmer, bool minimize) {
 uint64_t kmer32::char_to_bits(char& c) {
 
     switch (c) {
-        case 'A': case 'a':
+        case 'A':
             return 0b00u;
-        case 'C': case 'c':
+        case 'C':
             return 0b01u;
-        case 'G': case 'g':
+        case 'G':
             return 0b10u;
-        case 'T': case 't':
+        case 'T':
             return 0b11u;
         default:
             cerr << "Error: Invalid character " << c << "." << endl;

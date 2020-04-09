@@ -6,12 +6,12 @@ using namespace std;
 /**
  * This is the max. number of colors defined as a preprocessor directive.
  */
-#ifndef N
-#define N 64
+#ifndef maxN
+#define maxN 64
 #endif
 
 /**
- * This class contains functions for working with color sets (size N > 64).
+ * This class contains functions for working with color sets (maxN > 64).
  */
 class colorXX {
 
@@ -20,7 +20,7 @@ private:
     /**
      * This is a bit-mask to erase all bits that exceed the color number.
      */
-    static bitset<N> mask;
+    static bitset<maxN> mask;
 
 public:
 
@@ -42,7 +42,7 @@ public:
      * @param color bit sequence
      * @param pos position
      */
-    static void set(bitset<N>& color, uint64_t& pos);
+    static void set(bitset<maxN>& color, uint64_t& pos);
 
     /**
      * This function sets the bit at the given position to false.
@@ -50,7 +50,7 @@ public:
      * @param color bit sequence
      * @param pos position
      */
-    static void erase(bitset<N>& color, uint64_t& pos);
+    static void erase(bitset<maxN>& color, uint64_t& pos);
 
     /**
      * This function tests if the bit at the given position is set.
@@ -59,7 +59,7 @@ public:
      * @param pos position
      * @return 1 if bit is set, 0 otherwise
      */
-    static bool test(bitset<N>& color, uint64_t& pos);
+    static bool test(bitset<maxN>& color, uint64_t& pos);
 
     /**
      * This function inverts a color set to reduce the number of ones.
@@ -68,7 +68,7 @@ public:
      * @param minimize only invert, if smaller
      * @return 1 if inverted, 0 otherwise
      */
-    static bool complement(bitset<N>& color, bool minimize);
+    static bool complement(bitset<maxN>& color, bool minimize);
 
     /**
      * This function tests if one color set is a subset of another.
@@ -77,7 +77,7 @@ public:
      * @param c2 bit sequence
      * @return true, if c1 is a subset of c2
      */
-    static bool is_subset(bitset<N>& c1, bitset<N>& c2);
+    static bool is_subset(bitset<maxN>& c1, bitset<maxN>& c2);
 
     /**
      * This function tests if two colors have no elements in common.
@@ -86,7 +86,7 @@ public:
      * @param c2 bit sequence
      * @return true, if c1 & c2 are disjoint
      */
-    static bool is_disjoint(bitset<N>& c1, bitset<N>& c2);
+    static bool is_disjoint(bitset<maxN>& c1, bitset<maxN>& c2);
 
     /**
      * This function tests if two colors are either subsets or disjoint.
@@ -95,7 +95,7 @@ public:
      * @param c2 bis sequence
      * @return true, if c1 & c2 are compatible
      */
-    static bool is_compatible(bitset<N>& c1, bitset<N>& c2);
+    static bool is_compatible(bitset<maxN>& c1, bitset<maxN>& c2);
 
 protected:
 

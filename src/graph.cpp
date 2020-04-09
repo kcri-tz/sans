@@ -259,24 +259,3 @@ bool graph::test_set(color_t& color, vector<color_t>& color_set) {
     }
     return true;
 }
-
-/**
- * This function prints the splits ordered by weight to an output file stream.
- *
- * @param out output stream
- * @param names file names
- */
-void graph::output_splits(ostream& out, vector<string>& names) {
-
-    uint64_t pos = 0;
-    for (auto& split : split_list) {
-        out << split.first;    // weight of the split
-        for (auto& name : names) {
-            if (color::test(split.second, pos)) {
-                out << "\t" << name;    // name of the file
-            }
-            split.second >>= 01u;
-        }
-        out << endl;
-    }
-}

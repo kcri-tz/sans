@@ -1,8 +1,12 @@
 #include <iostream>
+#include <chrono>
 #include <cmath>
 
 using namespace std;
 
+/**
+ * This class contains some helpful utility functions.
+ */
 class util {
 
 private:
