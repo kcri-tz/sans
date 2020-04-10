@@ -9,6 +9,12 @@
  */
 int main(int argc, char* argv[]) {
 
+    // check for a new version of SANS at program start
+    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q SANS_VERSION")
+      && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q " SANS_VERSION)) {
+        cout << "NEW VERSION OF SANS AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif" << endl;
+    }
+
     // print a help message describing the program arguments
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;
