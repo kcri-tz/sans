@@ -70,6 +70,10 @@ void graph::add_kmers(string& str, uint64_t& color) {
     }
 }
 
+unordered_set<kmer_t> ping;    // create a new empty set for the k-mers
+unordered_set<kmer_t> pong;    // create another new set for the k-mers
+bool ball = true;    // indicates which of the two sets should be used
+
 /**
  * This function extracts k-mers from a sequence and adds them to the hash table.
  *
@@ -79,27 +83,27 @@ void graph::add_kmers(string& str, uint64_t& color) {
  */
 void graph::add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac) {
 
-    unordered_set<kmer_t> kmers;    // create a new empty set for the k-mers
     kmer_t kmer0;    // create an empty bit sequence for the initial k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
     next_kmer:
+    ping.clear(); pong.clear();
     if (str.length() < kmer::k) {
         return;    // not enough characters for a k-mer, abort
     }
+    (ball ? ping : pong).emplace(kmer0);
     uint64_t pos = 0;    // current position in the string, from 0 to length
-    kmers.clear();
-    kmers.emplace(kmer0);
 
     for (; pos < kmer::k; ++pos) {    // collect the first k bases from the string
         if (str[pos] == '.' || str[pos] == '-') {
             str = str.substr(pos+1, string::npos);
             goto next_kmer;    // gap character, start a new k-mer from the beginning
         }
-        shift_right_iupac(kmers, str[pos]);    // resolve iupac character
+        shift_right_iupac(ball ? ping : pong, !ball ? ping : pong, str[pos]);
+        ball = !ball;    // shift each base in, resolve iupac character
     }
-    if (kmers.size() <= max_iupac) {    // check if there are too many ambiguous k-mers
-        for (auto kmer : kmers) {    // iterate over the current set of ambiguous k-mers
+    if ((ball ? ping : pong).size() <= max_iupac) {    // check if there are too many ambiguous k-mers
+        for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
             rcmer = kmer;
             kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
             color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
@@ -111,10 +115,11 @@ void graph::add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac) {
             str = str.substr(pos+1, string::npos);
             goto next_kmer;    // gap character, start a new k-mer from the beginning
         }
-        shift_right_iupac(kmers, str[pos]);    // resolve iupac character
+        shift_right_iupac(ball ? ping : pong, !ball ? ping : pong, str[pos]);
+        ball = !ball;    // shift each base in, resolve iupac character
 
-        if (kmers.size() <= max_iupac) {    // check if there are too many ambiguous k-mers
-            for (auto kmer : kmers) {    // iterate over the current set of ambiguous k-mers
+        if ((ball ? ping : pong).size() <= max_iupac) {    // check if there are too many ambiguous k-mers
+            for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                 rcmer = kmer;
                 kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
                 color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
@@ -123,48 +128,49 @@ void graph::add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac) {
     }
 }
 
+kmer_t temp;
+char base;
+
 /**
  * This function shifts a set of iupac ambiguous k-mers to the right.
  *
  * @param prev set of k-mers
+ * @param next set of k-mers
  * @param input iupac character
  */
-void graph::shift_right_iupac(unordered_set<kmer_t>& prev, char& input) {
+void graph::shift_right_iupac(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input) {
 
-    unordered_set<kmer_t> next;    // create a new set for the next k-mers
-    kmer_t temp; char base;
-
-    for (auto kmer : prev) {    // extend each previous k-mer to the right
+    while (!prev.empty()) {    // extend each previous k-mer to the right
         switch (input) {
             case 'A': case 'R': case 'W': case 'M':
             case 'D': case 'H': case 'V': case 'N':
-                temp = kmer; base = 'A';
+                temp = *prev.begin(); base = 'A';
                 kmer::shift_right(temp, base);
                 next.emplace(temp);
         }
         switch (input) {
             case 'C': case 'Y': case 'S': case 'M':
             case 'B': case 'H': case 'V': case 'N':
-                temp = kmer; base = 'C';
+                temp = *prev.begin(); base = 'C';
                 kmer::shift_right(temp, base);
                 next.emplace(temp);
         }
         switch (input) {
             case 'G': case 'R': case 'S': case 'K':
             case 'B': case 'D': case 'V': case 'N':
-                temp = kmer; base = 'G';
+                temp = *prev.begin(); base = 'G';
                 kmer::shift_right(temp, base);
                 next.emplace(temp);
         }
         switch (input) {
             case 'T': case 'Y': case 'W': case 'K':
             case 'B': case 'D': case 'H': case 'N':
-                temp = kmer; base = 'T';
+                temp = *prev.begin(); base = 'T';
                 kmer::shift_right(temp, base);
                 next.emplace(temp);
         }
+        prev.erase(*prev.begin());
     }
-    prev.clear(); prev = next; next.clear();    // update set and clean-up
 }
 
 /**

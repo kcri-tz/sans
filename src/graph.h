@@ -120,8 +120,9 @@ protected:
      * This function shifts a set of iupac ambiguous k-mers to the right.
      *
      * @param prev set of k-mers
+     * @param next set of k-mers
      * @param input iupac character
      */
-    static void shift_right_iupac(unordered_set<kmer_t>& prev, char& input);
+    static void shift_right_iupac(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input);
 
 };

@@ -135,7 +135,7 @@ Usage: SANS [PARAMETERS]
    
    # run SANS
    cd fa
-   SANS -i list.txt -o ../sans.splits -t 130 -k 11 -v
+   SANS -i list.txt -o ../sans.splits -k 11 -t 130 -v
    cd ..
 
    # compare to references
