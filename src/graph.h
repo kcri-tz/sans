@@ -81,7 +81,7 @@ public:
      * @param color color flag
      * @param max_iupac allowed number of ambiguous k-mers per position
      */
-    static void add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac);
+    static void add_kmers(string& str, uint64_t& color, uint64_t& max_iupac);
 
     /**
      * This function iterates over the hash table and calculates the split weights.
@@ -117,12 +117,21 @@ protected:
     static bool test_set(color_t& color, vector<color_t>& color_set);
 
     /**
-     * This function shifts a set of iupac ambiguous k-mers to the right.
+     * This function calculates the multiplicity of iupac k-mers.
+     *
+     * @param product overall multiplicity
+     * @param factors per base multiplicity
+     * @param input iupac character
+     */
+    static void iupac_calc(uint64_t& product, vector<uint32_t>& factors, char& input);
+
+    /**
+     * This function shifts a base into a set of ambiguous iupac k-mers.
      *
      * @param prev set of k-mers
      * @param next set of k-mers
      * @param input iupac character
      */
-    static void shift_right_iupac(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input);
+    static void iupac_shift(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input);
 
 };

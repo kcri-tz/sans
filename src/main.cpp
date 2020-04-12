@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     // check for a new version of SANS at program start
     if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q SANS_VERSION")
       && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q " SANS_VERSION)) {
-        cout << "NEW VERSION OF SANS AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif" << endl;
+        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif" << endl;
     }
 
     // print a help message describing the program arguments
@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
                 if (line.length() > 0) {
                     if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
                         transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-                        iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
+                        iupac > 0 ? graph::add_kmers(sequence, i, iupac)
                                   : graph::add_kmers(sequence, i);
                         sequence.clear();
 
@@ -231,7 +231,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-            iupac > 0 ? graph::add_kmers_iupac(sequence, i, iupac)
+            iupac > 0 ? graph::add_kmers(sequence, i, iupac)
                       : graph::add_kmers(sequence, i);
             sequence.clear();
 

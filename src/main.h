@@ -18,7 +18,7 @@ using namespace std;
 
 // Symmetric Alignment-free phylogeNomic Splits
 // simple efficient re-implementation + filters
-#define SANS_VERSION "2.0_04C"    // SANS serif
+#define SANS_VERSION "2.0_04D"    // SANS serif
 
 /**
  * This is the entry point of the program.

@@ -37,6 +37,7 @@ void graph::init(uint64_t& top_size) {
  */
 void graph::add_kmers(string& str, uint64_t& color) {
 
+    uint64_t pos;    // current position in the string, from 0 to length
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
@@ -44,35 +45,22 @@ void graph::add_kmers(string& str, uint64_t& color) {
     if (str.length() < kmer::k) {
         return;    // not enough characters for a k-mer, abort
     }
-    uint64_t pos = 0;    // current position in the string, from 0 to length
+    pos = 0;
 
-    for (; pos < kmer::k; ++pos) {    // collect the first k bases from the string
-        if (str[pos] != 'A' && str[pos] != 'C' && str[pos] != 'G' && str[pos] != 'T') {
-            str = str.substr(pos+1, string::npos);
-            goto next_kmer;    // unknown base, start a new k-mer from the beginning
-        }
-        kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
-    }
-    rcmer = kmer;
-    kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-    color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
-
-    for (; pos < str.length(); ++pos) {    // collect the remaining bases from the string
+    for (; pos < str.length(); ++pos) {    // collect the bases from the string
         if (str[pos] != 'A' && str[pos] != 'C' && str[pos] != 'G' && str[pos] != 'T') {
             str = str.substr(pos+1, string::npos);
             goto next_kmer;    // unknown base, start a new k-mer from the beginning
         }
         kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
 
-        rcmer = kmer;
-        kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-        color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+        if (pos+1 >= kmer::k) {
+            rcmer = kmer;
+            kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+            color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+        }
     }
 }
-
-unordered_set<kmer_t> ping;    // create a new empty set for the k-mers
-unordered_set<kmer_t> pong;    // create another new set for the k-mers
-bool ball = true;    // indicates which of the two sets should be used
 
 /**
  * This function extracts k-mers from a sequence and adds them to the hash table.
@@ -81,44 +69,44 @@ bool ball = true;    // indicates which of the two sets should be used
  * @param color color flag
  * @param max_iupac allowed number of ambiguous k-mers per position
  */
-void graph::add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac) {
+void graph::add_kmers(string& str, uint64_t& color, uint64_t& max_iupac) {
+
+    unordered_set<kmer_t> ping;    // create a new empty set for the k-mers
+    unordered_set<kmer_t> pong;    // create another new set for the k-mers
+    bool ball; bool wait;    // indicates which of the two sets should be used
+
+    vector<uint32_t> factors;    // stores the multiplicity of iupac bases
+    uint64_t product;    // stores the overall multiplicity of the k-mers
+    uint64_t pos;    // current position in the string, from 0 to length
 
     kmer_t kmer0;    // create an empty bit sequence for the initial k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
     next_kmer:
-    ping.clear(); pong.clear();
+    ping.clear(); pong.clear(); factors.clear();
     if (str.length() < kmer::k) {
         return;    // not enough characters for a k-mer, abort
     }
+    ball = true; wait = false; product = 1; pos = 0;
     (ball ? ping : pong).emplace(kmer0);
-    uint64_t pos = 0;    // current position in the string, from 0 to length
 
-    for (; pos < kmer::k; ++pos) {    // collect the first k bases from the string
+    for (; pos < str.length(); ++pos) {    // collect the bases from the string
         if (str[pos] == '.' || str[pos] == '-') {
             str = str.substr(pos+1, string::npos);
             goto next_kmer;    // gap character, start a new k-mer from the beginning
         }
-        shift_right_iupac(ball ? ping : pong, !ball ? ping : pong, str[pos]);
-        ball = !ball;    // shift each base in, resolve iupac character
-    }
-    if ((ball ? ping : pong).size() <= max_iupac) {    // check if there are too many ambiguous k-mers
-        for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
-            rcmer = kmer;
-            kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-            color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
-        }
-    }
+        iupac_calc(product, factors, str[pos]);
 
-    for (; pos < str.length(); ++pos) {    // collect the remaining bases from the string
-        if (str[pos] == '.' || str[pos] == '-') {
-            str = str.substr(pos+1, string::npos);
-            goto next_kmer;    // gap character, start a new k-mer from the beginning
-        }
-        shift_right_iupac(ball ? ping : pong, !ball ? ping : pong, str[pos]);
-        ball = !ball;    // shift each base in, resolve iupac character
+        if (product <= max_iupac) {    // check if there are too many ambiguous k-mers
+            if (wait) {
+                str = str.substr(pos-kmer::k+1, string::npos);
+                goto next_kmer;    // start a new k-mer from the beginning
+            }
+            iupac_shift(ball ? ping : pong, !ball ? ping : pong, str[pos]);
+            ball = !ball;    // shift each base in, resolve iupac character
+        } else { wait = true; continue; }
 
-        if ((ball ? ping : pong).size() <= max_iupac) {    // check if there are too many ambiguous k-mers
+        if (pos+1 >= kmer::k) {
             for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                 rcmer = kmer;
                 kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
@@ -128,19 +116,52 @@ void graph::add_kmers_iupac(string& str, uint64_t& color, uint64_t& max_iupac) {
     }
 }
 
-kmer_t temp;
-char base;
+/**
+ * This function calculates the multiplicity of iupac k-mers.
+ *
+ * @param product overall multiplicity
+ * @param factors per base multiplicity
+ * @param input iupac character
+ */
+void graph::iupac_calc(uint64_t& product, vector<uint32_t>& factors, char& input) {
+
+    switch (input) {
+        case 'A': case 'C': case 'G': case 'T':
+            product *= 1;
+            factors.emplace_back(1);
+    }
+    switch (input) {
+        case 'R': case 'Y': case 'S': case 'W': case 'K': case 'M':
+            product *= 2;
+            factors.emplace_back(2);
+    }
+    switch (input) {
+        case 'B': case 'D': case 'H': case 'V':
+            product *= 3;
+            factors.emplace_back(3);
+    }
+    switch (input) {
+        case 'N':
+            product *= 4;
+            factors.emplace_back(4);
+    }
+    if (factors.size() > kmer::k) {
+        product /= *factors.begin();
+        factors.erase(factors.begin());
+    }
+}
 
 /**
- * This function shifts a set of iupac ambiguous k-mers to the right.
+ * This function shifts a base into a set of ambiguous iupac k-mers.
  *
  * @param prev set of k-mers
  * @param next set of k-mers
  * @param input iupac character
  */
-void graph::shift_right_iupac(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input) {
+void graph::iupac_shift(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input) {
 
-    while (!prev.empty()) {    // extend each previous k-mer to the right
+    kmer_t temp; char base;
+    while (!prev.empty()) {    // extend each previous k-mer
         switch (input) {
             case 'A': case 'R': case 'W': case 'M':
             case 'D': case 'H': case 'V': case 'N':
@@ -169,7 +190,7 @@ void graph::shift_right_iupac(unordered_set<kmer_t>& prev, unordered_set<kmer_t>
                 kmer::shift_right(temp, base);
                 next.emplace(temp);
         }
-        prev.erase(*prev.begin());
+        prev.erase(prev.begin());
     }
 }
 
