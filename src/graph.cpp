@@ -41,7 +41,7 @@ void graph::add_kmers(string& str, uint64_t& color) {
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
-    next_kmer:
+next_kmer:
     if (str.length() < kmer::k) {
         return;    // not enough characters for a k-mer, abort
     }
@@ -82,7 +82,7 @@ void graph::add_kmers(string& str, uint64_t& color, uint64_t& max_iupac) {
     kmer_t kmer0;    // create an empty bit sequence for the initial k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
-    next_kmer:
+next_kmer:
     ping.clear(); pong.clear(); factors.clear();
     if (str.length() < kmer::k) {
         return;    // not enough characters for a k-mer, abort
@@ -231,44 +231,52 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&)) {
 }
 
 /**
- * This function filters a maximum weight 1-tree compatible subset.
+ * This function filters a greedy maximum weight tree compatible subset.
  */
-void graph::filter_tree1() {
-    auto tree1 = vector<color_t>();    // create a set for compatible splits
-    for (auto it = split_list.begin(); it != split_list.end(); ) {
-        if (test_set(it->second, tree1)) {
-            tree1.emplace_back(it->second);
-            ++it;    // if compatible, add the new split to the set
-        } else {
-            it = split_list.erase(it);    // otherwise, remove split
+void graph::filter_strict() {
+    auto tree = vector<color_t>();    // create a set for compatible splits
+    auto it = split_list.begin();
+loop:
+    while (it != split_list.end()) {
+        if (test_strict(it->second, tree)) {
+            tree.emplace_back(it->second);
+            ++it; goto loop;    // if compatible, add the new split to the set
         }
+        it = split_list.erase(it);    // otherwise, remove split
     }
 }
 
 /**
- * This function filters a maximum weight 2-tree compatible subset.
+ * This function filters a greedy maximum weight weakly compatible subset.
  */
-void graph::filter_tree2() {
-    auto tree1 = vector<color_t>();    // create a set for compatible splits
-    auto tree2 = vector<color_t>();    // create a set for incompatible splits
-    for (auto it = split_list.begin(); it != split_list.end(); ) {
-        if (test_set(it->second, tree1)) {
-            tree1.emplace_back(it->second);
-            ++it;    // if compatible, add the new split to the set
-        } else if (test_set(it->second, tree2)) {
-            tree2.emplace_back(it->second);
-            ++it;    // if 2-tree compatible, add it to the backup set
-        } else {
-            it = split_list.erase(it);    // otherwise, remove split
+void graph::filter_weakly() {
+    auto network = vector<color_t>();    // create a set for compatible splits
+    auto it = split_list.begin();
+loop:
+    while (it != split_list.end()) {
+        if (test_weakly(it->second, network)) {
+            network.emplace_back(it->second);
+            ++it; goto loop;    // if compatible, add the new split to the set
         }
+        it = split_list.erase(it);    // otherwise, remove split
     }
 }
 
 /**
- * This function does not filter the splits in the output list.
+ * This function filters a greedy maximum weight n-tree compatible subset.
  */
-void graph::filter_none() {
-    // split_list is not modified
+void graph::filter_n_tree(uint64_t n) {
+    auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
+    auto it = split_list.begin();
+loop:
+    while (it != split_list.end()) {
+       for (auto& tree : forest)
+        if (test_strict(it->second, tree)) {
+            tree.emplace_back(it->second);
+            ++it; goto loop;    // if compatible, add the new split to the set
+        }
+        it = split_list.erase(it);    // otherwise, remove split
+    }
 }
 
 /**
@@ -278,10 +286,30 @@ void graph::filter_none() {
  * @param color_set set of splits
  * @return true, if compatible
  */
-bool graph::test_set(color_t& color, vector<color_t>& color_set) {
-    for (auto elem : color_set) {
-        if (!color::is_compatible(color, elem)) {
+bool graph::test_strict(color_t& color, vector<color_t>& color_set) {
+    for (auto& elem : color_set) {
+        if (!color::is_compatible(elem, color)) {
             return false;    // compare to each split in the set
+        }
+    }
+    return true;
+}
+
+/**
+ * This function tests if a split is weakly compatible with an existing set of splits.
+ *
+ * @param color new split
+ * @param color_set set of splits
+ * @return true, if weakly compatible
+ */
+bool graph::test_weakly(color_t& color, vector<color_t>& color_set) {
+    for (auto& elem1 : color_set) {
+        for (auto& elem2 : color_set) {
+            if (elem1 != elem2) {
+                if (!color::is_weakly_compatible(elem1, elem2, color)) {
+                    return false;    // compare to each split in the set
+                }
+            }
         }
     }
     return true;

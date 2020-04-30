@@ -9,7 +9,8 @@
 
 ### Publications
 
-Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs.](https://pub.uni-bielefeld.de/download/2942421/2942423/s13015-020-00164-3.wittler.pdf) Algorithms for Molecular Biology. 15: 4 (2020).
+Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs.](https://pub.uni-bielefeld.de/download/2942421/2942423/s13015-020-00164-3.wittler.pdf)
+Algorithms for Molecular Biology. 15: 4 (2020).
 
 Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs.](http://drops.dagstuhl.de/opus/volltexte/2019/11032/pdf/LIPIcs-WABI-2019-2.pdf)
 In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Schloss Dagstuhl--Leibniz-Zentrum fuer Informatik, Dagstuhl, Germany (2019).
@@ -79,8 +80,10 @@ Usage: SANS [PARAMETERS]
                   	          geom2: geometric mean with pseudo-counts
 
     -f, --filter  	 Output a greedy maximum weight subset
-                  	 options: 1-tree: compatible to a tree
-                  	          2-tree: compatible to union of two trees (network)
+                  	 options: strict: compatible to a tree
+                  	          weakly: weakly compatible network
+                  	          n-tree: compatible to a union of n trees
+                  	                  (where n is an arbitrary number)
 
     -x, --iupac   	 Extended IUPAC alphabet, resolve ambiguous bases
                   	 Specify a number to limit the k-mers per position

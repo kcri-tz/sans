@@ -41,8 +41,10 @@ int main(int argc, char* argv[]) {
         cout << "                  \t          geom2: geometric mean with pseudo-counts" << endl;
         cout << endl;
         cout << "    -f, --filter  \t Output a greedy maximum weight subset" << endl;
-        cout << "                  \t options: 1-tree: compatible to a tree" << endl;
-        cout << "                  \t          2-tree: compatible to union of two trees (network)" << endl;
+        cout << "                  \t options: strict: compatible to a tree" << endl;
+        cout << "                  \t          weakly: weakly compatible network" << endl;
+        cout << "                  \t          n-tree: compatible to a union of n trees" << endl;
+        cout << "                  \t                  (where n is an arbitrary number)" << endl;
         cout << endl;
         cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases" << endl;
         cout << "                  \t Specify a number to limit the k-mers per position" << endl;
@@ -63,8 +65,8 @@ int main(int argc, char* argv[]) {
     uint64_t kmer = 31;    // length of k-mers
     uint64_t top = 0;    // number of splits
     auto mean = util::geometric_mean;    // weight function
-    auto filter = graph::filter_none;    // filter function
-    uint64_t iupac = 0;    // allow extended iupac characters
+    string filter;    // filter function
+    uint64_t iupac = 1;    // allow extended iupac characters
     bool verbose = false;    // print messages during execution
 
     // parse the command line arguments and update the variables above
@@ -105,18 +107,18 @@ int main(int argc, char* argv[]) {
             }
         }
         else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--filter") == 0) {
-            string arg = argv[++i];    // Filter a maximum weight n-tree compatible subset
-            if (arg == "none") {
-                filter = graph::filter_none;
+            filter = argv[++i];    // Filter a greedy maximum weight subset
+            if (filter == "strict") {
+                // compatible to a tree
             }
-            else if (arg == "1-tree") {
-                filter = graph::filter_tree1;
+            else if (filter == "weakly") {
+                // weakly compatible network
             }
-            else if (arg == "2-tree") {
-                filter = graph::filter_tree2;
+            else if (filter.substr(filter.find('-')) == "-tree") {
+                stoi(filter.substr(0, filter.find('-')));
             }
             else {
-                cerr << "Error: unknown argument: --filter " << arg << endl;
+                cerr << "Error: unknown argument: --filter " << filter << endl;
                 return 1;
             }
         }
@@ -214,7 +216,7 @@ int main(int argc, char* argv[]) {
                 if (line.length() > 0) {
                     if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
                         transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-                        iupac > 0 ? graph::add_kmers(sequence, i, iupac)
+                        iupac > 1 ? graph::add_kmers(sequence, i, iupac)
                                   : graph::add_kmers(sequence, i);
                         sequence.clear();
 
@@ -231,7 +233,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-            iupac > 0 ? graph::add_kmers(sequence, i, iupac)
+            iupac > 1 ? graph::add_kmers(sequence, i, iupac)
                       : graph::add_kmers(sequence, i);
             sequence.clear();
 
@@ -279,12 +281,22 @@ int main(int argc, char* argv[]) {
     graph::add_weights(mean);    // accumulate split weights
 
     if (verbose) {
-        cout << "." << flush;
+        cout << "\33[2K\r" << "Filter splits.." << flush;
     }
-    filter();    // apply n-tree filter
+    if (!filter.empty()) {    // apply filter
+        if (filter == "strict") {
+            graph::filter_strict();
+        }
+        else if (filter == "weakly") {
+            graph::filter_weakly();
+        }
+        else if (filter.substr(filter.find('-')) == "-tree") {
+            graph::filter_n_tree(stoi(filter.substr(0, filter.find('-'))));
+        }
+    }
 
     if (verbose) {
-        cout << "." << flush;
+        cout << "\33[2K\r" << "Please wait..." << flush;
     }
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());

@@ -71,31 +71,23 @@ public:
     static bool complement(bitset<maxN>& color, bool minimize);
 
     /**
-     * This function tests if one color set is a subset of another.
+     * This function tests if two splits of colors are compatible.
      *
      * @param c1 bit sequence
      * @param c2 bit sequence
-     * @return true, if c1 is a subset of c2
-     */
-    static bool is_subset(bitset<maxN>& c1, bitset<maxN>& c2);
-
-    /**
-     * This function tests if two colors have no elements in common.
-     *
-     * @param c1 bit sequence
-     * @param c2 bit sequence
-     * @return true, if c1 & c2 are disjoint
-     */
-    static bool is_disjoint(bitset<maxN>& c1, bitset<maxN>& c2);
-
-    /**
-     * This function tests if two colors are either subsets or disjoint.
-     *
-     * @param c1 bit sequence
-     * @param c2 bis sequence
-     * @return true, if c1 & c2 are compatible
+     * @return true, if compatible
      */
     static bool is_compatible(bitset<maxN>& c1, bitset<maxN>& c2);
+
+    /**
+     * This function tests if three splits of colors are weakly compatible.
+     *
+     * @param c1 bit sequence
+     * @param c2 bit sequence
+     * @param c3 bit sequence
+     * @return true, if weakly compatible
+     */
+    static bool is_weakly_compatible(bitset<maxN>& c1, bitset<maxN>& c2, bitset<maxN>& c3);
 
 protected:
 

@@ -91,19 +91,19 @@ public:
     static void add_weights(double mean(uint32_t&, uint32_t&));
 
     /**
-     * This function filters a maximum weight 1-tree compatible subset.
+     * This function filters a greedy maximum weight tree compatible subset.
      */
-    static void filter_tree1();
+    static void filter_strict();
 
     /**
-     * This function filters a maximum weight 2-tree compatible subset.
+     * This function filters a greedy maximum weight weakly compatible subset.
      */
-    static void filter_tree2();
+    static void filter_weakly();
 
     /**
-     * This function does not filter the splits in the output list.
+     * This function filters a greedy maximum weight n-tree compatible subset.
      */
-    static void filter_none();
+    static void filter_n_tree(uint64_t n);
 
 protected:
 
@@ -114,7 +114,16 @@ protected:
      * @param color_set set of splits
      * @return true, if compatible
      */
-    static bool test_set(color_t& color, vector<color_t>& color_set);
+    static bool test_strict(color_t& color, vector<color_t>& color_set);
+
+    /**
+     * This function tests if a split is weakly compatible with an existing set of splits.
+     *
+     * @param color new split
+     * @param color_set set of splits
+     * @return true, if weakly compatible
+     */
+    static bool test_weakly(color_t& color, vector<color_t>& color_set);
 
     /**
      * This function calculates the multiplicity of iupac k-mers.

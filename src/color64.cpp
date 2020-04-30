@@ -82,35 +82,27 @@ bool color64::complement(uint64_t& color, bool minimize) {
 }
 
 /**
- * This function tests if one color set is a subset of another.
+ * This function tests if two splits of colors are compatible.
  *
  * @param c1 bit sequence
  * @param c2 bit sequence
- * @return true, if c1 is a subset of c2
- */
-bool color64::is_subset(uint64_t& c1, uint64_t& c2) {
-    return (c1 & c2) == c1;
-}
-
-/**
- * This function tests if two colors have no elements in common.
- *
- * @param c1 bit sequence
- * @param c2 bit sequence
- * @return true, if c1 & c2 are disjoint
- */
-bool color64::is_disjoint(uint64_t& c1, uint64_t& c2) {
-    return (c1 & c2) == 0b0u;
-}
-
-/**
- * This function tests if two colors are either subsets or disjoint.
- *
- * @param c1 bit sequence
- * @param c2 bis sequence
- * @return true, if c1 & c2 are compatible
+ * @return true, if compatible
  */
 bool color64::is_compatible(uint64_t& c1, uint64_t& c2) {
-    uint64_t intersect = c1 & c2;
-    return intersect == 0b0u || intersect == c1 || intersect == c2;
+    uint64_t n1 = ~c1 & mask, n2 = ~c2 & mask;
+    return ((c1 & c2) == 0b0u || (c1 & n2) == 0b0u || (n1 & c2) == 0b0u || (n1 & n2) == 0b0u);
+}
+
+/**
+ * This function tests if three splits of colors are weakly compatible.
+ *
+ * @param c1 bit sequence
+ * @param c2 bit sequence
+ * @param c3 bit sequence
+ * @return true, if weakly compatible
+ */
+bool color64::is_weakly_compatible(uint64_t& c1, uint64_t& c2, uint64_t& c3) {
+    uint64_t n1 = ~c1 & mask, n2 = ~c2 & mask, n3 = ~c3 & mask;
+    return ((c1 & c2 & c3) == 0b0u || (c1 & n2 & n3) == 0b0u || (n1 & c2 & n3) == 0b0u || (n1 & n2 & c3) == 0b0u)
+        && ((n1 & n2 & n3) == 0b0u || (n1 & c2 & c3) == 0b0u || (c1 & n2 & c3) == 0b0u || (c1 & c2 & n3) == 0b0u);
 }
