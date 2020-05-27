@@ -1,6 +1,7 @@
 # SANS *serif*
 
 ### Symmetric Alignment-free phylogeNomic Splits
+#### Space and time Efficient Re-Implementation including Filters
 
 * Reference-free
 * Alignment-free
@@ -64,7 +65,7 @@ Usage: SANS [PARAMETERS]
     -i, --input   	 Input file: list of sequence files, one per line
 
     -g, --graph   	 Graph file: load a Biforst graph, file name prefix
-                  	 (either -i/--input or -g/--graph must be provided)
+                  	 (at least -i/--input or -g/--graph must be provided, or both)
 
     -o, --output  	 Output file: list of splits, sorted by weight desc.
 
