@@ -1,7 +1,7 @@
 # SANS *serif*
 
-### Symmetric Alignment-free phylogeNomic Splits
-#### Space and time Efficient Re-Implementation including Filters
+**Symmetric Alignment-free phylogeNomic Splits** 
+***--- Space and time Efficient Re-Implementation including Filters***
 
 * Reference-free
 * Alignment-free
