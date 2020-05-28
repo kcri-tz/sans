@@ -24,9 +24,11 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -i, --input   \t Input file: list of sequence files, one per line" << endl;
         cout << endl;
+#ifdef useBF
         cout << "    -g, --graph   \t Graph file: load a Biforst graph, file name prefix" << endl;
-        cout << "                  \t (either -i/--input or -g/--graph must be provided)" << endl;
+        cout << "                  \t (at least -i/--input or -g/--graph must be provided, or both)" << endl;
         cout << endl;
+#endif
         cout << "    -o, --output  \t Output file: list of splits, sorted by weight desc." << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
