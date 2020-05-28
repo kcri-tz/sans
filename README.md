@@ -65,7 +65,7 @@ Usage: SANS [PARAMETERS]
     -i, --input   	 Input file: list of sequence files, one per line
 
     -g, --graph   	 Graph file: load a Biforst graph, file name prefix
-                  	 (at least -i/--input or -g/--graph must be provided, or both)
+                  	 (at least --input or --graph must be provided, or both)
 
     -o, --output  	 Output file: list of splits, sorted by weight desc.
 
