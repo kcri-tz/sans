@@ -231,13 +231,34 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&)) {
 }
 
 /**
- * This function filters a greedy maximum weight tree compatible subset.
+ * This function adds a single split (weight and colors) to the output list.
+ *
+ * @param weight split weight
+ * @param color split colors
  */
-void graph::filter_strict() {
+void graph::add_split(double& weight, color_t& color) {
+    split_list.emplace(weight, color);    // insert it at the correct position ordered by weight
+    if (t != 0 && split_list.size() > t) {
+        split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
+    }
+}
+
+/**
+ * This function filters a greedy maximum weight tree compatible subset.
+ *
+ * @param verbose print progress
+ */
+void graph::filter_strict(bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
+    uint64_t cur = 0;
+    uint64_t max = split_list.size();
 loop:
     while (it != split_list.end()) {
+        if (verbose) {
+            cout << "\33[2K\r" << "Filter splits.. " << 100*cur/max << "%" << flush;
+        }
+        cur++;
         if (test_strict(it->second, tree)) {
             tree.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
@@ -248,12 +269,20 @@ loop:
 
 /**
  * This function filters a greedy maximum weight weakly compatible subset.
+ *
+ * @param verbose print progress
  */
-void graph::filter_weakly() {
+void graph::filter_weakly(bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
+    uint64_t cur = 0;
+    uint64_t max = split_list.size();
 loop:
     while (it != split_list.end()) {
+        if (verbose) {
+            cout << "\33[2K\r" << "Filter splits.. " << 100*(cur*cur)/(max*max) << "%" << flush;
+        }
+        cur++;
         if (test_weakly(it->second, network)) {
             network.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
@@ -264,12 +293,21 @@ loop:
 
 /**
  * This function filters a greedy maximum weight n-tree compatible subset.
+ *
+ * @param n number of trees
+ * @param verbose print progress
  */
-void graph::filter_n_tree(uint64_t n) {
+void graph::filter_n_tree(uint64_t n, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     auto it = split_list.begin();
+    uint64_t cur = 0;
+    uint64_t max = split_list.size();
 loop:
     while (it != split_list.end()) {
+        if (verbose) {
+            cout << "\33[2K\r" << "Filter splits.. " << 100*cur/max << "%" << flush;
+        }
+        cur++;
        for (auto& tree : forest)
         if (test_strict(it->second, tree)) {
             tree.emplace_back(it->second);

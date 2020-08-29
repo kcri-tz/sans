@@ -8,7 +8,7 @@ uint64_t color64::n;
 /**
  * This is a bit-mask to erase all bits that exceed the color number.
  */
-uint64_t color64::mask;
+uint64_t color64::mask = -1;
 
 /**
  * This function initializes the color number and bit-mask.
@@ -17,7 +17,7 @@ uint64_t color64::mask;
  */
 void color64::init(uint64_t& color_number) {
 
-    n = color_number;
+    n = color_number; mask = 0;
     for (uint64_t i = 0; i < n; ++i) {
         mask <<= 01u;    // fill all bits within the color number with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits

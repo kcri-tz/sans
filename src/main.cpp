@@ -24,12 +24,15 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -i, --input   \t Input file: list of sequence files, one per line" << endl;
         cout << endl;
-        cout << "    -g, --graph   \t Graph file: load a Biforst graph, file name prefix" << endl;
+        cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
 #ifdef useBF
         cout << "                  \t (at least --input or --graph must be provided, or both)" << endl;
 #else
-        cout << "                  \t (requires compiler flag -DuseBF, please adjust makefile)" << endl;
+        cout << "                  \t (requires compiler flag -DuseBF, please edit makefile)" << endl;
 #endif
+        cout << endl;
+        cout << "    -s, --splits  \t Splits file: load an existing list of splits file" << endl;
+        cout << "                  \t (allows to filter -t/-f, other arguments are ignored)" << endl;
         cout << endl;
         cout << "    -o, --output  \t Output file: list of splits, sorted by weight desc." << endl;
         cout << endl;
@@ -63,11 +66,13 @@ int main(int argc, char* argv[]) {
 
     string input;    // name of input file
     string graph;    // name of graph file
+    string splits;    // name of splits file
     string output;    // name of output file
-    uint64_t num = 0;    // number of input files
 
     uint64_t kmer = 31;    // length of k-mers
+    uint64_t num = 0;    // number of input files
     uint64_t top = 0;    // number of splits
+
     auto mean = util::geometric_mean;    // weight function
     string filter;    // filter function
     uint64_t iupac = 1;    // allow extended iupac characters
@@ -79,11 +84,14 @@ int main(int argc, char* argv[]) {
             input = argv[++i];    // Input file: list of sequence files, one per line
         }
         else if (strcmp(argv[i], "-g") == 0 || strcmp(argv[i], "--graph") == 0) {
-            graph = argv[++i];    // Graph file: load a Biforst graph, file name prefix
+            graph = argv[++i];    // Graph file: load a Bifrost graph, file name prefix
             #ifndef useBF
                 cerr << "Error: requires compiler flag -DuseBF" << endl;
                 return 1;
             #endif
+        }
+        else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--splits") == 0) {
+            splits = argv[++i];    // Splits file: load an existing list of splits file
         }
         else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
             output = argv[++i];    // Output file: list of splits, sorted by weight desc.
@@ -138,15 +146,23 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (input.empty() && graph.empty()) {
+    if (input.empty() && graph.empty() && splits.empty()) {
         cerr << "Error: missing argument: --input <file_name>" << endl;
+        return 1;
+    }
+    if (!input.empty() && !splits.empty()) {
+        cerr << "Error: too many input arguments: -i and -s" << endl;
+        return 1;
+    }
+    if (!graph.empty() && !splits.empty()) {
+        cerr << "Error: too many input arguments: -g and -s" << endl;
         return 1;
     }
     if (output.empty()) {
         cerr << "Error: missing argument: --output <file_name>" << endl;
         return 1;
     }
-    if (kmer > maxK) {
+    if (kmer > maxK && splits.empty()) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
         return 1;
     }
@@ -197,11 +213,41 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    kmer::init(kmer);    // initialize the k-mer length
-    color::init(num);    // initialize the color number
+    chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
     graph::init(top);    // initialize the toplist size
 
-    chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
+    if (!splits.empty()) {
+        unordered_map<string, uint64_t> name_table;
+        ifstream file(splits);
+        string line;
+        while (getline(file, line)) {
+            uint64_t curr = line.find('\t');
+            double weight = stod(line.substr(0, curr));
+            uint64_t next = curr + 1;
+
+            color_t color = 0;
+            do {
+                curr = line.find('\t', next);
+                string name = line.substr(next, curr-next);
+                if (name_table.find(name) == name_table.end()) {
+                    files.emplace_back(name);
+                    name_table[name] = num++;
+                    if (num > maxN) {
+                        cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl;
+                        return 1;
+                    }
+                }
+                color::set(color, name_table[name]);
+                next = curr + 1;
+            } while (curr != string::npos);
+
+            graph::add_split(weight, color);
+        }
+        file.close();
+    }
+
+    kmer::init(kmer);    // initialize the k-mer length
+    color::init(num);    // initialize the color number
 
     if (!input.empty()) {
         if (verbose) {
@@ -289,13 +335,13 @@ int main(int argc, char* argv[]) {
     }
     if (!filter.empty()) {    // apply filter
         if (filter == "strict") {
-            graph::filter_strict();
+            graph::filter_strict(verbose);
         }
         else if (filter == "weakly") {
-            graph::filter_weakly();
+            graph::filter_weakly(verbose);
         }
         else if (filter.substr(filter.find('-')) == "-tree") {
-            graph::filter_n_tree(stoi(filter.substr(0, filter.find('-'))));
+            graph::filter_n_tree(stoi(filter.substr(0, filter.find('-'))), verbose);
         }
     }
 
@@ -323,12 +369,11 @@ int main(int argc, char* argv[]) {
     }
     file.close();
 
-    chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time mesaurement
+    chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
 
     if (verbose) {
         cout << " Done!" << flush;    // print progress and time
         cout << " (" << util::format_time(end - begin) << ")" << endl;
     }
-
     return 0;
 }

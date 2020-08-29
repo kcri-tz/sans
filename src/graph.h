@@ -91,19 +91,34 @@ public:
     static void add_weights(double mean(uint32_t&, uint32_t&));
 
     /**
-     * This function filters a greedy maximum weight tree compatible subset.
+     * This function adds a single split (weight and colors) to the output list.
+     *
+     * @param weight split weight
+     * @param color split colors
      */
-    static void filter_strict();
+    static void add_split(double& weight, color_t& color);
+
+    /**
+     * This function filters a greedy maximum weight tree compatible subset.
+     *
+     * @param verbose print progress
+     */
+    static void filter_strict(bool& verbose);
 
     /**
      * This function filters a greedy maximum weight weakly compatible subset.
+     *
+     * @param verbose print progress
      */
-    static void filter_weakly();
+    static void filter_weakly(bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset.
+     *
+     * @param n number of trees
+     * @param verbose print progress
      */
-    static void filter_n_tree(uint64_t n);
+    static void filter_n_tree(uint64_t n, bool& verbose);
 
 protected:
 

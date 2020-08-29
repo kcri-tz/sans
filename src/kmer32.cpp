@@ -8,7 +8,7 @@ uint64_t kmer32::k;
 /**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
-uint64_t kmer32::mask;
+uint64_t kmer32::mask = -1;
 
 /**
  * This function initializes the k-mer length and bit-mask.
@@ -17,7 +17,7 @@ uint64_t kmer32::mask;
  */
 void kmer32::init(uint64_t& kmer_length) {
 
-    k = kmer_length;
+    k = kmer_length; mask = 0;
     for (uint64_t i = 0; i < 2*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
