@@ -85,7 +85,7 @@ bool kmerXX::reverse_complement(bitset<2*maxK>& kmer, bool minimize) {
 
     // if minimize == true, return the lexicographically smaller
     if (minimize) {
-        for (uint64_t i = 2*k-1; i >= 0; --i) {
+        for (uint64_t i = 2*k-1; i != -1; --i) {
             if (kmer[i] > rcmp[i]) {
                 break;
             }

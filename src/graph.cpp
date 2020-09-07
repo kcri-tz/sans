@@ -75,8 +75,8 @@ void graph::add_kmers(string& str, uint64_t& color, uint64_t& max_iupac) {
     unordered_set<kmer_t> pong;    // create another new set for the k-mers
     bool ball; bool wait;    // indicates which of the two sets should be used
 
-    vector<uint32_t> factors;    // stores the multiplicity of iupac bases
-    uint64_t product;    // stores the overall multiplicity of the k-mers
+    vector<uint8_t> factors;    // stores the multiplicity of iupac bases
+    long double product;    // stores the overall multiplicity of the k-mers
     uint64_t pos;    // current position in the string, from 0 to length
 
     kmer_t kmer0;    // create an empty bit sequence for the initial k-mer
@@ -123,7 +123,7 @@ next_kmer:
  * @param factors per base multiplicity
  * @param input iupac character
  */
-void graph::iupac_calc(uint64_t& product, vector<uint32_t>& factors, char& input) {
+void graph::iupac_calc(long double& product, vector<uint8_t>& factors, char& input) {
 
     switch (input) {
         case 'A': case 'C': case 'G': case 'T':
@@ -205,6 +205,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&)) {
     for (auto it = kmer_table.begin(); it != kmer_table.end(); ++it) {    // iterate over k-mer hash table
         color_t& color = it->second;    // get the color set for each k-mer
         bool pos = color::complement(color, true);    // invert the color set, if necessary
+        if (color == 0) continue;    // ignore empty splits
         array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
 
         double old_value = mean(weight[0], weight[1]);    // calculate the old mean value

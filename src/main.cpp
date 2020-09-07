@@ -120,14 +120,14 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--filter") == 0) {
             filter = argv[++i];    // Filter a greedy maximum weight subset
-            if (filter == "strict") {
+            if (filter == "strict" || filter == "tree") {
                 // compatible to a tree
             }
             else if (filter == "weakly") {
                 // weakly compatible network
             }
-            else if (filter.substr(filter.find('-')) == "-tree") {
-                stoi(filter.substr(0, filter.find('-')));
+            else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
+                stoi(filter.substr(0, filter.find("tree")));
             }
             else {
                 cerr << "Error: unknown argument: --filter " << filter << endl;
@@ -171,6 +171,10 @@ int main(int argc, char* argv[]) {
     vector<string> files;
     if (!input.empty()) {
         ifstream file(input);
+        if (!file.good()) {
+            cerr << "Error: could not read input file: " << input << endl;
+            return 1;
+        }
         string line;
         while (getline(file, line)) {
             files.emplace_back(line);
@@ -219,6 +223,10 @@ int main(int argc, char* argv[]) {
     if (!splits.empty()) {
         unordered_map<string, uint64_t> name_table;
         ifstream file(splits);
+        if (!file.good()) {
+            cerr << "Error: could not read splits file: " << splits << endl;
+            return 1;
+        }
         string line;
         while (getline(file, line)) {
             uint64_t curr = line.find('\t');
@@ -256,10 +264,13 @@ int main(int argc, char* argv[]) {
         string sequence;    // read in the sequence files and extract the k-mers
 
         for (uint64_t i = 0; i < files.size(); ++i) {
-            if (verbose) {
+            ifstream file(files[i]);    // input file stream
+            if (!file.good()) {
+                cout << "\33[2K\r" << "\u001b[31m" << files[i] << " (ERR)" << "\u001b[0m" << endl;    // could not read file
+            }
+            else if (verbose) {
                 cout << "\33[2K\r" << files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
             }
-            ifstream file(files[i]);    // input file stream
 
             string line;    // read the file line by line
             while (getline(file, line)) {
@@ -334,14 +345,14 @@ int main(int argc, char* argv[]) {
         cout << "\33[2K\r" << "Filter splits.." << flush;
     }
     if (!filter.empty()) {    // apply filter
-        if (filter == "strict") {
+        if (filter == "strict" || filter == "tree") {
             graph::filter_strict(verbose);
         }
         else if (filter == "weakly") {
             graph::filter_weakly(verbose);
         }
-        else if (filter.substr(filter.find('-')) == "-tree") {
-            graph::filter_n_tree(stoi(filter.substr(0, filter.find('-'))), verbose);
+        else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
+            graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
         }
     }
 

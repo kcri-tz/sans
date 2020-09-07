@@ -147,7 +147,7 @@ protected:
      * @param factors per base multiplicity
      * @param input iupac character
      */
-    static void iupac_calc(uint64_t& product, vector<uint32_t>& factors, char& input);
+    static void iupac_calc(long double& product, vector<uint8_t>& factors, char& input);
 
     /**
      * This function shifts a base into a set of ambiguous iupac k-mers.
