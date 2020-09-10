@@ -90,12 +90,12 @@ bool kmerXX::reverse_complement(bitset<2*maxK>& kmer, bool minimize) {
                 break;
             }
             if (kmer[i] < rcmp[i]) {
-                return 0;    // not reversed
+                return false;    // not reversed
             }
         }
     }
     kmer = rcmp;
-    return 1;    // reversed
+    return true;    // reversed
 }
 
 /**

@@ -87,8 +87,9 @@ public:
      * This function iterates over the hash table and calculates the split weights.
      *
      * @param mean weight function
+     * @param verbose print progress
      */
-    static void add_weights(double mean(uint32_t&, uint32_t&));
+    static void add_weights(double mean(uint32_t&, uint32_t&), bool& verbose);
 
     /**
      * This function adds a single split (weight and colors) to the output list.

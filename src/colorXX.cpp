@@ -68,10 +68,10 @@ bool colorXX::complement(bitset<maxN>& color, bool minimize) {
 
     // if minimize == true, return the color set with fewer ones
     if (minimize && (2*ones < n || (2*ones == n && color[0]))) {
-        return 0;    // not inverted
+        return false;    // not inverted
     } else {
         color = ~color & mask;    // flip the bits
-        return 1;    // inverted
+        return true;    // inverted
     }
 }
 

@@ -83,10 +83,10 @@ bool kmer32::reverse_complement(uint64_t& kmer, bool minimize) {
 
     // if minimize == true, return the lexicographically smaller
     if (minimize && kmer <= rcmp) {
-        return 0;    // not reversed
+        return false;    // not reversed
     } else {
         kmer = rcmp;
-        return 1;    // reversed
+        return true;    // reversed
     }
 }
 

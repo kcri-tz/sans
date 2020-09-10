@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 
     uint64_t kmer = 31;    // length of k-mers
     uint64_t num = 0;    // number of input files
-    uint64_t top = 0;    // number of splits
+    uint64_t top = -1;    // number of splits
 
     auto mean = util::geometric_mean;    // weight function
     string filter;    // filter function
@@ -310,14 +310,13 @@ int main(int argc, char* argv[]) {
         if (verbose) {
             cout << "SANS::main(): Processing unitigs..." << flush;
         }
-        uint64_t cur = 0;
+        uint64_t cur = 0, progress;
         uint64_t max = cdbg.size();
 
         for (auto& unitig : cdbg) {
             if (verbose) {
                 cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
-            }
-            cur++;
+            }   curr++;
 
             auto sequence = unitig.mappedSequenceToString();
             auto *colors = unitig.getData()->getUnitigColors(unitig);
@@ -337,12 +336,12 @@ int main(int argc, char* argv[]) {
 #endif
 
     if (verbose) {
-        cout << "Please wait." << flush;
+        cout << "Processing splits..." << flush;
     }
-    graph::add_weights(mean);    // accumulate split weights
+    graph::add_weights(mean, verbose);    // accumulate split weights
 
     if (verbose) {
-        cout << "\33[2K\r" << "Filter splits.." << flush;
+        cout << "\33[2K\r" << "Filtering splits..." << flush;
     }
     if (!filter.empty()) {    // apply filter
         if (filter == "strict" || filter == "tree") {

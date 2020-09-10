@@ -198,12 +198,21 @@ void graph::iupac_shift(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next
  * This function iterates over the hash table and calculates the split weights.
  *
  * @param mean weight function
+ * @param verbose print progress
  */
-void graph::add_weights(double mean(uint32_t&, uint32_t&)) {
+void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
 
     double min_value = numeric_limits<double>::min();    // current min. weight in the top list (>0)
-    for (auto it = kmer_table.begin(); it != kmer_table.end(); ++it) {    // iterate over k-mer hash table
-        color_t& color = it->second;    // get the color set for each k-mer
+    uint64_t cur = 0, prog = 0, next;
+    uint64_t max = kmer_table.size();
+loop:
+    for (auto& it : kmer_table) {    // iterate over k-mer hash table
+        if (verbose) {
+            next = 100*cur/max;
+             if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
+            prog = next; cur++;
+        }
+        color_t& color = it.second;    // get the color set for each k-mer
         bool pos = color::complement(color, true);    // invert the color set, if necessary
         if (color == 0) continue;    // ignore empty splits
         array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
@@ -223,7 +232,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&)) {
         double new_value = mean(weight[0], weight[1]);    // calculate the new mean value
         if (new_value >= min_value) {    // if it is greater than the min. value, add it to the top list
             split_list.emplace(new_value, color);    // insert it at the correct position ordered by weight
-            if (t != 0 && split_list.size() > t) {
+            if (split_list.size() > t) {
                 split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
                 min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
             }
@@ -239,7 +248,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&)) {
  */
 void graph::add_split(double& weight, color_t& color) {
     split_list.emplace(weight, color);    // insert it at the correct position ordered by weight
-    if (t != 0 && split_list.size() > t) {
+    if (split_list.size() > t) {
         split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
     }
 }
@@ -252,14 +261,15 @@ void graph::add_split(double& weight, color_t& color) {
 void graph::filter_strict(bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
-    uint64_t cur = 0;
+    uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
     while (it != split_list.end()) {
         if (verbose) {
-            cout << "\33[2K\r" << "Filter splits.. " << 100*cur/max << "%" << flush;
+            next = 100*cur/max;
+            if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
+            prog = next; cur++;
         }
-        cur++;
         if (test_strict(it->second, tree)) {
             tree.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
@@ -276,14 +286,15 @@ loop:
 void graph::filter_weakly(bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
-    uint64_t cur = 0;
+    uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
     while (it != split_list.end()) {
         if (verbose) {
-            cout << "\33[2K\r" << "Filter splits.. " << 100*(cur*cur)/(max*max) << "%" << flush;
+            next = 100*(cur*cur)/(max*max);
+            if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
+            prog = next; cur++;
         }
-        cur++;
         if (test_weakly(it->second, network)) {
             network.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
@@ -301,14 +312,15 @@ loop:
 void graph::filter_n_tree(uint64_t n, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     auto it = split_list.begin();
-    uint64_t cur = 0;
+    uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
     while (it != split_list.end()) {
         if (verbose) {
-            cout << "\33[2K\r" << "Filter splits.. " << 100*cur/max << "%" << flush;
+            next = 100*cur/max;
+            if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
+            prog = next; cur++;
         }
-        cur++;
        for (auto& tree : forest)
         if (test_strict(it->second, tree)) {
             tree.emplace_back(it->second);
