@@ -72,7 +72,7 @@ public:
      * @param str dna sequence
      * @param color color flag
      */
-    static void add_kmers(string& str, uint64_t& color);
+    static void add_kmers(string& str, uint64_t& color, bool reverse);
 
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
@@ -81,7 +81,7 @@ public:
      * @param color color flag
      * @param max_iupac allowed number of ambiguous k-mers per position
      */
-    static void add_kmers(string& str, uint64_t& color, uint64_t& max_iupac);
+    static void add_kmers(string& str, uint64_t& color, uint64_t& max_iupac, bool reverse);
 
     /**
      * This function iterates over the hash table and calculates the split weights.

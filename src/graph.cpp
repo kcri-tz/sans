@@ -35,7 +35,7 @@ void graph::init(uint64_t& top_size) {
  * @param str dna sequence
  * @param color color flag
  */
-void graph::add_kmers(string& str, uint64_t& color) {
+void graph::add_kmers(string& str, uint64_t& color, bool reverse) {
 
     uint64_t pos;    // current position in the string, from 0 to length
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
@@ -56,7 +56,7 @@ next_kmer:
 
         if (pos+1 >= kmer::k) {
             rcmer = kmer;
-            kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+            if (reverse) {kmer::reverse_complement(rcmer, true); }   // invert the k-mer, if necessary
             color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
         }
     }
@@ -69,7 +69,7 @@ next_kmer:
  * @param color color flag
  * @param max_iupac allowed number of ambiguous k-mers per position
  */
-void graph::add_kmers(string& str, uint64_t& color, uint64_t& max_iupac) {
+void graph::add_kmers(string& str, uint64_t& color, uint64_t& max_iupac, bool reverse) {
 
     unordered_set<kmer_t> ping;    // create a new empty set for the k-mers
     unordered_set<kmer_t> pong;    // create another new set for the k-mers
@@ -109,7 +109,7 @@ next_kmer:
         if (pos+1 >= kmer::k) {
             for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                 rcmer = kmer;
-                kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+                if (reverse) {kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
                 color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
             }
         }
