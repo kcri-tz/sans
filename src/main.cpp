@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     // print a help message describing the program arguments
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;
-		cout << "version " << SANS_VERSION << endl;
+        cout << "SANS serif | version " << SANS_VERSION << endl;
         cout << endl;
         cout << "Usage: SANS [PARAMETERS]" << endl;
         cout << endl;
@@ -76,12 +76,11 @@ int main(int argc, char* argv[]) {
     uint64_t kmer = 31;    // length of k-mers
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
-
-    bool norev = false; // do consider reverse complement k-mers
     
     auto mean = util::geometric_mean;    // weight function
     string filter;    // filter function
     uint64_t iupac = 1;    // allow extended iupac characters
+    bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
 
     // parse the command line arguments and update the variables above
@@ -144,7 +143,7 @@ int main(int argc, char* argv[]) {
             iupac = stoi(argv[++i]);    // Extended IUPAC alphabet, resolve ambiguous bases
         }
         else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--norev") == 0) {
-            norev = true;    // Do not consider reverse complement k-mers
+            reverse = false;    // Do not consider reverse complement k-mers
         }
         else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
             verbose = true;    // Print messages during execution
@@ -286,8 +285,8 @@ int main(int argc, char* argv[]) {
                 if (line.length() > 0) {
                     if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
                         transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-                        iupac > 1 ? graph::add_kmers(sequence, i, iupac, norev)
-                                  : graph::add_kmers(sequence, i, norev);
+                        iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
+                                  : graph::add_kmers(sequence, i, reverse);
                         sequence.clear();
 
                         if (verbose) {
@@ -303,8 +302,8 @@ int main(int argc, char* argv[]) {
                 }
             }
             transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
-            iupac > 1 ? graph::add_kmers(sequence, i, iupac, norev)
-                      : graph::add_kmers(sequence, i, norev);
+            iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
+                      : graph::add_kmers(sequence, i, reverse);
             sequence.clear();
 
             if (verbose) {
@@ -335,7 +334,7 @@ int main(int argc, char* argv[]) {
             for (; it != end; ++it) {
                 auto seq = sequence.substr(it.getKmerPosition(), kmer);
                 auto col = files.size() + it.getColorID();
-                graph::add_kmers(seq, col, norev);
+                graph::add_kmers(seq, col, reverse);
             }
         }
         if (verbose) {

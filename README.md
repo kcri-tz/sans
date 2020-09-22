@@ -93,7 +93,7 @@ Usage: SANS [PARAMETERS]
                   	 Specify a number to limit the k-mers per position
                   	 between 1 (no ambiguity) and 4^k (allows NNN...N)
 
-    -n, --norev          Do not consider reverse complement k-mers
+    -n, --norev   	 Do not consider reverse complement k-mers
 
     -v, --verbose 	 Print information messages during execution
 
