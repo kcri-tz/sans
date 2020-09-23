@@ -324,7 +324,7 @@ int main(int argc, char* argv[]) {
         for (auto& unitig : cdbg) {
             if (verbose) {
                 cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
-            }   curr++;
+            }   cur++;
 
             auto sequence = unitig.mappedSequenceToString();
             auto *colors = unitig.getData()->getUnitigColors(unitig);
