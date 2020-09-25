@@ -366,7 +366,8 @@ int main(int argc, char* argv[]) {
 		#ifdef useBF
 		else return cdbg.getColorName(i-files.size());
 		#endif
-		return "";
+		cerr << "ERROR: Color bit does not correspond to color name" << endl;
+		exit(EXIT_FAILURE);
 	};
 
 
