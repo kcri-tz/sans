@@ -1,6 +1,5 @@
 #include <iostream>
 #include <bitset>
-#include <math.h>       /* log2 */
 
 using namespace std;
 

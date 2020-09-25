@@ -593,8 +593,6 @@ string graph::print_tree(set * root, std::function<string(const uint64_t&)> map)
 		s+=to_string(root->weight);
         return s;
 	}
-	
-	
 }
 
 
