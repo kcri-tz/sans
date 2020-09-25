@@ -186,10 +186,12 @@ int main(int argc, char* argv[]) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
         return 1;
     }
-    if (!newick.empty() && filter != "strict" && !filter.find("tree")){
+    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1){
         cerr << "Error: Newick output (-n, --newick) only applicable in combination with -f strict or -f n-tree" << endl;
         return 1;
 	}
+	
+	cout << newick << "," << filter << endl << flush;
 
     // parse the list of input sequence files
     vector<string> files;
