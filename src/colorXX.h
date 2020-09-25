@@ -1,5 +1,6 @@
 #include <iostream>
 #include <bitset>
+#include <math.h>       /* log2 */
 
 using namespace std;
 
@@ -44,6 +45,14 @@ public:
      */
     static void set(bitset<maxN>& color, uint64_t& pos);
 
+	/**
+     * This function returns the position of a single color
+     *
+     * @param color bit sequence
+     * @return position
+     */
+    static uint64_t pos(bitset<maxN>& color);
+
     /**
      * This function sets the bit at the given position to false.
      *
@@ -71,6 +80,15 @@ public:
     static bool complement(bitset<maxN>& color, bool minimize);
 
     /**
+     * This function returns the number of ones, or - if both is true - the number of zeros if it is larger.
+     *
+     * @param color bit sequence
+     * @param both consider both zeros and ones and return max of both
+     * @return number of ones (or zeros)
+     */
+    static int size(bitset<maxN>& color, bool both);
+
+	/**
      * This function tests if two splits of colors are compatible.
      *
      * @param c1 bit sequence
@@ -88,6 +106,7 @@ public:
      * @return true, if weakly compatible
      */
     static bool is_weakly_compatible(bitset<maxN>& c1, bitset<maxN>& c2, bitset<maxN>& c3);
+	
 
 protected:
 

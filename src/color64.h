@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>       /* log2 */
 
 using namespace std;
 
@@ -36,7 +37,15 @@ public:
      */
     static void set(uint64_t& color, uint64_t& pos);
 
-    /**
+	/**
+     * This function returns the position of a single color
+     *
+     * @param color bit sequence
+     * @return position
+     */
+    static uint64_t pos(uint64_t& color);
+
+	/**
      * This function sets the bit at the given position to false.
      *
      * @param color bit sequence
@@ -63,6 +72,15 @@ public:
     static bool complement(uint64_t& color, bool minimize);
 
     /**
+     * This function returns the number of ones, or - if both is true - the number of zeros if it is larger.
+     *
+     * @param color bit sequence
+     * @param both consider both zeros and ones and return max of both
+     * @return number of ones (or zeros)
+     */
+    static int size(uint64_t& color, bool both);
+
+	/**
      * This function tests if two splits of colors are compatible.
      *
      * @param c1 bit sequence

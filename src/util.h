@@ -47,7 +47,7 @@ public:
      * @return formatted string
      */
     static string format_time(chrono::high_resolution_clock::duration time);
-
+	
 protected:
 
 };

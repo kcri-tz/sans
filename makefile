@@ -1,12 +1,12 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -DmaxK=32 -DmaxN=64
+# CC = g++ -O3 -DmaxK=32 -DmaxN128
 
 ## IF BIFROST LIBRARY SHOULD BE USED
-# CC = g++ -O3 -DmaxK=32 -DmaxN=64 -DuseBF
-# BF = -lbifrost -lpthread -lz
+CC = g++ -O3 -DmaxK=64 -DmaxN=128 -DuseBF
+BF = -lbifrost -lpthread -lz
 
 SANS: main.o
-	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o color64.o colorXX.o util.o $(BF)
+	$(CC) -o SANS64 main.o graph.o kmer32.o kmerXX.o color64.o colorXX.o util.o $(BF)
 	rm -rf obj/; mkdir obj/; mv *.o obj/
 
 main.o: src/main.cpp src/main.h graph.o util.o

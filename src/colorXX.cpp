@@ -34,6 +34,23 @@ void colorXX::set(bitset<maxN>& color, uint64_t& pos) {
     color.set(pos) &= mask;
 }
 
+
+
+/**
+ * This function returns the position of a single color
+ *
+ * @param color bit sequence
+ * @return position, or -1 if all zero
+ */
+uint64_t colorXX::pos(bitset<maxN>& color){
+	for (uint64_t i = 0; i<color.size(); i++) {
+      if (color.test(i)) {
+          return i;
+      }
+    }
+    return -1;
+}
+
 /**
  * This function sets the bit at the given position to false.
  *
@@ -74,6 +91,29 @@ bool colorXX::complement(bitset<maxN>& color, bool minimize) {
         return true;    // inverted
     }
 }
+
+
+/**
+	* This function returns the number of ones, or - if both is true - the number of zeros if it is larger.
+	*
+	* @param color bit sequence
+	* @param both consider both zeros and ones and return max of both
+	* @return number of ones (or zeros)
+	*/
+int colorXX::size(bitset<maxN>& color, bool both){
+
+	uint64_t ones = color.count();    // count the number of ones
+	
+	if (!both) { return ones; }
+	
+	uint64_t zeros = n - ones;
+	
+	if (ones>zeros) { return ones; }
+	else { return zeros; }
+
+}
+
+
 
 /**
  * This function tests if two splits of colors are compatible.
