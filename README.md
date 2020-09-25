@@ -119,6 +119,11 @@ Usage: SANS [PARAMETERS]
    ```
    SANS -i list.txt -k 31 -f strict -N sans_greedytree.new 
    ```
+   or filter from a set of splits (`-s sans.splits`)
+   ```
+   SANS -s sans.splits -f strict -N sans_greedytree.new 
+   ```
+
 
 2. **Drosophila example data**
    ```
