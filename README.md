@@ -72,7 +72,7 @@ Usage: SANS [PARAMETERS]
 
                   	 (either --input and/or --graph, or --splits must be provided)
                   	 
-    -o, --output  	 Output file: list of splits, sorted by weight desc.
+    -o, --output  	 Output TSV file: list of splits, sorted by weight desc.
 
     -N, --newick  	 Output newick file
                   	 (only applicable in combination with -f strict or -f n-tree)
