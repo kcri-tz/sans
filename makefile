@@ -1,8 +1,8 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -DmaxK=32 -DmaxN=64
+CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64
 
 ## IF BIFROST LIBRARY SHOULD BE USED
-# CC = g++ -O3 -DmaxK=32 -DmaxN=64 -DuseBF
+# CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
 SANS: main.o

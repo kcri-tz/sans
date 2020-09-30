@@ -19,7 +19,6 @@ int main(int argc, char* argv[]) {
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;
         cout << "SANS serif | version " << SANS_VERSION << endl;
-        cout << endl;
         cout << "Usage: SANS [PARAMETERS]" << endl;
         cout << endl;
         cout << "  Required arguments:" << endl;
@@ -229,7 +228,7 @@ int main(int argc, char* argv[]) {
     graph::init(top);    // initialize the toplist size
 
     if (!splits.empty()) {
-        unordered_map<string, uint64_t> name_table;
+        hash_map<string, uint64_t> name_table;
         ifstream file(splits);
         if (!file.good()) {
             cerr << "Error: could not read splits file: " << splits << endl;
@@ -284,7 +283,6 @@ int main(int argc, char* argv[]) {
             while (getline(file, line)) {
                 if (line.length() > 0) {
                     if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
-                        transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
                         iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
                                   : graph::add_kmers(sequence, i, reverse);
                         sequence.clear();
@@ -297,11 +295,11 @@ int main(int argc, char* argv[]) {
                         getline(file, line);
                     }
                     else {
+                        transform(line.begin(), line.end(), line.begin(), ::toupper);
                         sequence += line;    // FASTA & FASTQ sequence -> read
                     }
                 }
             }
-            transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
             iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
                       : graph::add_kmers(sequence, i, reverse);
             sequence.clear();
@@ -375,10 +373,10 @@ int main(int argc, char* argv[]) {
         for (uint64_t i = 0; i < num; ++i) {
             if (color::test(split.second, pos)) {
                 if (i < files.size())
-                    stream << "\t" << files[i];    // name of the file
+                    stream << '\t' << files[i];    // name of the file
                 #ifdef useBF
                 else
-                    stream << "\t" << cdbg.getColorName(i-files.size());
+                    stream << '\t' << cdbg.getColorName(i-files.size());
                 #endif
             }
             split.second >>= 01u;

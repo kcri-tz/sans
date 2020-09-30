@@ -18,12 +18,12 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 
 ## Table of Contents
 
-* [Requirements](https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif#requirements)
-* [Compilation](https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif#compilation)
-* [Usage](https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif#usage)
-* [FAQ](https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif#faq)
-* [Contact](https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif#contact)
-* [License](https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif#license)
+* [Requirements](#requirements)
+* [Compilation](#compilation)
+* [Usage](#usage)
+* [FAQ](#faq)
+* [Contact](#contact)
+* [License](#license)
 
 ## Requirements
 
@@ -166,10 +166,6 @@ For any question, feedback, or problem, please feel free to file an issue on thi
 
 ## License
 
-* The hash function library xxHash is BSD licensed (https://github.com/Cyan4973/xxHash)
-* The popcount library is BSD licensed (https://github.com/kimwalisch/libpopcnt)
-* The libdivide library is zlib licensed (https://github.com/ridiculousfish/libdivide)
-* The kseq library is copyrighted by Heng Li and released under the MIT license (http://lh3lh3.users.sourceforge.net/kseq.shtml)
-* The CRoaring library is Apache 2.0 licensed (https://github.com/RoaringBitmap/CRoaring)
-* Bifrost is BSD-2 licensed (https://github.com/pmelsted/bifrost)
-* SANS is under GNU general public license (https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/serif/LICENSE)
+* The sparse-map library is licensed under the [MIT license](https://github.com/Tessil/sparse-map/blob/master/LICENSE).
+* The Bifrost library is licensed under the [BSD-2 license](https://github.com/pmelsted/bifrost/blob/master/LICENSE).
+* SANS is licensed under the [GNU general public license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/LICENSE).

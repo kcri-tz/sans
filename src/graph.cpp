@@ -8,12 +8,12 @@ uint64_t graph::t;
 /**
  * This is a hash table mapping k-mers to colors [O(1)].
  */
-unordered_map<kmer_t, color_t> graph::kmer_table;
+hash_map<kmer_t, color_t> graph::kmer_table;
 
 /**
  * This is a hash table mapping colors to weights [O(1)].
  */
-unordered_map<color_t, array<uint32_t,2>> graph::color_table;
+hash_map<color_t, array<uint32_t,2>> graph::color_table;
 
 /**
  * This is an ordered tree collecting the splits [O(log n)].
@@ -37,25 +37,24 @@ void graph::init(uint64_t& top_size) {
  * @param reverse merge complements
  */
 void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
+    if (str.length() < kmer::k)  return;    // not enough characters
 
     uint64_t pos;    // current position in the string, from 0 to length
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
+    uint64_t begin = 0;
 next_kmer:
-    if (str.length() < kmer::k) {
-        return;    // not enough characters for a k-mer, abort
-    }
-    pos = 0;
+    pos = begin;
 
     for (; pos < str.length(); ++pos) {    // collect the bases from the string
         if (str[pos] != 'A' && str[pos] != 'C' && str[pos] != 'G' && str[pos] != 'T') {
-            str = str.substr(pos+1, string::npos);
+            begin = pos+1;    // str = str.substr(pos+1, string::npos);
             goto next_kmer;    // unknown base, start a new k-mer from the beginning
         }
         kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
 
-        if (pos+1 >= kmer::k) {
+        if (pos+1 - begin >= kmer::k) {
             rcmer = kmer;
             if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
             color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
@@ -72,43 +71,44 @@ next_kmer:
  * @param max_iupac allowed number of ambiguous k-mers per position
  */
 void graph::add_kmers(string& str, uint64_t& color, bool& reverse, uint64_t& max_iupac) {
+    if (str.length() < kmer::k) return;    // not enough characters
 
-    unordered_set<kmer_t> ping;    // create a new empty set for the k-mers
-    unordered_set<kmer_t> pong;    // create another new set for the k-mers
+    hash_set<kmer_t> ping;    // create a new empty set for the k-mers
+    hash_set<kmer_t> pong;    // create another new set for the k-mers
     bool ball; bool wait;    // indicates which of the two sets should be used
 
     vector<uint8_t> factors;    // stores the multiplicity of iupac bases
     long double product;    // stores the overall multiplicity of the k-mers
-    uint64_t pos;    // current position in the string, from 0 to length
 
-    kmer_t kmer0;    // create an empty bit sequence for the initial k-mer
+    uint64_t pos;    // current position in the string, from 0 to length
+    kmer_t kmer;    // create an empty bit sequence for the initial k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
+    uint64_t begin = 0;
 next_kmer:
+    pos = begin;
+
     ping.clear(); pong.clear(); factors.clear();
-    if (str.length() < kmer::k) {
-        return;    // not enough characters for a k-mer, abort
-    }
-    ball = true; wait = false; product = 1; pos = 0;
-    (ball ? ping : pong).emplace(kmer0);
+    ball = true; wait = false; product = 1;
+    (ball ? ping : pong).emplace(kmer);
 
     for (; pos < str.length(); ++pos) {    // collect the bases from the string
         if (str[pos] == '.' || str[pos] == '-') {
-            str = str.substr(pos+1, string::npos);
+            begin = pos+1;    // str = str.substr(pos+1, string::npos);
             goto next_kmer;    // gap character, start a new k-mer from the beginning
         }
         iupac_calc(product, factors, str[pos]);
 
         if (product <= max_iupac) {    // check if there are too many ambiguous k-mers
             if (wait) {
-                str = str.substr(pos-kmer::k+1, string::npos);
+                begin = pos-kmer::k+1;    // str = str.substr(pos-kmer::k+1, string::npos);
                 goto next_kmer;    // start a new k-mer from the beginning
             }
             iupac_shift(ball ? ping : pong, !ball ? ping : pong, str[pos]);
             ball = !ball;    // shift each base in, resolve iupac character
         } else { wait = true; continue; }
 
-        if (pos+1 >= kmer::k) {
+        if (pos+1 - begin >= kmer::k) {
             for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                 rcmer = kmer;
                 if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
@@ -160,7 +160,7 @@ void graph::iupac_calc(long double& product, vector<uint8_t>& factors, char& inp
  * @param next set of k-mers
  * @param input iupac character
  */
-void graph::iupac_shift(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input) {
+void graph::iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input) {
 
     kmer_t temp; char base;
     while (!prev.empty()) {    // extend each previous k-mer
@@ -208,13 +208,13 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = kmer_table.size();
 loop:
-    for (auto& it : kmer_table) {    // iterate over k-mer hash table
+    for (auto it = kmer_table.begin(); it != kmer_table.end(); ++it) {    // iterate over k-mer hash table
         if (verbose) {
             next = 100*cur/max;
              if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-        color_t& color = it.second;    // get the color set for each k-mer
+        color_t& color = it.value();    // get the color set for each k-mer
         bool pos = color::complement(color, true);    // invert the color set, if necessary
         if (color == 0) continue;    // ignore empty splits
         array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set

@@ -1,12 +1,21 @@
 #include <iostream>
-
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <limits>
 
+#include "tsl/sparse_map.h"
+#include "tsl/sparse_set.h"
+
 using namespace std;
+
+template <typename K, typename V>
+    // using hash_map = unordered_map<K,V>;
+    using hash_map = tsl::sparse_pg_map<K,V>;
+template <typename T>
+    // using hash_set = unordered_set<T>;
+    using hash_set = tsl::sparse_pg_set<T>;
 
 #include "kmer32.h"
 #include "kmerXX.h"
@@ -40,12 +49,12 @@ private:
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
-    static unordered_map<kmer_t, color_t> kmer_table;
+    static hash_map<kmer_t, color_t> kmer_table;
 
     /**
      * This is a hash table mapping colors to weights [O(1)].
      */
-    static unordered_map<color_t, array<uint32_t,2>> color_table;
+    static hash_map<color_t, array<uint32_t,2>> color_table;
 
 public:
 
@@ -159,6 +168,6 @@ protected:
      * @param next set of k-mers
      * @param input iupac character
      */
-    static void iupac_shift(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input);
+    static void iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input);
 
 };
