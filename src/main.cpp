@@ -10,9 +10,9 @@
 int main(int argc, char* argv[]) {
 
     // check for a new version of SANS at program start
-    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q SANS_VERSION")
-      && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q " SANS_VERSION)) {
-        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif" << endl;
+    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")
+      && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
+        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
     }
 
     // print a help message describing the program arguments
@@ -22,13 +22,12 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "Usage: SANS [PARAMETERS]" << endl;
         cout << endl;
-        cout << "  Required arguments:" << endl;
+        cout << "  Input arguments:" << endl;
         cout << endl;
         cout << "    -i, --input   \t Input file: list of sequence files, one per line" << endl;
         cout << endl;
         cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
 #ifdef useBF
-        cout << "                  \t (at least --input or --graph must be provided, or both)" << endl;
 #else
         cout << "                  \t (requires compiler flag -DuseBF, please edit makefile)" << endl;
 #endif
@@ -36,14 +35,16 @@ int main(int argc, char* argv[]) {
         cout << "    -s, --splits  \t Splits file: load an existing list of splits file" << endl;
         cout << "                  \t (allows to filter -t/-f, other arguments are ignored)" << endl;
         cout << endl;
-        cout << "                  \t (either --input and/or --graph, or --splits must be provided)" << endl;
+        cout << "  (either --input and/or --graph, or --splits must be provided)" << endl;
+        cout << endl;
+        cout << "  Output arguments:" << endl;
         cout << endl;
         cout << "    -o, --output  \t Output TSV file: list of splits, sorted by weight desc." << endl;
         cout << endl;
         cout << "    -N, --newick  \t Output newick file" << endl;
 		cout << "                  \t (only applicable in combination with -f strict or -f n-tree)" << endl;
         cout << endl;
-        cout << "                  \t (at least --output or --newick must be provided, or both)" << endl;
+        cout << "  (at least --output or --newick must be provided, or both)" << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
@@ -191,8 +192,6 @@ int main(int argc, char* argv[]) {
         return 1;
 	}
 	
-	cout << newick << "," << filter << endl << flush;
-
     // parse the list of input sequence files
     vector<string> files;
     if (!input.empty()) {

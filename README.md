@@ -60,26 +60,28 @@ displays the command line interface:
 ```
 Usage: SANS [PARAMETERS]
 
-  Required arguments:
+  Input arguments:
 
     -i, --input   	 Input file: list of sequence files, one per line
 
     -g, --graph   	 Graph file: load a Bifrost graph, file name prefix
-                  	 (at least --input or --graph must be provided, or both)
+                  	 (requires compiler flag -DuseBF, please edit makefile)
 
     -s, --splits  	 Splits file: load an existing list of splits file
                   	 (allows to filter -t/-f, other arguments are ignored)
 
-                  	 (either --input and/or --graph, or --splits must be provided)
+  (either --input and/or --graph, or --splits must be provided)
                   	 
+  Input arguments:
+
     -o, --output  	 Output TSV file: list of splits, sorted by weight desc.
 
     -N, --newick  	 Output newick file
                   	 (only applicable in combination with -f strict or -f n-tree)
 
-                  	 (at least --output or --newick must be provided, or both)
+  (at least --output or --newick must be provided, or both)
 
-    Optional arguments:
+  Optional arguments:
 
     -k, --kmer    	 Length of k-mers (default: 31)
 
