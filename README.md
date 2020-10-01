@@ -72,7 +72,7 @@ Usage: SANS [PARAMETERS]
 
   (either --input and/or --graph, or --splits must be provided)
                   	 
-  Input arguments:
+  Output arguments:
 
     -o, --output  	 Output TSV file: list of splits, sorted by weight desc.
 
