@@ -60,17 +60,26 @@ displays the command line interface:
 ```
 Usage: SANS [PARAMETERS]
 
-  Required arguments:
+  Input arguments:
 
     -i, --input   	 Input file: list of sequence files, one per line
 
     -g, --graph   	 Graph file: load a Bifrost graph, file name prefix
-                  	 (at least --input or --graph must be provided, or both)
+                  	 (requires compiler flag -DuseBF, please edit makefile)
 
     -s, --splits  	 Splits file: load an existing list of splits file
                   	 (allows to filter -t/-f, other arguments are ignored)
 
-    -o, --output  	 Output file: list of splits, sorted by weight desc.
+  (either --input and/or --graph, or --splits must be provided)
+                  	 
+  Input arguments:
+
+    -o, --output  	 Output TSV file: list of splits, sorted by weight desc.
+
+    -N, --newick  	 Output newick file
+                  	 (only applicable in combination with -f strict or -f n-tree)
+
+  (at least --output or --newick must be provided, or both)
 
   Optional arguments:
 
@@ -104,14 +113,19 @@ Usage: SANS [PARAMETERS]
 
 1. **Determine splits from assemblies or read files**
    ```
-   SANS -i list.txt -o sans.splits -k 31
+   SANS  -k 31 -i list.txt -o sans.splits
    ```
    The 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt* (`-i list.txt`) are extracted. Splits are determined and written to *sans.splits* (`-o sans.splits`).
 
-   To extract a tree in NEWICK format, use the filter script:
+   To extract a tree (`-f strict`) in NEWICK format (`-N sans_greedytree.new`), use 
    ```
-   scripts/sans2new.py sans.splits > sans_greedytree.new 
+   SANS -i list.txt -k 31 -f strict -N sans_greedytree.new 
    ```
+   or filter from a set of splits (`-s sans.splits`)
+   ```
+   SANS -s sans.splits -f strict -N sans_greedytree.new 
+   ```
+
 
 2. **Drosophila example data**
    ```
@@ -122,13 +136,10 @@ Usage: SANS [PARAMETERS]
    # download data
    ./download.sh
    
-   # run SANS
+   # run SANS greedy tree
    cd fa
-   SANS -i list.txt -o ../sans.splits -t 130 -v
+   SANS -i list.txt -f strict -o ../sans_greedytree.splits -N sans_greedytree.new -t 130 -v
    cd ..
-   
-   # greedy tree
-   ../../scripts/sans2new.py sans.splits -g sans_greedytree.splits > sans_greedytree.new
 
    # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits

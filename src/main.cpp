@@ -10,9 +10,9 @@
 int main(int argc, char* argv[]) {
 
     // check for a new version of SANS at program start
-    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q SANS_VERSION")
-      && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/serif/src/main.h | grep -q " SANS_VERSION)) {
-        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans/tree/serif" << endl;
+    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")
+      && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
+        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
     }
 
     // print a help message describing the program arguments
@@ -21,13 +21,12 @@ int main(int argc, char* argv[]) {
         cout << "SANS serif | version " << SANS_VERSION << endl;
         cout << "Usage: SANS [PARAMETERS]" << endl;
         cout << endl;
-        cout << "  Required arguments:" << endl;
+        cout << "  Input arguments:" << endl;
         cout << endl;
         cout << "    -i, --input   \t Input file: list of sequence files, one per line" << endl;
         cout << endl;
         cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
 #ifdef useBF
-        cout << "                  \t (at least --input or --graph must be provided, or both)" << endl;
 #else
         cout << "                  \t (requires compiler flag -DuseBF, please edit makefile)" << endl;
 #endif
@@ -35,7 +34,16 @@ int main(int argc, char* argv[]) {
         cout << "    -s, --splits  \t Splits file: load an existing list of splits file" << endl;
         cout << "                  \t (allows to filter -t/-f, other arguments are ignored)" << endl;
         cout << endl;
-        cout << "    -o, --output  \t Output file: list of splits, sorted by weight desc." << endl;
+        cout << "  (either --input and/or --graph, or --splits must be provided)" << endl;
+        cout << endl;
+        cout << "  Output arguments:" << endl;
+        cout << endl;
+        cout << "    -o, --output  \t Output TSV file: list of splits, sorted by weight desc." << endl;
+        cout << endl;
+        cout << "    -N, --newick  \t Output newick file" << endl;
+		cout << "                  \t (only applicable in combination with -f strict or -f n-tree)" << endl;
+        cout << endl;
+        cout << "  (at least --output or --newick must be provided, or both)" << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
@@ -71,6 +79,7 @@ int main(int argc, char* argv[]) {
     string graph;    // name of graph file
     string splits;    // name of splits file
     string output;    // name of output file
+    string newick; // name of newick output file
 
     uint64_t kmer = 31;    // length of k-mers
     uint64_t num = 0;    // number of input files
@@ -81,6 +90,7 @@ int main(int argc, char* argv[]) {
     uint64_t iupac = 1;    // allow extended iupac characters
     bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
+    
 
     // parse the command line arguments and update the variables above
     for (int i = 1; i < argc; ++i) {
@@ -99,6 +109,9 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
             output = argv[++i];    // Output file: list of splits, sorted by weight desc.
+        }
+        else if (strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--newick") == 0) {
+            newick = argv[++i];    // Output newick file
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {
             kmer = stoi(argv[++i]);    // Length of k-mers (default: 31)
@@ -165,15 +178,19 @@ int main(int argc, char* argv[]) {
         cerr << "Error: too many input arguments: -g and -s" << endl;
         return 1;
     }
-    if (output.empty()) {
-        cerr << "Error: missing argument: --output <file_name>" << endl;
+    if (output.empty() && newick.empty()) {
+        cerr << "Error: missing argument: --output <file_name> or --newick <file_name>" << endl;
         return 1;
     }
     if (kmer > maxK && splits.empty()) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
         return 1;
     }
-
+    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1){
+        cerr << "Error: Newick output (-n, --newick) only applicable in combination with -f strict or -f n-tree" << endl;
+        return 1;
+	}
+	
     // parse the list of input sequence files
     vector<string> files;
     if (!input.empty()) {
@@ -341,6 +358,18 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+
+	// function to map color position to file name
+	std::function<string(const uint64_t&)> map=[=](uint64_t i){
+		if (i < files.size()) return files[i];
+		#ifdef useBF
+		else return cdbg.getColorName(i-files.size());
+		#endif
+		cerr << "ERROR: Color bit does not correspond to color name" << endl;
+		exit(EXIT_FAILURE);
+	};
+
+
     if (verbose) {
         cout << "Processing splits..." << flush;
     }
@@ -351,14 +380,28 @@ int main(int argc, char* argv[]) {
     }
     if (!filter.empty()) {    // apply filter
         if (filter == "strict" || filter == "tree") {
-            graph::filter_strict(verbose);
+			if (!newick.empty()) {
+			    ofstream file(newick);    // output file stream
+				ostream stream(file.rdbuf());
+				stream << graph::filter_strict(map,verbose); // filter and output
+				file.close();
+			} else {
+				graph::filter_strict(verbose);
+			}
         }
         else if (filter == "weakly") {
             graph::filter_weakly(verbose);
         }
         else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
-            graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
-        }
+			if (!newick.empty()) {
+			    ofstream file(newick);    // output file stream
+				ostream stream(file.rdbuf());
+				stream << graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
+				file.close();
+			} else {
+				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
+			}
+		}
     }
 
     if (verbose) {

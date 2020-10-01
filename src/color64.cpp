@@ -35,6 +35,16 @@ void color64::set(uint64_t& color, uint64_t& pos) {
 }
 
 /**
+	* This function returns the position of a single color
+	*
+	* @param color bit sequence
+	* @return position
+	*/
+uint64_t color64::pos(uint64_t& color){
+		return log2(color);
+}
+
+/**
  * This function sets the bit at the given position to false.
  *
  * @param color bit sequence
@@ -80,6 +90,33 @@ bool color64::complement(uint64_t& color, bool minimize) {
         return true;    // inverted
     }
 }
+
+/**
+	* This function returns the number of ones, or - if both is true - the number of zeros if it is larger.
+	*
+	* @param color bit sequence
+	* @param both consider both zeros and ones and return max of both
+	* @return number of ones (or zeros)
+	*/
+int color64::size(uint64_t& color, bool both){
+
+    uint64_t bits = color;    // copy the original color
+    uint64_t ones = 0;    // counter for the number of ones
+
+    for (uint64_t i = 0; i < n; ++i) {
+        ones += bits & 0b1u;    // count the last bit
+        bits >>= 01u;    // shift to the next bit pos.
+    }
+	
+	if (!both) { return ones; }
+	
+	uint64_t zeros = n - ones;
+	
+	if (ones>zeros) { return ones; }
+	else { return zeros; }
+
+}
+
 
 /**
  * This function tests if two splits of colors are compatible.
