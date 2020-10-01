@@ -13,11 +13,11 @@
 using namespace std;
 
 template <typename K, typename V>
-    // using hash_map = unordered_map<K,V>;
-    using hash_map = tsl::sparse_pg_map<K,V>;
+    using hash_map = unordered_map<K,V>;
+    // using hash_map = tsl::sparse_pg_map<K,V>;
 template <typename T>
-    // using hash_set = unordered_set<T>;
-    using hash_set = tsl::sparse_pg_set<T>;
+    using hash_set = unordered_set<T>;
+    // using hash_set = tsl::sparse_pg_set<T>;
 
 #include "kmer32.h"
 #include "kmerXX.h"
