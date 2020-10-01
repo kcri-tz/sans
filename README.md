@@ -6,7 +6,7 @@
 * Reference-free
 * Alignment-free
 * Assembled genomes or reads as input
-* Phylogenetic splits as output
+* Phylogenetic splits or tree as output
 
 ### Publications
 
