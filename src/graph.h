@@ -66,18 +66,8 @@ private:
     /**
      * This is a hash table mapping colors to weights [O(1)].
      */
-<<<<<<< HEAD
     static hash_map<color_t, array<uint32_t,2>> color_table;
-=======
-    static unordered_map<color_t, array<uint32_t,2>> color_table;
-	
-	/**
-	 * initializes a new set struct.
-     * @param taxa color_t coding all taxa beneath this node
-     * @param subsets list of subsets
-	 */
-// 	static struct set* newSet(color_t taxa, vector<set *> subsets);
->>>>>>> newick
+
 
 public:
 	
@@ -212,10 +202,8 @@ protected:
      * @param next set of k-mers
      * @param input iupac character
      */
-<<<<<<< HEAD
+
     static void iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input);
-=======
-    static void iupac_shift(unordered_set<kmer_t>& prev, unordered_set<kmer_t>& next, char& input);
 	
 	/**
 	* This function returns a tree structure (struct set) generated from the given list of color sets
@@ -243,6 +231,6 @@ protected:
 	static string print_tree(set * root, std::function<string(const uint64_t&)> map);
 
 
->>>>>>> newick
+
 
 };
