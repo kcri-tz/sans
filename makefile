@@ -6,7 +6,7 @@ CC = g++ -O3 -DmaxK=32 -DmaxN=256
 # BF = -lbifrost -lpthread -lz
 
 SANS: main.o
-	$(CC) -o SANS32 main.o graph.o kmer32.o kmerXX.o color64.o colorXX.o util.o $(BF)
+	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o color64.o colorXX.o util.o $(BF)
 	rm -rf obj/; mkdir obj/; mv *.o obj/
 
 main.o: src/main.cpp src/main.h graph.o util.o
