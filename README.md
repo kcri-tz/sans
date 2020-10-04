@@ -1,6 +1,6 @@
 # SANS *serif*
 
-**Symmetric Alignment-free phylogeNomic Splits**
+**Symmetric Alignment-free phylogeNomic Splits**  
 ***--- Space and time Efficient Re-Implementation including Filters***
 
 * Reference-free
