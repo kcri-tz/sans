@@ -16,7 +16,6 @@ bitset<2*maxK> kmerXX::mask = mask.set();
  * @param kmer_length k-mer length
  */
 void kmerXX::init(uint64_t& kmer_length) {
-
     k = kmer_length; mask.reset();
     for (uint64_t i = 0; i < 2*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
@@ -32,7 +31,6 @@ void kmerXX::init(uint64_t& kmer_length) {
  * @return right character
  */
 char kmerXX::shift_left(bitset<2*maxK>& kmer, char& c) {
-
     uint64_t left = char_to_bits(c);    // new leftmost character
     uint64_t right = 2*kmer[1]+kmer[0];    // old rightmost character
 
@@ -52,7 +50,6 @@ char kmerXX::shift_left(bitset<2*maxK>& kmer, char& c) {
  * @return left character
  */
 char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
-
     uint64_t left = 2*kmer[2*k-1]+kmer[2*k-2];    // old leftmost character
     uint64_t right = char_to_bits(c);    // new rightmost character
 
@@ -72,7 +69,6 @@ char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
  * @return 1 if inverted, 0 otherwise
  */
 bool kmerXX::reverse_complement(bitset<2*maxK>& kmer, bool minimize) {
-
     bitset<2*maxK> bits = kmer;    // copy the original k-mer
     bitset<2*maxK> rcmp;    // empty reverse complement
 
@@ -105,7 +101,6 @@ bool kmerXX::reverse_complement(bitset<2*maxK>& kmer, bool minimize) {
  * @return bit sequence
  */
 uint64_t kmerXX::char_to_bits(char& c) {
-
     switch (c) {
         case 'A':
             return 0b00u;
@@ -128,7 +123,6 @@ uint64_t kmerXX::char_to_bits(char& c) {
  * @return character
  */
 char kmerXX::bits_to_char(uint64_t& b) {
-
     switch (b) {
         case 0b00u:
             return 'A';

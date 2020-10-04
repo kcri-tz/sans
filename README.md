@@ -1,6 +1,6 @@
 # SANS *serif*
 
-**Symmetric Alignment-free phylogeNomic Splits**  
+**Symmetric Alignment-free phylogeNomic Splits**
 ***--- Space and time Efficient Re-Implementation including Filters***
 
 * Reference-free
@@ -70,8 +70,8 @@ Usage: SANS [PARAMETERS]
     -s, --splits  	 Splits file: load an existing list of splits file
                   	 (allows to filter -t/-f, other arguments are ignored)
 
-  (either --input and/or --graph, or --splits must be provided)
-                  	 
+    (either --input and/or --graph, or --splits must be provided)
+
   Output arguments:
 
     -o, --output  	 Output TSV file: list of splits, sorted by weight desc.
@@ -79,7 +79,7 @@ Usage: SANS [PARAMETERS]
     -N, --newick  	 Output newick file
                   	 (only applicable in combination with -f strict or -f n-tree)
 
-  (at least --output or --newick must be provided, or both)
+    (at least --output or --newick must be provided, or both)
 
   Optional arguments:
 
@@ -117,25 +117,24 @@ Usage: SANS [PARAMETERS]
    ```
    The 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt* (`-i list.txt`) are extracted. Splits are determined and written to *sans.splits* (`-o sans.splits`).
 
-   To extract a tree (`-f strict`) in NEWICK format (`-N sans_greedytree.new`), use 
+   To extract a tree (`-f strict`) in NEWICK format (`-N sans_greedytree.new`), use
    ```
-   SANS -i list.txt -k 31 -f strict -N sans_greedytree.new 
+   SANS -i list.txt -k 31 -f strict -N sans_greedytree.new
    ```
    or filter from a set of splits (`-s sans.splits`)
    ```
-   SANS -s sans.splits -f strict -N sans_greedytree.new 
+   SANS -s sans.splits -f strict -N sans_greedytree.new
    ```
-
 
 2. **Drosophila example data**
    ```
    # go to example directory
    cd <SANS directory>
    cd example_data/drosophila
-   
+
    # download data
    ./download.sh
-   
+
    # run SANS greedy tree
    cd fa
    SANS -i list.txt -f strict -o ../sans_greedytree.splits -N sans_greedytree.new -t 130 -v
@@ -151,10 +150,10 @@ Usage: SANS [PARAMETERS]
    # go to example directory
    cd <SANS directory>
    cd example_data/prasinoviruses
-      
+
    # download data
    ./download.sh
-   
+
    # run SANS
    cd fa
    SANS -i list.txt -o ../sans.splits -k 11 -t 130 -v

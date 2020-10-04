@@ -6,6 +6,7 @@
 #include <limits>
 #include <algorithm>
 #include <functional>
+#include <utility>
 
 #include "tsl/sparse_map.h"
 #include "tsl/sparse_set.h"
@@ -13,11 +14,11 @@
 using namespace std;
 
 template <typename K, typename V>
-    using hash_map = unordered_map<K,V>;
-    // using hash_map = tsl::sparse_pg_map<K,V>;
+    // using hash_map = unordered_map<K,V>;
+    using hash_map = tsl::sparse_pg_map<K,V>;
 template <typename T>
-    using hash_set = unordered_set<T>;
-    // using hash_set = tsl::sparse_pg_set<T>;
+    // using hash_set = unordered_set<T>;
+    using hash_set = tsl::sparse_pg_set<T>;
 
 #include "kmer32.h"
 #include "kmerXX.h"
@@ -40,16 +41,15 @@ template <typename T>
     typedef color64 color;
     typedef uint64_t color_t;
 #endif
-	
+
 /**
  * A tree structure that is needed for generating a NEWICK string.
  */
-struct set { 
-	color_t taxa;
-	double weight;
-	vector<set *> subsets;
-}; 
-
+struct set {
+    color_t taxa;
+    double weight;
+    vector<set*> subsets;
+};
 
 /**
  * This class manages the k-mer/color hash tables and split list.
@@ -68,10 +68,7 @@ private:
      */
     static hash_map<color_t, array<uint32_t,2>> color_table;
 
-
 public:
-	
-  
 
     /**
      * This is an ordered tree collecting the splits [O(log n)].
@@ -132,15 +129,14 @@ public:
      */
     static void filter_strict(bool& verbose);
 
-	/**
-	 * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
+    /**
+     * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
      *
-	 * @param map function that maps an integer to the original id, or null
-	 * @param verbose print progress
-	 */
-	static string filter_strict(std::function<string(const uint64_t&)> map, bool& verbose);
-	
- 	
+     * @param map function that maps an integer to the original id, or null
+     * @param verbose print progress
+     */
+    static string filter_strict(std::function<string(const uint64_t&)> map, bool& verbose);
+
     /**
      * This function filters a greedy maximum weight weakly compatible subset.
      *
@@ -148,7 +144,7 @@ public:
      */
     static void filter_weakly(bool& verbose);
 
-	/**
+    /**
      * This function filters a greedy maximum weight n-tree compatible subset.
      *
      * @param n number of trees
@@ -156,15 +152,14 @@ public:
      */
     static void filter_n_tree(uint64_t n, bool& verbose);
 
-   /**
+    /**
      * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
      *
      * @param n number of trees
-	 * @param map function that maps an integer to the original id, or null
+     * @param map function that maps an integer to the original id, or null
      * @param verbose print progress
      */
     static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose);
-
 
 protected:
 
@@ -202,35 +197,31 @@ protected:
      * @param next set of k-mers
      * @param input iupac character
      */
-
     static void iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input);
-	
-	/**
-	* This function returns a tree structure (struct set) generated from the given list of color sets
-	*
-	* @param color_set list of color sets
-	* @return tree structure (struct set)
-	*/
-	static set * build_tree(vector<color_t>& color_set);
 
-	/**
-	 * This function recursively refines a given set/tree structure by a given split
-	 *
-	 * @param current_set node of currently considered (sub-)set/tree structure
-	 * @param split color set to refine by
-	 * @return whether or not the given split is compatible with the set/tree structure
-	 */
-	static bool refine_tree(set * current_set, color_t& split, color_t& allTaxa);
-	
-	/**
-	* This function returns a newick string generated from the given tree structure (set)
-	*
-	* @param root root of the tree/set structure
-	* @return newick string
-	*/
-	static string print_tree(set * root, std::function<string(const uint64_t&)> map);
+    /**
+     * This function returns a tree structure (struct set) generated from the given list of color sets.
+     *
+     * @param color_set list of color sets
+     * @return tree structure (struct set)
+     */
+    static set* build_tree(vector<color_t>& color_set);
 
+    /**
+     * This function recursively refines a given set/tree structure by a given split.
+     *
+     * @param current_set node of currently considered (sub-)set/tree structure
+     * @param split color set to refine by
+     * @return whether or not the given split is compatible with the set/tree structure
+     */
+    static bool refine_tree(set* current_set, color_t& split, color_t& allTaxa);
 
-
+    /**
+     * This function returns a newick string generated from the given tree structure (set).
+     *
+     * @param root root of the tree/set structure
+     * @return newick string
+     */
+    static string print_tree(set* root, std::function<string(const uint64_t&)> map);
 
 };

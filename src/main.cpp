@@ -34,16 +34,16 @@ int main(int argc, char* argv[]) {
         cout << "    -s, --splits  \t Splits file: load an existing list of splits file" << endl;
         cout << "                  \t (allows to filter -t/-f, other arguments are ignored)" << endl;
         cout << endl;
-        cout << "  (either --input and/or --graph, or --splits must be provided)" << endl;
+        cout << "    (either --input and/or --graph, or --splits must be provided)" << endl;
         cout << endl;
         cout << "  Output arguments:" << endl;
         cout << endl;
         cout << "    -o, --output  \t Output TSV file: list of splits, sorted by weight desc." << endl;
         cout << endl;
         cout << "    -N, --newick  \t Output newick file" << endl;
-		cout << "                  \t (only applicable in combination with -f strict or -f n-tree)" << endl;
+        cout << "                  \t (only applicable in combination with -f strict or -f n-tree)" << endl;
         cout << endl;
-        cout << "  (at least --output or --newick must be provided, or both)" << endl;
+        cout << "    (at least --output or --newick must be provided, or both)" << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
@@ -79,18 +79,17 @@ int main(int argc, char* argv[]) {
     string graph;    // name of graph file
     string splits;    // name of splits file
     string output;    // name of output file
-    string newick; // name of newick output file
+    string newick;    // name of newick output file
 
     uint64_t kmer = 31;    // length of k-mers
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
-    
+
     auto mean = util::geometric_mean;    // weight function
     string filter;    // filter function
     uint64_t iupac = 1;    // allow extended iupac characters
     bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
-    
 
     // parse the command line arguments and update the variables above
     for (int i = 1; i < argc; ++i) {
@@ -186,11 +185,11 @@ int main(int argc, char* argv[]) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
         return 1;
     }
-    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1){
+    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1) {
         cerr << "Error: Newick output (-n, --newick) only applicable in combination with -f strict or -f n-tree" << endl;
         return 1;
-	}
-	
+    }
+
     // parse the list of input sequence files
     vector<string> files;
     if (!input.empty()) {
@@ -358,17 +357,15 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-
-	// function to map color position to file name
-	std::function<string(const uint64_t&)> map=[=](uint64_t i){
-		if (i < files.size()) return files[i];
-		#ifdef useBF
-		else return cdbg.getColorName(i-files.size());
-		#endif
-		cerr << "ERROR: Color bit does not correspond to color name" << endl;
-		exit(EXIT_FAILURE);
-	};
-
+    // function to map color position to file name
+    std::function<string(const uint64_t&)> map=[=](uint64_t i) {
+        if (i < files.size()) return files[i];
+        #ifdef useBF
+        else return cdbg.getColorName(i-files.size());
+        #endif
+        cerr << "ERROR: Color bit does not correspond to color name" << endl;
+        exit(EXIT_FAILURE);
+    };
 
     if (verbose) {
         cout << "Processing splits..." << flush;
@@ -380,28 +377,28 @@ int main(int argc, char* argv[]) {
     }
     if (!filter.empty()) {    // apply filter
         if (filter == "strict" || filter == "tree") {
-			if (!newick.empty()) {
-			    ofstream file(newick);    // output file stream
-				ostream stream(file.rdbuf());
-				stream << graph::filter_strict(map,verbose); // filter and output
-				file.close();
-			} else {
-				graph::filter_strict(verbose);
-			}
+            if (!newick.empty()) {
+                ofstream file(newick);    // output file stream
+                ostream stream(file.rdbuf());
+                stream << graph::filter_strict(map, verbose);    // filter and output
+                file.close();
+            } else {
+                graph::filter_strict(verbose);
+            }
         }
         else if (filter == "weakly") {
             graph::filter_weakly(verbose);
         }
         else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
-			if (!newick.empty()) {
-			    ofstream file(newick);    // output file stream
-				ostream stream(file.rdbuf());
-				stream << graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
-				file.close();
-			} else {
-				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
-			}
-		}
+            if (!newick.empty()) {
+                ofstream file(newick);    // output file stream
+                ostream stream(file.rdbuf());
+                stream << graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
+                file.close();
+            } else {
+                graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
+            }
+        }
     }
 
     if (verbose) {

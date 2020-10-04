@@ -44,8 +44,8 @@ public:
      */
     static void set(bitset<maxN>& color, uint64_t& pos);
 
-	/**
-     * This function returns the position of a single color
+    /**
+     * This function returns the position of a single color.
      *
      * @param color bit sequence
      * @return position
@@ -87,7 +87,7 @@ public:
      */
     static int size(bitset<maxN>& color, bool both);
 
-	/**
+    /**
      * This function tests if two splits of colors are compatible.
      *
      * @param c1 bit sequence
@@ -105,7 +105,6 @@ public:
      * @return true, if weakly compatible
      */
     static bool is_weakly_compatible(bitset<maxN>& c1, bitset<maxN>& c2, bitset<maxN>& c3);
-	
 
 protected:
 
