@@ -44,11 +44,9 @@ By default, the installation creates:
 
 You may want to make the binary (*SANS*) accessible via your *PATH* variable.
 
-If Bifrost should be used, change the SANS makefile accordingly (easy to see how).
-Please note the installation instructions regarding the default maximum *k*-mer size of Bifrost in its README.
+Optional: If Bifrost should be used, change the SANS makefile accordingly (easy to see how). Please note the installation instructions regarding the default maximum *k*-mer size of Bifrost in its README. If during the compilation, the Bifrost library files are not found, make sure that the corresponding folder is found as include path by the C++ compiler. You may have to add `-I/usr/local/include` (with the corresponding folder) to the compiler flags in the makefile. We also recommend to have a look at the [FAQs of Bifrost](https://github.com/pmelsted/bifrost#faq).
 
-If during the compilation, the Bifrost library files are not found, make sure that the corresponding folder is found as include path by the C++ compiler.
-You may have to add `-I/usr/local/include` (with the corresponding folder) to the compiler flags in the makefile.
+
 
 ## Usage:
 
@@ -107,7 +105,17 @@ Usage: SANS [PARAMETERS]
     -v, --verbose 	 Print information messages during execution
 
     -h, --help    	 Display this help page and quit
+  
 ```
+
+### Contact and Evaluation 
+
+For any question, feedback, or problem, please feel free to file an issue on this Git repository or write an email and we will get back to you as soon as possible.
+
+[sans-service@cebitec.uni-bielefeld.de](mailto:sans-service@cebitec.uni-bielefeld.de)
+
+SANS is provided as a service of the [German Network for Bioinformatics Infrastructure (de.NBI)](https://www.denbi.de/). We would appriciate if you would participate in the evaluation of SANS by completing this [very short survey](https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans).
+
 
 ### Examples
 
@@ -167,13 +175,7 @@ Usage: SANS [PARAMETERS]
    ../../scripts/comp.py sans.splits Reference_Fig4.splits fa/list.txt
    ```
 
-## FAQ
 
-We recommend to have a look at the [FAQs of Bifrost](https://github.com/pmelsted/bifrost#faq).
-
-## Contact
-
-For any question, feedback, or problem, please feel free to file an issue on this Git repository and we will get back to you as soon as possible.
 
 ## License
 
