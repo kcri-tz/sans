@@ -21,7 +21,6 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 * [Requirements](#requirements)
 * [Compilation](#compilation)
 * [Usage](#usage)
-* [FAQ](#faq)
 * [Contact](#contact)
 * [License](#license)
 
@@ -108,7 +107,7 @@ Usage: SANS [PARAMETERS]
   
 ```
 
-### Contact and Evaluation 
+### Contact
 
 For any question, feedback, or problem, please feel free to file an issue on this Git repository or write an email and we will get back to you as soon as possible.
 
