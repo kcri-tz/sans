@@ -16,7 +16,6 @@ bitset<maxN> colorXX::mask = mask.set();
  * @param color_number color number
  */
 void colorXX::init(uint64_t& color_number) {
-
     n = color_number; mask.reset();
     for (uint64_t i = 0; i < n; ++i) {
         mask <<= 01u;    // fill all bits within the color number with ones
@@ -34,19 +33,17 @@ void colorXX::set(bitset<maxN>& color, uint64_t& pos) {
     color.set(pos) &= mask;
 }
 
-
-
 /**
- * This function returns the position of a single color
+ * This function returns the position of a single color.
  *
  * @param color bit sequence
  * @return position, or -1 if all zero
  */
-uint64_t colorXX::pos(bitset<maxN>& color){
-	for (uint64_t i = 0; i<color.size(); i++) {
-      if (color.test(i)) {
-          return i;
-      }
+uint64_t colorXX::pos(bitset<maxN>& color) {
+    for (uint64_t i = 0; i < color.size(); i++) {
+        if (color.test(i)) {
+            return i;
+        }
     }
     return -1;
 }
@@ -80,9 +77,7 @@ bool colorXX::test(bitset<maxN>& color, uint64_t& pos) {
  * @return 1 if inverted, 0 otherwise
  */
 bool colorXX::complement(bitset<maxN>& color, bool minimize) {
-
     uint64_t ones = color.count();    // count the number of ones
-
     // if minimize == true, return the color set with fewer ones
     if (minimize && (2*ones < n || (2*ones == n && color[0]))) {
         return false;    // not inverted
@@ -92,28 +87,21 @@ bool colorXX::complement(bitset<maxN>& color, bool minimize) {
     }
 }
 
-
 /**
-	* This function returns the number of ones, or - if both is true - the number of zeros if it is larger.
-	*
-	* @param color bit sequence
-	* @param both consider both zeros and ones and return max of both
-	* @return number of ones (or zeros)
-	*/
-int colorXX::size(bitset<maxN>& color, bool both){
+ * This function returns the number of ones, or - if both is true - the number of zeros if it is larger.
+ *
+ * @param color bit sequence
+ * @param both consider both zeros and ones and return max of both
+ * @return number of ones (or zeros)
+ */
+int colorXX::size(bitset<maxN>& color, bool both) {
+    uint64_t ones = color.count();    // count the number of ones
+    if (!both) { return ones; }
 
-	uint64_t ones = color.count();    // count the number of ones
-	
-	if (!both) { return ones; }
-	
-	uint64_t zeros = n - ones;
-	
-	if (ones>zeros) { return ones; }
-	else { return zeros; }
-
+    uint64_t zeros = n - ones;
+    if (ones > zeros) { return ones; }
+    else { return zeros; }
 }
-
-
 
 /**
  * This function tests if two splits of colors are compatible.
