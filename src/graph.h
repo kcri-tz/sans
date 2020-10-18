@@ -1,13 +1,14 @@
 #include <iostream>
-#include <map>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
 #include <limits>
 #include <algorithm>
 #include <functional>
 #include <utility>
+#include <vector>
 
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include "tsl/sparse_map.h"
 #include "tsl/sparse_set.h"
 
@@ -45,10 +46,10 @@ template <typename T>
 /**
  * A tree structure that is needed for generating a NEWICK string.
  */
-struct set {
+struct node {
     color_t taxa;
     double weight;
-    vector<set*> subsets;
+    vector<node*> subsets;
 };
 
 /**
@@ -97,6 +98,16 @@ public:
     static void add_kmers(string& str, uint64_t& color, bool& reverse);
 
     /**
+     * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
+     *
+     * @param str dna sequence
+     * @param color color flag
+     * @param reverse merge complements
+     * @param m number of k-mers to minimize
+     */
+    static void add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m);
+
+    /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
      *
      * @param str dna sequence
@@ -105,6 +116,17 @@ public:
      * @param max_iupac allowed number of ambiguous k-mers per position
      */
     static void add_kmers(string& str, uint64_t& color, bool& reverse, uint64_t& max_iupac);
+
+    /**
+     * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
+     *
+     * @param str dna sequence
+     * @param color color flag
+     * @param reverse merge complements
+     * @param m number of k-mers to minimize
+     * @param max_iupac allowed number of ambiguous k-mers per position
+     */
+    static void add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m, uint64_t& max_iupac);
 
     /**
      * This function iterates over the hash table and calculates the split weights.
@@ -200,12 +222,12 @@ protected:
     static void iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input);
 
     /**
-     * This function returns a tree structure (struct set) generated from the given list of color sets.
+     * This function returns a tree structure (struct node) generated from the given list of color sets.
      *
      * @param color_set list of color sets
-     * @return tree structure (struct set)
+     * @return tree structure (struct node)
      */
-    static set* build_tree(vector<color_t>& color_set);
+    static node* build_tree(vector<color_t>& color_set);
 
     /**
      * This function recursively refines a given set/tree structure by a given split.
@@ -214,7 +236,7 @@ protected:
      * @param split color set to refine by
      * @return whether or not the given split is compatible with the set/tree structure
      */
-    static bool refine_tree(set* current_set, color_t& split, color_t& allTaxa);
+    static bool refine_tree(node* current_set, color_t& split, color_t& allTaxa);
 
     /**
      * This function returns a newick string generated from the given tree structure (set).
@@ -222,6 +244,6 @@ protected:
      * @param root root of the tree/set structure
      * @return newick string
      */
-    static string print_tree(set* root, std::function<string(const uint64_t&)> map);
+    static string print_tree(node* root, std::function<string(const uint64_t&)> map);
 
 };

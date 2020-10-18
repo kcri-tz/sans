@@ -21,18 +21,33 @@ hash_map<color_t, array<uint32_t,2>> graph::color_table;
 multimap<double, color_t, greater<>> graph::split_list;
 
 /**
- * Initializes a new set struct.
+ * This is a comparison function extending std::bitset.
+ */
+#if maxK > 32 || maxN > 64
+namespace std {
+    template <uint64_t N>
+    bool operator<(const bitset<N>& x, const bitset<N>& y) {
+        for (uint64_t i = N-1; i != -1; --i) {
+            if (x[i] ^ y[i]) return y[i];
+        }
+        return false;
+    }
+}
+#endif
+
+/**
+ * Initializes a new node struct.
  *
  * @param taxa color_t coding all taxa beneath this node
  * @param subsets list of subsets
  */
-struct set* newSet(color_t taxa, double weight, vector<set*> subsets) {
+struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
     // declare and allocate new node
-    auto* set = new struct set();
-    set->taxa = std::move(taxa);
-    set->weight = std::move(weight);
-    set->subsets = std::move(subsets);
-    return(set);
+    auto* node = new struct node();
+    node->taxa = std::move(taxa);
+    node->weight = std::move(weight);
+    node->subsets = std::move(subsets);
+    return(node);
 }
 
 /**
@@ -73,6 +88,55 @@ next_kmer:
             rcmer = kmer;
             if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
             color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+        }
+    }
+}
+
+/**
+ * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
+ *
+ * @param str dna sequence
+ * @param color color flag
+ * @param reverse merge complements
+ * @param m number of k-mers to minimize
+ */
+void graph::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m) {
+    if (str.length() < kmer::k) return;    // not enough characters
+
+    vector<kmer_t> sequence_order;    // k-mers ordered by their position in sequence
+    multiset<kmer_t> value_order;    // k-mers ordered by their lexicographical value
+
+    uint64_t pos;    // current position in the string, from 0 to length
+    kmer_t kmer;    // create a new empty bit sequence for the k-mer
+    kmer_t rcmer;    // create a bit sequence for the reverse complement
+
+    uint64_t begin = 0;
+next_kmer:
+    pos = begin;
+    sequence_order.clear();
+    value_order.clear();
+
+    for (; pos < str.length(); ++pos) {    // collect the bases from the string
+        if (str[pos] != 'A' && str[pos] != 'C' && str[pos] != 'G' && str[pos] != 'T') {
+            begin = pos+1;    // str = str.substr(pos+1, string::npos);
+            goto next_kmer;    // unknown base, start a new k-mer from the beginning
+        }
+        kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
+
+        if (pos+1 - begin >= kmer::k) {
+            rcmer = kmer;
+            if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+
+            if (sequence_order.size() == m) {
+                value_order.erase(*sequence_order.begin());    // remove k-mer outside the window
+                sequence_order.erase(sequence_order.begin());
+            }
+            value_order.emplace(rcmer);    // insert k-mer ordered by its lexicographical value
+            sequence_order.emplace_back(rcmer);
+
+            if (sequence_order.size() == m) {
+                color::set(kmer_table[*value_order.begin()], color);    // update the k-mer with the current color
+            }
         }
     }
 }
@@ -128,6 +192,81 @@ next_kmer:
                 rcmer = kmer;
                 if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
                 color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+            }
+        }
+    }
+}
+
+/**
+ * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
+ *
+ * @param str dna sequence
+ * @param color color flag
+ * @param reverse merge complements
+ * @param m number of k-mers to minimize
+ * @param max_iupac allowed number of ambiguous k-mers per position
+ */
+void graph::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m, uint64_t& max_iupac) {
+    if (str.length() < kmer::k) return;    // not enough characters
+
+    vector<kmer_t> sequence_order;    // k-mers ordered by their position in sequence
+    multiset<kmer_t> value_order;    // k-mers ordered by their lexicographical value
+    multiset<kmer_t> inner_value_order;
+
+    hash_set<kmer_t> ping;    // create a new empty set for the k-mers
+    hash_set<kmer_t> pong;    // create another new set for the k-mers
+    bool ball; bool wait;    // indicates which of the two sets should be used
+
+    vector<uint8_t> factors;    // stores the multiplicity of iupac bases
+    long double product;    // stores the overall multiplicity of the k-mers
+
+    uint64_t pos;    // current position in the string, from 0 to length
+    kmer_t kmer;    // create an empty bit sequence for the initial k-mer
+    kmer_t rcmer;    // create a bit sequence for the reverse complement
+
+    uint64_t begin = 0;
+next_kmer:
+    pos = begin;
+    sequence_order.clear();
+    value_order.clear();
+
+    ping.clear(); pong.clear(); factors.clear();
+    ball = true; wait = false; product = 1;
+    (ball ? ping : pong).emplace(kmer);
+
+    for (; pos < str.length(); ++pos) {    // collect the bases from the string
+        if (str[pos] == '.' || str[pos] == '-') {
+            begin = pos+1;    // str = str.substr(pos+1, string::npos);
+            goto next_kmer;    // gap character, start a new k-mer from the beginning
+        }
+        iupac_calc(product, factors, str[pos]);
+
+        if (product <= max_iupac) {    // check if there are too many ambiguous k-mers
+            if (wait) {
+                begin = pos-kmer::k+1;    // str = str.substr(pos-kmer::k+1, string::npos);
+                goto next_kmer;    // start a new k-mer from the beginning
+            }
+            iupac_shift(ball ? ping : pong, !ball ? ping : pong, str[pos]);
+            ball = !ball;    // shift each base in, resolve iupac character
+        } else { wait = true; continue; }
+
+        if (pos+1 - begin >= kmer::k) {
+            for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
+                rcmer = kmer;
+                if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+                inner_value_order.emplace(rcmer);
+            }
+
+            if (sequence_order.size() == m) {
+                value_order.erase(*sequence_order.begin());    // remove k-mer outside the window
+                sequence_order.erase(sequence_order.begin());
+            }
+            value_order.emplace(*inner_value_order.begin());    // insert k-mer ordered by its lexicographical value
+            sequence_order.emplace_back(*inner_value_order.begin());
+            inner_value_order.clear();
+
+            if (sequence_order.size() == m) {
+                color::set(kmer_table[*value_order.begin()], color);    // update the k-mer with the current color
             }
         }
     }
@@ -301,7 +440,7 @@ loop:
         it = split_list.erase(it);    // otherwise, remove split
     }
     if (map) {
-        set* root = build_tree(tree);
+        node* root = build_tree(tree);
         return print_tree(root, map) + ";\n";
     } else {
         return "";
@@ -373,7 +512,7 @@ loop:
     string s;
     if (map) {
         for (auto& tree : forest) {
-            set* root = build_tree(tree);
+            node* root = build_tree(tree);
             s += print_tree(root, map) + ";\n";
         }
     }
@@ -423,7 +562,7 @@ bool graph::test_weakly(color_t& color, vector<color_t>& color_set) {
  * @param split color set to refine by
  * @return whether or not the given split is compatible with the set/tree structure
  */
-bool graph::refine_tree(set* current_set, color_t& split, color_t& allTaxa) {
+bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
     // possible cases:
     // splitsize <2: nothing has to be done
     // split equals one subset -> warning: split twice
@@ -432,11 +571,11 @@ bool graph::refine_tree(set* current_set, color_t& split, color_t& allTaxa) {
     // split covers several subsets completely -> introduce new split
     if (color::size(split, false) < 2 || color::size(allTaxa, false) - color::size(split, false) < 2) { return true; }
 
-    vector<set*> *subsets = &current_set->subsets;
-    vector<set*> fullycoveredsubsets = {};
-    set* partiallycoveredsubset = nullptr;
+    vector<node*> *subsets = &current_set->subsets;
+    vector<node*> fullycoveredsubsets = {};
+    node* partiallycoveredsubset = nullptr;
 
-    for (set* subset : *subsets) {
+    for (node* subset : *subsets) {
         color_t subtaxa = subset->taxa;
         if (split == subtaxa) {
             return true;
@@ -465,7 +604,7 @@ bool graph::refine_tree(set* current_set, color_t& split, color_t& allTaxa) {
     } else if (fullycoveredsubsets.size() > 1) {
         // introduce new split
         color_t newsubtaxa = 0b0u;
-        for(set* subset : fullycoveredsubsets) { newsubtaxa |= subset->taxa; }
+        for(node* subset : fullycoveredsubsets) { newsubtaxa |= subset->taxa; }
         // get weight of split
         double weight = 0;
         auto it = split_list.begin();
@@ -476,9 +615,9 @@ bool graph::refine_tree(set* current_set, color_t& split, color_t& allTaxa) {
             }
             it++;
         }
-        set* newset = newSet(newsubtaxa, weight, fullycoveredsubsets);
+        node* newset = newSet(newsubtaxa, weight, fullycoveredsubsets);
         // remove old sets
-        for(set* subset : fullycoveredsubsets) {
+        for(node* subset : fullycoveredsubsets) {
             // subsets.remove(subset)
             subsets->erase(std::remove(subsets->begin(), subsets->end(), subset), subsets->end());
         }
@@ -492,21 +631,21 @@ bool graph::refine_tree(set* current_set, color_t& split, color_t& allTaxa) {
 }
 
 /**
- * This function returns a tree structure (struct set) generated from the given list of color sets.
+ * This function returns a tree structure (struct node) generated from the given list of color sets.
  *
  * @param color_set list of color sets
- * @return tree structure (struct set)
+ * @return tree structure (struct node)
  */
-set* graph::build_tree(vector<color_t>& color_set) {
+node* graph::build_tree(vector<color_t>& color_set) {
     //initialize set of trivial splits
-    vector<set*> subsets = {};
+    vector<node*> subsets = {};
     color_t allTaxa = 0b0u;
 
     for (uint64_t i = 0; i < color::n; i++) {
         color_t leaf = 0b0u;
         color::set(leaf, i);
         color::set(allTaxa, i);
-        vector<set*> emptyset = {};
+        vector<node*> emptyset = {};
         // get weight
         double weight = 0;
         auto it = split_list.begin();
@@ -517,10 +656,10 @@ set* graph::build_tree(vector<color_t>& color_set) {
             }
             it++;
         }
-        set* newset = newSet(leaf, weight, emptyset);
+        node* newset = newSet(leaf, weight, emptyset);
         subsets.push_back(newset);
     }
-    set* sets = newSet(allTaxa, 0, subsets);
+    node* sets = newSet(allTaxa, 0, subsets);
 
     for (color_t split : color_set) {
         // split if possible
@@ -538,8 +677,8 @@ set* graph::build_tree(vector<color_t>& color_set) {
  * @param root root of the tree/set structure
  * @return newick string
  */
-string graph::print_tree(set* root, std::function<string(const uint64_t&)> map) {
-    vector<set*> subsets = root->subsets;
+string graph::print_tree(node* root, std::function<string(const uint64_t&)> map) {
+    vector<node*> subsets = root->subsets;
     color_t taxa = root->taxa;
 
     if (subsets.empty()){    // leaf set
@@ -555,7 +694,7 @@ string graph::print_tree(set* root, std::function<string(const uint64_t&)> map) 
     }
     else {
         string s = "(";
-        for (set* subset : subsets) {
+        for (node* subset : subsets) {
             s += print_tree(subset, map);
             if (subset != subsets.back()) { s += ","; }
         }

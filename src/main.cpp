@@ -26,8 +26,7 @@ int main(int argc, char* argv[]) {
         cout << "    -i, --input   \t Input file: list of sequence files, one per line" << endl;
         cout << endl;
         cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
-#ifdef useBF
-#else
+#ifndef useBF
         cout << "                  \t (requires compiler flag -DuseBF, please edit makefile)" << endl;
 #endif
         cout << endl;
@@ -40,8 +39,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -o, --output  \t Output TSV file: list of splits, sorted by weight desc." << endl;
         cout << endl;
-        cout << "    -N, --newick  \t Output newick file" << endl;
-        cout << "                  \t (only applicable in combination with -f strict or -f n-tree)" << endl;
+        cout << "    -N, --newick  \t Output Newick file" << endl;
+        cout << "                  \t (only applicable in combination with -f strict or n-tree)" << endl;
         cout << endl;
         cout << "    (at least --output or --newick must be provided, or both)" << endl;
         cout << endl;
@@ -49,7 +48,9 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -k, --kmer    \t Length of k-mers (default: 31)" << endl;
         cout << endl;
-        cout << "    -t, --top     \t Number of splits (default: all)" << endl;
+        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
+        cout << endl;
+        cout << "    -t, --top     \t Number of splits in the output list (default: all)" << endl;
         cout << endl;
         cout << "    -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
         cout << "                  \t options: arith: arithmetic mean" << endl;
@@ -73,10 +74,8 @@ int main(int argc, char* argv[]) {
         cout << "    -h, --help    \t Display this help page and quit" << endl;
         cout << endl;
         cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
-        cout << endl;
         cout << "  Evaluation: https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans" << endl;
         cout << endl;
-
         return 0;
     }
 
@@ -87,6 +86,7 @@ int main(int argc, char* argv[]) {
     string newick;    // name of newick output file
 
     uint64_t kmer = 31;    // length of k-mers
+    uint64_t window = 1;    // number of k-mers
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
 
@@ -119,6 +119,9 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {
             kmer = stoi(argv[++i]);    // Length of k-mers (default: 31)
+        }
+        else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--window") == 0) {
+            window = stoi(argv[++i]);    // Number of k-mers (default: 1)
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
             top = stoi(argv[++i]);    // Number of splits (default: all)
@@ -171,15 +174,15 @@ int main(int argc, char* argv[]) {
     }
 
     if (input.empty() && graph.empty() && splits.empty()) {
-        cerr << "Error: missing argument: --input <file_name>" << endl;
+        cerr << "Error: missing argument: --input <file_name> or --graph <file_name>" << endl;
         return 1;
     }
-    if (!input.empty() && !splits.empty()) {
-        cerr << "Error: too many input arguments: -i and -s" << endl;
+    if (!input.empty() && !graph.empty() && !splits.empty()) {
+        cerr << "Error: too many input arguments: --input, --graph, and --splits" << endl;
         return 1;
     }
     if (!graph.empty() && !splits.empty()) {
-        cerr << "Error: too many input arguments: -g and -s" << endl;
+        cerr << "Error: too many input arguments: --graph and --splits" << endl;
         return 1;
     }
     if (output.empty() && newick.empty()) {
@@ -191,12 +194,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     if (!newick.empty() && filter != "strict" && filter.find("tree") == -1) {
-        cerr << "Error: Newick output (-n, --newick) only applicable in combination with -f strict or -f n-tree" << endl;
+        cerr << "Error: Newick output only applicable in combination with -f strict or n-tree" << endl;
         return 1;
+    }
+    if (!input.empty() && !splits.empty()) {
+        cerr << "Note: two input arguments --input and --splits were provided" << endl;
+        cerr << "      --input is used for lookup only, no additional splits are inferred" << endl;
+    }
+    if (input.empty() && !splits.empty() && !newick.empty()) {
+        cerr << "Note: Newick output from a list of splits, some taxa could be missing" << endl;
+        cerr << "      --input can be used to provide the original list of taxa" << endl;
     }
 
     // parse the list of input sequence files
     vector<string> files;
+    hash_map<string, uint64_t> name_table;
+
     if (!input.empty()) {
         ifstream file(input);
         if (!file.good()) {
@@ -206,7 +219,7 @@ int main(int argc, char* argv[]) {
         string line;
         while (getline(file, line)) {
             files.emplace_back(line);
-            num++;
+            name_table[line] = num++;
         }
         file.close();
 
@@ -249,7 +262,6 @@ int main(int argc, char* argv[]) {
     graph::init(top);    // initialize the toplist size
 
     if (!splits.empty()) {
-        hash_map<string, uint64_t> name_table;
         ifstream file(splits);
         if (!file.good()) {
             cerr << "Error: could not read splits file: " << splits << endl;
@@ -285,7 +297,7 @@ int main(int argc, char* argv[]) {
     kmer::init(kmer);    // initialize the k-mer length
     color::init(num);    // initialize the color number
 
-    if (!input.empty()) {
+    if (!input.empty() && splits.empty()) {
         if (verbose) {
             cout << "SANS::main(): Reading input files..." << flush;
         }
@@ -304,8 +316,13 @@ int main(int argc, char* argv[]) {
             while (getline(file, line)) {
                 if (line.length() > 0) {
                     if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
-                        iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
-                                  : graph::add_kmers(sequence, i, reverse);
+                        if (window > 1) {
+                            iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
+                                      : graph::add_minimizers(sequence, i, reverse, window);
+                        } else {
+                            iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
+                                      : graph::add_kmers(sequence, i, reverse);
+                        }
                         sequence.clear();
 
                         if (verbose) {
@@ -321,8 +338,13 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-            iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
-                      : graph::add_kmers(sequence, i, reverse);
+            if (window > 1) {
+                iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
+                          : graph::add_minimizers(sequence, i, reverse, window);
+            } else {
+                iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
+                          : graph::add_kmers(sequence, i, reverse);
+            }
             sequence.clear();
 
             if (verbose) {

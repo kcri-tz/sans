@@ -74,7 +74,7 @@ Usage: SANS [PARAMETERS]
     -o, --output  	 Output TSV file: list of splits, sorted by weight desc.
 
     -N, --newick  	 Output newick file
-                  	 (only applicable in combination with -f strict or -f n-tree)
+                  	 (only applicable in combination with -f strict or n-tree)
 
     (at least --output or --newick must be provided, or both)
 
@@ -82,7 +82,9 @@ Usage: SANS [PARAMETERS]
 
     -k, --kmer    	 Length of k-mers (default: 31)
 
-    -t, --top     	 Number of splits (default: all)
+    -w, --window  	 Number of k-mers per minimizer window (default: 1)
+
+    -t, --top     	 Number of splits in the output list (default: all)
 
     -m, --mean    	 Mean weight function to handle asymmetric splits
                   	 options: arith: arithmetic mean
@@ -104,7 +106,6 @@ Usage: SANS [PARAMETERS]
     -v, --verbose 	 Print information messages during execution
 
     -h, --help    	 Display this help page and quit
-  
 ```
 
 ### Contact
