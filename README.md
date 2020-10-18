@@ -73,7 +73,7 @@ Usage: SANS [PARAMETERS]
 
     -o, --output  	 Output TSV file: list of splits, sorted by weight desc.
 
-    -N, --newick  	 Output newick file
+    -N, --newick  	 Output Newick file
                   	 (only applicable in combination with -f strict or n-tree)
 
     (at least --output or --newick must be provided, or both)
@@ -106,6 +106,7 @@ Usage: SANS [PARAMETERS]
     -v, --verbose 	 Print information messages during execution
 
     -h, --help    	 Display this help page and quit
+
 ```
 
 ### Contact
