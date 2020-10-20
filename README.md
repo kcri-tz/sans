@@ -82,8 +82,6 @@ Usage: SANS [PARAMETERS]
 
     -k, --kmer    	 Length of k-mers (default: 31)
 
-    -w, --window  	 Number of k-mers per minimizer window (default: 1)
-
     -t, --top     	 Number of splits in the output list (default: all)
 
     -m, --mean    	 Mean weight function to handle asymmetric splits
@@ -106,7 +104,7 @@ Usage: SANS [PARAMETERS]
     -v, --verbose 	 Print information messages during execution
 
     -h, --help    	 Display this help page and quit
-
+  
 ```
 
 ### Contact

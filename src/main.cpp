@@ -48,8 +48,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -k, --kmer    \t Length of k-mers (default: 31)" << endl;
         cout << endl;
-        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
-        cout << endl;
+//        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
+//        cout << endl;
         cout << "    -t, --top     \t Number of splits in the output list (default: all)" << endl;
         cout << endl;
         cout << "    -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
