@@ -69,6 +69,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -n, --norev   \t Do not consider reverse complement k-mers" << endl;
         cout << endl;
+        cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
+        cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
@@ -95,6 +97,7 @@ int main(int argc, char* argv[]) {
     uint64_t iupac = 1;    // allow extended iupac characters
     bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
+    bool amino = false;      // input files are amino acid sequences
 
     // parse the command line arguments and update the variables above
     for (int i = 1; i < argc; ++i) {
@@ -167,6 +170,9 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
             verbose = true;    // Print messages during execution
         }
+        else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--amino") == 0) {
+            amino = true;   // Input provides amino acid sequences
+        }
         else {
             cerr << "Error: unknown argument: type --help" << endl;
             return 1;
@@ -183,6 +189,10 @@ int main(int argc, char* argv[]) {
     }
     if (!graph.empty() && !splits.empty()) {
         cerr << "Error: too many input arguments: --graph and --splits" << endl;
+        return 1;
+    }
+    if (input.empty() && amino) {
+        cerr << "Error: missing argument: --input <file_name> for option --amino" << endl;
         return 1;
     }
     if (output.empty() && newick.empty()) {
