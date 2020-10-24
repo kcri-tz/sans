@@ -21,9 +21,13 @@ hash_map<color_t, array<uint32_t,2>> graph::color_table;
 multimap<double, color_t, greater<>> graph::split_list;
 
 /**
+* These are the allowed chars.
+*/
+vector<char> graph::allowedChars;
+/**
  * This is a comparison function extending std::bitset.
  */
-#if maxK > 32 || maxN > 64
+#if maxK > 32 || maxN > 64 || forceamino
 namespace std {
     template <uint64_t N>
     bool operator<(const bitset<N>& x, const bitset<N>& y) {
@@ -51,12 +55,42 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
 }
 
 /**
- * This function initializes the top list size.
+ * This function initializes the top list size and the allowed chars.
  *
  * @param t top list size
+ * @param isAmino defines the allowed charset
  */
-void graph::init(uint64_t& top_size) {
+void graph::init(uint64_t& top_size, bool& isAmino) {
     t = top_size;
+
+    if(isAmino){
+        graph::allowedChars.push_back('P');
+        graph::allowedChars.push_back('A');
+        graph::allowedChars.push_back('G');
+        graph::allowedChars.push_back('Q');
+        graph::allowedChars.push_back('N');
+        graph::allowedChars.push_back('E');
+        graph::allowedChars.push_back('D');
+        graph::allowedChars.push_back('T');
+        graph::allowedChars.push_back('S');
+        graph::allowedChars.push_back('C');
+        graph::allowedChars.push_back('V');
+        graph::allowedChars.push_back('I');
+        graph::allowedChars.push_back('M');
+        graph::allowedChars.push_back('L');
+        graph::allowedChars.push_back('F');
+        graph::allowedChars.push_back('Y');
+        graph::allowedChars.push_back('W');
+        graph::allowedChars.push_back('H');
+        graph::allowedChars.push_back('K');
+        graph::allowedChars.push_back('R');
+    }else{
+        graph::allowedChars.push_back('A');
+        graph::allowedChars.push_back('C');
+        graph::allowedChars.push_back('G');
+        graph::allowedChars.push_back('T');
+    }
+
 }
 
 /**
@@ -78,7 +112,7 @@ next_kmer:
     pos = begin;
 
     for (; pos < str.length(); ++pos) {    // collect the bases from the string
-        if (str[pos] != 'A' && str[pos] != 'C' && str[pos] != 'G' && str[pos] != 'T') {
+        if (!isAllowedChar(pos, str)) {
             begin = pos+1;    // str = str.substr(pos+1, string::npos);
             goto next_kmer;    // unknown base, start a new k-mer from the beginning
         }
@@ -117,7 +151,7 @@ next_kmer:
     value_order.clear();
 
     for (; pos < str.length(); ++pos) {    // collect the bases from the string
-        if (str[pos] != 'A' && str[pos] != 'C' && str[pos] != 'G' && str[pos] != 'T') {
+        if (!isAllowedChar(pos, str)) {
             begin = pos+1;    // str = str.substr(pos+1, string::npos);
             goto next_kmer;    // unknown base, start a new k-mer from the beginning
         }
@@ -139,6 +173,22 @@ next_kmer:
             }
         }
     }
+}
+/**
+ * This function checks if the character at the given position is allowed.
+ * @param pos position in str
+ * @param str the current part of the sequence
+ * @return true if allowed, false otherwise
+ */
+bool graph::isAllowedChar(uint64_t pos, string &str) {
+    bool allowed = false;
+    char &currentChar = str[pos];
+
+    for(int i = 0; i<graph::allowedChars.size() && !allowed; i++){
+        allowed =  graph::allowedChars.at(i) == currentChar;
+    }
+
+    return allowed;
 }
 
 /**

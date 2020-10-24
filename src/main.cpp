@@ -269,7 +269,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    graph::init(top);    // initialize the toplist size
+    graph::init(top, amino);    // initialize the toplist size and the allowed characters
 
     if (!splits.empty()) {
         ifstream file(splits);

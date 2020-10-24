@@ -21,9 +21,18 @@ template <typename T>
     // using hash_set = unordered_set<T>;
     using hash_set = tsl::sparse_pg_set<T>;
 
+#ifndef forceamino
+#define forceamino true
+#endif
+
 #include "kmer32.h"
 #include "kmerXX.h"
+#include "kmerAmino.h"
 
+#if forceamino
+    typedef kmerAmino kmer;
+    typedef bitset<5*maxK> kmer_t;
+#else
 #if maxK > 32 // store k-mers in a bitset, allows larger k-mers
     typedef kmerXX kmer;
     typedef bitset<2*maxK> kmer_t;
@@ -31,6 +40,8 @@ template <typename T>
     typedef kmer32 kmer;
     typedef uint64_t kmer_t;
 #endif
+#endif
+
 
 #include "color64.h"
 #include "colorXX.h"
@@ -82,11 +93,18 @@ public:
     static uint64_t t;
 
     /**
-     * This function initializes the top list size.
+    * These are the allowed chars.
+    */
+    static vector<char> allowedChars;
+
+
+    /**
+     * This function initializes the top list size and the allowed chars.
      *
      * @param t top list size
+     * @param isAmino defines the allowed charset
      */
-    static void init(uint64_t& top_size);
+    static void init(uint64_t& top_size, bool& isAmino);
 
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
@@ -246,4 +264,11 @@ protected:
      */
     static string print_tree(node* root, std::function<string(const uint64_t&)> map);
 
+    /**
+     * This function checks if the character at the given position is allowed.
+     * @param pos position in str
+     * @param str the current part of the sequence
+     * @return true if allowed, false otherwise
+     */
+    static bool isAllowedChar(uint64_t pos, string &str);
 };
