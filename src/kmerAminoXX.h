@@ -13,7 +13,7 @@ using namespace std;
 /**
  * This class contains functions for working with k-mers containing amino acids.
  */
-class kmerAmino {
+class kmerAminoXX {
 
 private:
 

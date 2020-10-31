@@ -1,22 +1,22 @@
-#include "kmerAmino.h"
+#include "kmerAmino12.h"
 
 /**
  * This is the length of a k-mer.
  */
-uint64_t kmerAmino::k;
+uint64_t kmerAmino12::k;
 
 /**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
-bitset<5*maxK> kmerAmino::mask = mask.set();
+uint64_t kmerAmino12::mask = -1;
 
 /**
  * This function initializes the k-mer length and bit-mask.
  *
  * @param kmer_length k-mer length
  */
-void kmerAmino::init(uint64_t& kmer_length) {
-    k = kmer_length; mask.reset();
+void kmerAmino12::init(uint64_t& kmer_length) {
+    k = kmer_length; mask = 0;
     for (uint64_t i = 0; i < 5*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
@@ -25,45 +25,35 @@ void kmerAmino::init(uint64_t& kmer_length) {
 
 /**
  * This function shifts a k-mer adding a new character to the left.
- * * http://www.cplusplus.com/forum/general/97378/
- * TODO debuggen!!!
+ *
  * @param kmer bit sequence
  * @param c left character
  * @return right character
  */
-char kmerAmino::shift_left(bitset<5*maxK>& kmer, char& c) {
+char kmerAmino12::shift_left(uint64_t& kmer, char& c) {
     uint64_t left = char_to_bits(c);    // new leftmost character
-    uint64_t right = 5*kmer[4]+kmer[3]+kmer[2]+kmer[1]+kmer[0];    // old rightmost character
+    uint64_t right = kmer & 0b11u;    // old rightmost character
 
     kmer >>= 05u;    // shift all current bits to the right by five positions
-
-    for(int i = 4; i>=0; i--){   // encode the new character within the leftmost five bits
-        kmer[5*k-(5-i)] = (left >> i) & 0x1;
-    }
-
+    kmer |= left << (5*k-05u);    // encode the new character within the leftmost five bits
     kmer &= mask;    // set all bits to zero that exceed the k-mer length
 
     return bits_to_char(right);    // return the dropped rightmost character
 }
 
-
 /**
  * This function shifts a k-mer adding a new character to the right.
- * http://www.cplusplus.com/forum/general/97378/
- * TODO debuggen!!!
+ *
  * @param kmer bit sequence
  * @param c right character
  * @return left character
  */
-char kmerAmino::shift_right(bitset<5*maxK>& kmer, char& c) {
-    uint64_t left = 5*kmer[5*k-1]+kmer[5*k-2]+kmer[5*k-3]+kmer[5*k-4]+kmer[5*k-5];    // old leftmost character
+char kmerAmino12::shift_right(uint64_t& kmer, char& c) {
+    uint64_t left = (kmer >> (5*k-05u)) & 0b11u;    // old leftmost character
     uint64_t right = char_to_bits(c);    // new rightmost character
 
     kmer <<= 05u;    // shift all current bits to the left by five positions
-    for(int i = 4; i>=0; i--){// encode the new character within the rightmost five bits
-        kmer[i] = (right >> i) & 0x1;
-    }
-
+    kmer |= right;    // encode the new character within the rightmost five bits
     kmer &= mask;    // set all bits to zero that exceed the k-mer length
 
     return bits_to_char(left);    // return the dropped leftmost character
@@ -76,9 +66,8 @@ char kmerAmino::shift_right(bitset<5*maxK>& kmer, char& c) {
  * @param minimize only invert, if smaller
  * @return 1 if inverted, 0 otherwise
  */
-bool kmerAmino::reverse_complement(bitset<5*maxK>& kmer, bool minimize) {
-    //TODO
-    return false;
+bool kmerAmino12::reverse_complement(uint64_t& kmer, bool minimize) {
+   return false;
 }
 
 /**
@@ -87,7 +76,7 @@ bool kmerAmino::reverse_complement(bitset<5*maxK>& kmer, bool minimize) {
  * @param c character
  * @return bit sequence
  */
-uint64_t kmerAmino::char_to_bits(char& c) {
+uint64_t kmerAmino12::char_to_bits(char& c) {
 
     switch (c) {
         case 'P':
@@ -130,6 +119,10 @@ uint64_t kmerAmino::char_to_bits(char& c) {
             return 0b10010u;
         case 'R':
             return 0b10011u;
+        case 'X':
+            return 0b10100u;
+        case '*':
+            return 0b10101u;
         default:
             cerr << "Error: Invalid character " << c << "." << endl;
             return -1;
@@ -142,7 +135,7 @@ uint64_t kmerAmino::char_to_bits(char& c) {
  * @param b bit sequence
  * @return character
  */
-char kmerAmino::bits_to_char(uint64_t& b) {
+char kmerAmino12::bits_to_char(uint64_t& b) {
     switch (b) {
         case 0b00000u:
             return 'P';
@@ -184,6 +177,10 @@ char kmerAmino::bits_to_char(uint64_t& b) {
             return 'K';
         case 0b10011u:
             return 'R';
+        case 0b10100u:
+            return 'X';
+        case 0b10101u:
+            return '*';
         default:
             cerr << "Error: Invalid bit sequence " << b << "." << endl;
             return -1;

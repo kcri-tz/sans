@@ -1,33 +1,34 @@
-#include "graph.h"
+#include "graphAmino.h"
 
 /**
  * This is the size of the top list.
  */
-uint64_t graph::t;
+uint64_t graphAmino::t;
 
 /**
  * This is a hash table mapping k-mers to colors [O(1)].
  */
-hash_map<kmer_t, color_t> graph::kmer_table;
+hash_map<kmerAmino_t, color_t> graphAmino::kmer_table;
 
 /**
  * This is a hash table mapping colors to weights [O(1)].
  */
-hash_map<color_t, array<uint32_t,2>> graph::color_table;
+hash_map<color_t, array<uint32_t,2>> graphAmino::color_table;
 
 /**
  * This is an ordered tree collecting the splits [O(log n)].
  */
-multimap<double, color_t, greater<>> graph::split_list;
+multimap<double, color_t, greater<>> graphAmino::split_list;
 
 /**
 * These are the allowed chars.
 */
-vector<char> graph::allowedChars;
+vector<char> graphAmino::allowedChars;
+
 /**
  * This is a comparison function extending std::bitset.
  */
-#if maxK > 32 || maxN > 64
+#if maxK > 12 || maxN > 64
 namespace std {
     template <uint64_t N>
     bool operator<(const bitset<N>& x, const bitset<N>& y) {
@@ -45,13 +46,13 @@ namespace std {
  * @param taxa color_t coding all taxa beneath this node
  * @param subsets list of subsets
  */
-struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
-    // declare and allocate new node
-    auto* node = new struct node();
-    node->taxa = std::move(taxa);
-    node->weight = std::move(weight);
-    node->subsets = std::move(subsets);
-    return(node);
+struct aminonode* newSet(color_t taxa, double weight, vector<aminonode*> subsets) {
+    // declare and allocate new aminonode
+    auto* aminonode = new struct aminonode();
+    aminonode->taxa = std::move(taxa);
+    aminonode->weight = std::move(weight);
+    aminonode->subsets = std::move(subsets);
+    return(aminonode);
 }
 
 /**
@@ -59,29 +60,47 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  *
  * @param t top list size
  */
-void graph::init(uint64_t& top_size) {
+void graphAmino::init(uint64_t& top_size) {
     t = top_size;
 
-    graph::allowedChars.push_back('A');
-    graph::allowedChars.push_back('C');
-    graph::allowedChars.push_back('G');
-    graph::allowedChars.push_back('T');
+    graphAmino::allowedChars.push_back('P');
+    graphAmino::allowedChars.push_back('A');
+    graphAmino::allowedChars.push_back('G');
+    graphAmino::allowedChars.push_back('Q');
+    graphAmino::allowedChars.push_back('N');
+    graphAmino::allowedChars.push_back('E');
+    graphAmino::allowedChars.push_back('D');
+    graphAmino::allowedChars.push_back('T');
+    graphAmino::allowedChars.push_back('S');
+    graphAmino::allowedChars.push_back('C');
+    graphAmino::allowedChars.push_back('V');
+    graphAmino::allowedChars.push_back('I');
+    graphAmino::allowedChars.push_back('M');
+    graphAmino::allowedChars.push_back('L');
+    graphAmino::allowedChars.push_back('F');
+    graphAmino::allowedChars.push_back('Y');
+    graphAmino::allowedChars.push_back('W');
+    graphAmino::allowedChars.push_back('H');
+    graphAmino::allowedChars.push_back('K');
+    graphAmino::allowedChars.push_back('R');
+    graphAmino::allowedChars.push_back('X');
+    graphAmino::allowedChars.push_back('*');
 
 }
 
 /**
  * This function extracts k-mers from a sequence and adds them to the hash table.
  *
- * @param str dna sequence
+ * @param str amino acid sequence
  * @param color color flag
  * @param reverse merge complements
  */
-void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
-    if (str.length() < kmer::k) return;    // not enough characters
+void graphAmino::add_kmers(string& str, uint64_t& color, bool& reverse) {
+    if (str.length() < kmerAmino::k) return;    // not enough characters
 
     uint64_t pos;    // current position in the string, from 0 to length
-    kmer_t kmer;    // create a new empty bit sequence for the k-mer
-    kmer_t rcmer;    // create a bit sequence for the reverse complement
+    kmerAmino_t kmerAmino;    // create a new empty bit sequence for the k-mer
+    kmerAmino_t rcmer;    // create a bit sequence for the reverse complement
 
     uint64_t begin = 0;
 next_kmer:
@@ -92,11 +111,11 @@ next_kmer:
             begin = pos+1;    // str = str.substr(pos+1, string::npos);
             goto next_kmer;    // unknown base, start a new k-mer from the beginning
         }
-        kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
+        kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
 
-        if (pos+1 - begin >= kmer::k) {
-            rcmer = kmer;
-            if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+        if (pos+1 - begin >= kmerAmino::k) {
+            rcmer = kmerAmino;
+            if (reverse) kmerAmino::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
             color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
         }
     }
@@ -105,20 +124,20 @@ next_kmer:
 /**
  * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
  *
- * @param str dna sequence
+ * @param str amino acid sequence
  * @param color color flag
  * @param reverse merge complements
  * @param m number of k-mers to minimize
  */
-void graph::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m) {
-    if (str.length() < kmer::k) return;    // not enough characters
+void graphAmino::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m) {
+    if (str.length() < kmerAmino::k) return;    // not enough characters
 
-    vector<kmer_t> sequence_order;    // k-mers ordered by their position in sequence
-    multiset<kmer_t> value_order;    // k-mers ordered by their lexicographical value
+    vector<kmerAmino_t> sequence_order;    // k-mers ordered by their position in sequence
+    multiset<kmerAmino_t> value_order;    // k-mers ordered by their lexicographical value
 
     uint64_t pos;    // current position in the string, from 0 to length
-    kmer_t kmer;    // create a new empty bit sequence for the k-mer
-    kmer_t rcmer;    // create a bit sequence for the reverse complement
+    kmerAmino_t kmerAmino;    // create a new empty bit sequence for the k-mer
+    kmerAmino_t rcmer;    // create a bit sequence for the reverse complement
 
     uint64_t begin = 0;
 next_kmer:
@@ -131,11 +150,11 @@ next_kmer:
             begin = pos+1;    // str = str.substr(pos+1, string::npos);
             goto next_kmer;    // unknown base, start a new k-mer from the beginning
         }
-        kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
+        kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
 
-        if (pos+1 - begin >= kmer::k) {
-            rcmer = kmer;
-            if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+        if (pos+1 - begin >= kmerAmino::k) {
+            rcmer = kmerAmino;
+            if (reverse) kmerAmino::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
 
             if (sequence_order.size() == m) {
                 value_order.erase(*sequence_order.begin());    // remove k-mer outside the window
@@ -156,222 +175,15 @@ next_kmer:
  * @param str the current part of the sequence
  * @return true if allowed, false otherwise
  */
-bool graph::isAllowedChar(uint64_t pos, string &str) {
+bool graphAmino::isAllowedChar(uint64_t pos, string &str) {
     bool allowed = false;
     char &currentChar = str[pos];
 
-    for(int i = 0; i<graph::allowedChars.size() && !allowed; i++){
-        allowed =  graph::allowedChars.at(i) == currentChar;
+    for(int i = 0; i<graphAmino::allowedChars.size() && !allowed; i++){
+        allowed =  graphAmino::allowedChars.at(i) == currentChar;
     }
 
     return allowed;
-}
-
-/**
- * This function extracts k-mers from a sequence and adds them to the hash table.
- *
- * @param str dna sequence
- * @param color color flag
- * @param reverse merge complements
- * @param max_iupac allowed number of ambiguous k-mers per position
- */
-void graph::add_kmers(string& str, uint64_t& color, bool& reverse, uint64_t& max_iupac) {
-    if (str.length() < kmer::k) return;    // not enough characters
-
-    hash_set<kmer_t> ping;    // create a new empty set for the k-mers
-    hash_set<kmer_t> pong;    // create another new set for the k-mers
-    bool ball; bool wait;    // indicates which of the two sets should be used
-
-    vector<uint8_t> factors;    // stores the multiplicity of iupac bases
-    long double product;    // stores the overall multiplicity of the k-mers
-
-    uint64_t pos;    // current position in the string, from 0 to length
-    kmer_t kmer;    // create an empty bit sequence for the initial k-mer
-    kmer_t rcmer;    // create a bit sequence for the reverse complement
-
-    uint64_t begin = 0;
-next_kmer:
-    pos = begin;
-
-    ping.clear(); pong.clear(); factors.clear();
-    ball = true; wait = false; product = 1;
-    (ball ? ping : pong).emplace(kmer);
-
-    for (; pos < str.length(); ++pos) {    // collect the bases from the string
-        if (str[pos] == '.' || str[pos] == '-') {
-            begin = pos+1;    // str = str.substr(pos+1, string::npos);
-            goto next_kmer;    // gap character, start a new k-mer from the beginning
-        }
-        iupac_calc(product, factors, str[pos]);
-
-        if (product <= max_iupac) {    // check if there are too many ambiguous k-mers
-            if (wait) {
-                begin = pos-kmer::k+1;    // str = str.substr(pos-kmer::k+1, string::npos);
-                goto next_kmer;    // start a new k-mer from the beginning
-            }
-            iupac_shift(ball ? ping : pong, !ball ? ping : pong, str[pos]);
-            ball = !ball;    // shift each base in, resolve iupac character
-        } else { wait = true; continue; }
-
-        if (pos+1 - begin >= kmer::k) {
-            for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
-                rcmer = kmer;
-                if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-                color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
-            }
-        }
-    }
-}
-
-/**
- * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
- *
- * @param str dna sequence
- * @param color color flag
- * @param reverse merge complements
- * @param m number of k-mers to minimize
- * @param max_iupac allowed number of ambiguous k-mers per position
- */
-void graph::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m, uint64_t& max_iupac) {
-    if (str.length() < kmer::k) return;    // not enough characters
-
-    vector<kmer_t> sequence_order;    // k-mers ordered by their position in sequence
-    multiset<kmer_t> value_order;    // k-mers ordered by their lexicographical value
-    multiset<kmer_t> inner_value_order;
-
-    hash_set<kmer_t> ping;    // create a new empty set for the k-mers
-    hash_set<kmer_t> pong;    // create another new set for the k-mers
-    bool ball; bool wait;    // indicates which of the two sets should be used
-
-    vector<uint8_t> factors;    // stores the multiplicity of iupac bases
-    long double product;    // stores the overall multiplicity of the k-mers
-
-    uint64_t pos;    // current position in the string, from 0 to length
-    kmer_t kmer;    // create an empty bit sequence for the initial k-mer
-    kmer_t rcmer;    // create a bit sequence for the reverse complement
-
-    uint64_t begin = 0;
-next_kmer:
-    pos = begin;
-    sequence_order.clear();
-    value_order.clear();
-
-    ping.clear(); pong.clear(); factors.clear();
-    ball = true; wait = false; product = 1;
-    (ball ? ping : pong).emplace(kmer);
-
-    for (; pos < str.length(); ++pos) {    // collect the bases from the string
-        if (str[pos] == '.' || str[pos] == '-') {
-            begin = pos+1;    // str = str.substr(pos+1, string::npos);
-            goto next_kmer;    // gap character, start a new k-mer from the beginning
-        }
-        iupac_calc(product, factors, str[pos]);
-
-        if (product <= max_iupac) {    // check if there are too many ambiguous k-mers
-            if (wait) {
-                begin = pos-kmer::k+1;    // str = str.substr(pos-kmer::k+1, string::npos);
-                goto next_kmer;    // start a new k-mer from the beginning
-            }
-            iupac_shift(ball ? ping : pong, !ball ? ping : pong, str[pos]);
-            ball = !ball;    // shift each base in, resolve iupac character
-        } else { wait = true; continue; }
-
-        if (pos+1 - begin >= kmer::k) {
-            for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
-                rcmer = kmer;
-                if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-                inner_value_order.emplace(rcmer);
-            }
-
-            if (sequence_order.size() == m) {
-                value_order.erase(*sequence_order.begin());    // remove k-mer outside the window
-                sequence_order.erase(sequence_order.begin());
-            }
-            value_order.emplace(*inner_value_order.begin());    // insert k-mer ordered by its lexicographical value
-            sequence_order.emplace_back(*inner_value_order.begin());
-            inner_value_order.clear();
-
-            if (sequence_order.size() == m) {
-                color::set(kmer_table[*value_order.begin()], color);    // update the k-mer with the current color
-            }
-        }
-    }
-}
-
-/**
- * This function calculates the multiplicity of iupac k-mers.
- *
- * @param product overall multiplicity
- * @param factors per base multiplicity
- * @param input iupac character
- */
-void graph::iupac_calc(long double& product, vector<uint8_t>& factors, char& input) {
-    switch (input) {
-        case 'A': case 'C': case 'G': case 'T':
-            product *= 1;
-            factors.emplace_back(1);
-    }
-    switch (input) {
-        case 'R': case 'Y': case 'S': case 'W': case 'K': case 'M':
-            product *= 2;
-            factors.emplace_back(2);
-    }
-    switch (input) {
-        case 'B': case 'D': case 'H': case 'V':
-            product *= 3;
-            factors.emplace_back(3);
-    }
-    switch (input) {
-        case 'N':
-            product *= 4;
-            factors.emplace_back(4);
-    }
-    if (factors.size() > kmer::k) {
-        product /= *factors.begin();
-        factors.erase(factors.begin());
-    }
-}
-
-/**
- * This function shifts a base into a set of ambiguous iupac k-mers.
- *
- * @param prev set of k-mers
- * @param next set of k-mers
- * @param input iupac character
- */
-void graph::iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input) {
-    kmer_t temp; char base;
-    while (!prev.empty()) {    // extend each previous k-mer
-        switch (input) {
-            case 'A': case 'R': case 'W': case 'M':
-            case 'D': case 'H': case 'V': case 'N':
-                temp = *prev.begin(); base = 'A';
-                kmer::shift_right(temp, base);
-                next.emplace(temp);
-        }
-        switch (input) {
-            case 'C': case 'Y': case 'S': case 'M':
-            case 'B': case 'H': case 'V': case 'N':
-                temp = *prev.begin(); base = 'C';
-                kmer::shift_right(temp, base);
-                next.emplace(temp);
-        }
-        switch (input) {
-            case 'G': case 'R': case 'S': case 'K':
-            case 'B': case 'D': case 'V': case 'N':
-                temp = *prev.begin(); base = 'G';
-                kmer::shift_right(temp, base);
-                next.emplace(temp);
-        }
-        switch (input) {
-            case 'T': case 'Y': case 'W': case 'K':
-            case 'B': case 'D': case 'H': case 'N':
-                temp = *prev.begin(); base = 'T';
-                kmer::shift_right(temp, base);
-                next.emplace(temp);
-        }
-        prev.erase(prev.begin());
-    }
 }
 
 /**
@@ -380,7 +192,7 @@ void graph::iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& in
  * @param mean weight function
  * @param verbose print progress
  */
-void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
+void graphAmino::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
     double min_value = numeric_limits<double>::min();    // current min. weight in the top list (>0)
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = kmer_table.size();
@@ -425,7 +237,7 @@ loop:
  * @param weight split weight
  * @param color split colors
  */
-void graph::add_split(double& weight, color_t& color) {
+void graphAmino::add_split(double& weight, color_t& color) {
     split_list.emplace(weight, color);    // insert it at the correct position ordered by weight
     if (split_list.size() > t) {
         split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
@@ -437,7 +249,7 @@ void graph::add_split(double& weight, color_t& color) {
  *
  * @param verbose print progress
  */
-void graph::filter_strict(bool& verbose) {
+void graphAmino::filter_strict(bool& verbose) {
     filter_strict(nullptr, verbose);
 }
 
@@ -447,7 +259,7 @@ void graph::filter_strict(bool& verbose) {
  * @param map function that maps an integer to the original id, or null if no newick output wanted
  * @param verbose print progress
  */
-string graph::filter_strict(std::function<string(const uint64_t&)> map, bool& verbose) {
+string graphAmino::filter_strict(std::function<string(const uint64_t&)> map, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
@@ -466,7 +278,7 @@ loop:
         it = split_list.erase(it);    // otherwise, remove split
     }
     if (map) {
-        node* root = build_tree(tree);
+        aminonode* root = build_tree(tree);
         return print_tree(root, map) + ";\n";
     } else {
         return "";
@@ -478,7 +290,7 @@ loop:
  *
  * @param verbose print progress
  */
-void graph::filter_weakly(bool& verbose) {
+void graphAmino::filter_weakly(bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
@@ -504,7 +316,7 @@ loop:
  * @param n number of trees
  * @param verbose print progress
  */
-void graph::filter_n_tree(uint64_t n, bool& verbose) {
+void graphAmino::filter_n_tree(uint64_t n, bool& verbose) {
     filter_n_tree(n, nullptr, verbose);
 }
 
@@ -515,7 +327,7 @@ void graph::filter_n_tree(uint64_t n, bool& verbose) {
  * @param map function that maps an integer to the original id, or null
  * @param verbose print progress
  */
-string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose) {
+string graphAmino::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
@@ -538,7 +350,7 @@ loop:
     string s;
     if (map) {
         for (auto& tree : forest) {
-            node* root = build_tree(tree);
+            aminonode* root = build_tree(tree);
             s += print_tree(root, map) + ";\n";
         }
     }
@@ -552,7 +364,7 @@ loop:
  * @param color_set set of splits
  * @return true, if compatible
  */
-bool graph::test_strict(color_t& color, vector<color_t>& color_set) {
+bool graphAmino::test_strict(color_t& color, vector<color_t>& color_set) {
     for (auto& elem : color_set) {
         if (!color::is_compatible(elem, color)) {
             return false;    // compare to each split in the set
@@ -568,7 +380,7 @@ bool graph::test_strict(color_t& color, vector<color_t>& color_set) {
  * @param color_set set of splits
  * @return true, if weakly compatible
  */
-bool graph::test_weakly(color_t& color, vector<color_t>& color_set) {
+bool graphAmino::test_weakly(color_t& color, vector<color_t>& color_set) {
     for (auto& elem1 : color_set) {
         for (auto& elem2 : color_set) {
             if (elem1 != elem2) {
@@ -588,7 +400,7 @@ bool graph::test_weakly(color_t& color, vector<color_t>& color_set) {
  * @param split color set to refine by
  * @return whether or not the given split is compatible with the set/tree structure
  */
-bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
+bool graphAmino::refine_tree(aminonode* current_set, color_t& split, color_t& allTaxa) {
     // possible cases:
     // splitsize <2: nothing has to be done
     // split equals one subset -> warning: split twice
@@ -597,11 +409,11 @@ bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
     // split covers several subsets completely -> introduce new split
     if (color::size(split, false) < 2 || color::size(allTaxa, false) - color::size(split, false) < 2) { return true; }
 
-    vector<node*> *subsets = &current_set->subsets;
-    vector<node*> fullycoveredsubsets = {};
-    node* partiallycoveredsubset = nullptr;
+    vector<aminonode*> *subsets = &current_set->subsets;
+    vector<aminonode*> fullycoveredsubsets = {};
+    aminonode* partiallycoveredsubset = nullptr;
 
-    for (node* subset : *subsets) {
+    for (aminonode* subset : *subsets) {
         color_t subtaxa = subset->taxa;
         if (split == subtaxa) {
             return true;
@@ -630,7 +442,7 @@ bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
     } else if (fullycoveredsubsets.size() > 1) {
         // introduce new split
         color_t newsubtaxa = 0b0u;
-        for(node* subset : fullycoveredsubsets) { newsubtaxa |= subset->taxa; }
+        for(aminonode* subset : fullycoveredsubsets) { newsubtaxa |= subset->taxa; }
         // get weight of split
         double weight = 0;
         auto it = split_list.begin();
@@ -641,9 +453,9 @@ bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
             }
             it++;
         }
-        node* newset = newSet(newsubtaxa, weight, fullycoveredsubsets);
+        aminonode* newset = newSet(newsubtaxa, weight, fullycoveredsubsets);
         // remove old sets
-        for(node* subset : fullycoveredsubsets) {
+        for(aminonode* subset : fullycoveredsubsets) {
             // subsets.remove(subset)
             subsets->erase(std::remove(subsets->begin(), subsets->end(), subset), subsets->end());
         }
@@ -662,16 +474,16 @@ bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
  * @param color_set list of color sets
  * @return tree structure (struct node)
  */
-node* graph::build_tree(vector<color_t>& color_set) {
+aminonode* graphAmino::build_tree(vector<color_t>& color_set) {
     //initialize set of trivial splits
-    vector<node*> subsets = {};
+    vector<aminonode*> subsets = {};
     color_t allTaxa = 0b0u;
 
     for (uint64_t i = 0; i < color::n; i++) {
         color_t leaf = 0b0u;
         color::set(leaf, i);
         color::set(allTaxa, i);
-        vector<node*> emptyset = {};
+        vector<aminonode*> emptyset = {};
         // get weight
         double weight = 0;
         auto it = split_list.begin();
@@ -682,10 +494,10 @@ node* graph::build_tree(vector<color_t>& color_set) {
             }
             it++;
         }
-        node* newset = newSet(leaf, weight, emptyset);
+        aminonode* newset = newSet(leaf, weight, emptyset);
         subsets.push_back(newset);
     }
-    node* sets = newSet(allTaxa, 0, subsets);
+    aminonode* sets = newSet(allTaxa, 0, subsets);
 
     for (color_t split : color_set) {
         // split if possible
@@ -703,8 +515,8 @@ node* graph::build_tree(vector<color_t>& color_set) {
  * @param root root of the tree/set structure
  * @return newick string
  */
-string graph::print_tree(node* root, std::function<string(const uint64_t&)> map) {
-    vector<node*> subsets = root->subsets;
+string graphAmino::print_tree(aminonode* root, std::function<string(const uint64_t&)> map) {
+    vector<aminonode*> subsets = root->subsets;
     color_t taxa = root->taxa;
 
     if (subsets.empty()){    // leaf set
@@ -720,7 +532,7 @@ string graph::print_tree(node* root, std::function<string(const uint64_t&)> map)
     }
     else {
         string s = "(";
-        for (node* subset : subsets) {
+        for (aminonode* subset : subsets) {
             s += print_tree(subset, map);
             if (subset != subsets.back()) { s += ","; }
         }

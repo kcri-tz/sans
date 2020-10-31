@@ -1,3 +1,5 @@
+#ifndef COLOR64_H
+#define COLOR64_H
 #include <iostream>
 #include <cmath>
 
@@ -102,3 +104,5 @@ public:
 protected:
 
 };
+
+#endif

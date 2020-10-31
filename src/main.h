@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "graph.h"
+#include "graphAmino.h"
 #include "util.h"
 
 #ifndef MAX_KMER_SIZE

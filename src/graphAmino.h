@@ -21,15 +21,16 @@ template <typename T>
     // using hash_set = unordered_set<T>;
     using hash_set = tsl::sparse_pg_set<T>;
 
-#include "kmer32.h"
-#include "kmerXX.h"
+#include "kmerAmino12.h"
+#include "kmerAminoXX.h"
 
-#if maxK > 32 // store k-mers in a bitset, allows larger k-mers
-    typedef kmerXX kmer;
-    typedef bitset<2*maxK> kmer_t;
+
+#if maxK > 12 // store k-mers in a bitset, allows larger k-mers
+    typedef kmerAminoXX kmerAmino;
+    typedef bitset<5*maxK> kmerAmino_t;
 #else // store k-mer bits in an integer, optimizes performance
-    typedef kmer32 kmer;
-    typedef uint64_t kmer_t;
+    typedef kmerAmino12 kmerAmino;
+    typedef uint64_t kmerAmino_t;
 #endif
 
 
@@ -45,25 +46,25 @@ template <typename T>
 #endif
 
 /**
- * A tree structure that is needed for generating a NEWICK string.
- */
-struct node {
+* A tree structure that is needed for generating a NEWICK string.
+*/
+struct aminonode {
     color_t taxa;
     double weight;
-    vector<node*> subsets;
+    vector<aminonode*> subsets;
 };
 
 /**
  * This class manages the k-mer/color hash tables and split list.
  */
-class graph {
+class graphAmino {
 
 private:
 
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
-    static hash_map<kmer_t, color_t> kmer_table;
+    static hash_map<kmerAmino_t, color_t> kmer_table;
 
     /**
      * This is a hash table mapping colors to weights [O(1)].
@@ -92,13 +93,14 @@ public:
      * This function initializes the top list size and the allowed chars.
      *
      * @param t top list size
+     * @param isAmino defines the allowed charset
      */
     static void init(uint64_t& top_size);
 
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
      *
-     * @param str dna sequence
+     * @param str amino acid sequence
      * @param color color flag
      * @param reverse merge complements
      */
@@ -107,33 +109,12 @@ public:
     /**
      * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
      *
-     * @param str dna sequence
+     * @param str amino acid sequence
      * @param color color flag
      * @param reverse merge complements
      * @param m number of k-mers to minimize
      */
     static void add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m);
-
-    /**
-     * This function extracts k-mers from a sequence and adds them to the hash table.
-     *
-     * @param str dna sequence
-     * @param color color flag
-     * @param reverse merge complements
-     * @param max_iupac allowed number of ambiguous k-mers per position
-     */
-    static void add_kmers(string& str, uint64_t& color, bool& reverse, uint64_t& max_iupac);
-
-    /**
-     * This function extracts k-mer minimizers from a sequence and adds them to the hash table.
-     *
-     * @param str dna sequence
-     * @param color color flag
-     * @param reverse merge complements
-     * @param m number of k-mers to minimize
-     * @param max_iupac allowed number of ambiguous k-mers per position
-     */
-    static void add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t& m, uint64_t& max_iupac);
 
     /**
      * This function iterates over the hash table and calculates the split weights.
@@ -211,30 +192,12 @@ protected:
     static bool test_weakly(color_t& color, vector<color_t>& color_set);
 
     /**
-     * This function calculates the multiplicity of iupac k-mers.
-     *
-     * @param product overall multiplicity
-     * @param factors per base multiplicity
-     * @param input iupac character
-     */
-    static void iupac_calc(long double& product, vector<uint8_t>& factors, char& input);
-
-    /**
-     * This function shifts a base into a set of ambiguous iupac k-mers.
-     *
-     * @param prev set of k-mers
-     * @param next set of k-mers
-     * @param input iupac character
-     */
-    static void iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input);
-
-    /**
      * This function returns a tree structure (struct node) generated from the given list of color sets.
      *
      * @param color_set list of color sets
      * @return tree structure (struct node)
      */
-    static node* build_tree(vector<color_t>& color_set);
+    static aminonode* build_tree(vector<color_t>& color_set);
 
     /**
      * This function recursively refines a given set/tree structure by a given split.
@@ -243,7 +206,7 @@ protected:
      * @param split color set to refine by
      * @return whether or not the given split is compatible with the set/tree structure
      */
-    static bool refine_tree(node* current_set, color_t& split, color_t& allTaxa);
+    static bool refine_tree(aminonode* current_set, color_t& split, color_t& allTaxa);
 
     /**
      * This function returns a newick string generated from the given tree structure (set).
@@ -251,7 +214,7 @@ protected:
      * @param root root of the tree/set structure
      * @return newick string
      */
-    static string print_tree(node* root, std::function<string(const uint64_t&)> map);
+    static string print_tree(aminonode* root, std::function<string(const uint64_t&)> map);
 
     /**
      * This function checks if the character at the given position is allowed.
