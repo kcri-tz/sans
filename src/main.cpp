@@ -1,4 +1,5 @@
 #include "main.h"
+#include "translator.h"
 
 /**
  * This is the entry point of the program.
@@ -71,6 +72,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
         cout << endl;
+        cout << "    -tr, --translate   \t Translates DNA coding sequences. Can be used with an alternative translation file." << endl;
+        cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
@@ -86,6 +89,7 @@ int main(int argc, char* argv[]) {
     string splits;    // name of splits file
     string output;    // name of output file
     string newick;    // name of newick output file
+    string translate; // name of translate file
 
     uint64_t kmer = 31;    // length of k-mers
     uint64_t window = 1;    // number of k-mers
@@ -98,6 +102,7 @@ int main(int argc, char* argv[]) {
     bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
     bool amino = false;      // input files are amino acid sequences
+    bool shouldTranslate = false;   // translate input files
 
     // parse the command line arguments and update the variables above
     for (int i = 1; i < argc; ++i) {
@@ -173,6 +178,10 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--amino") == 0) {
             amino = true;   // Input provides amino acid sequences
         }
+        else if (strcmp(argv[i], "-tr") == 0 || strcmp(argv[i], "--translate") == 0) {
+            translate = argv[++i];    // codon file: defines codons for translation
+            shouldTranslate = true;
+        }
         else {
             cerr << "Error: unknown argument: type --help" << endl;
             return 1;
@@ -214,6 +223,14 @@ int main(int argc, char* argv[]) {
     if (input.empty() && !splits.empty() && !newick.empty()) {
         cerr << "Note: Newick output from a list of splits, some taxa could be missing" << endl;
         cerr << "      --input can be used to provide the original list of taxa" << endl;
+    }
+
+    // check if we need to init translation
+    if (shouldTranslate) {
+        amino = true;
+        if (!translator::init(translate)) {
+            cerr << "No translation data found" << translate << endl;
+        }
     }
 
     // parse the list of input sequence files
@@ -323,6 +340,7 @@ int main(int argc, char* argv[]) {
                 cout << "\33[2K\r" << files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
             }
 
+            string appendixChars; 
             string line;    // read the file line by line
             while (getline(file, line)) {
                 if (line.length() > 0) {
@@ -353,7 +371,21 @@ int main(int argc, char* argv[]) {
                     }
                     else {
                         transform(line.begin(), line.end(), line.begin(), ::toupper);
-                        sequence += line;    // FASTA & FASTQ sequence -> read
+                        string newLine = line;
+                        if (shouldTranslate) {
+                            if (appendixChars.length() >0 ) {
+                                newLine= appendixChars + newLine;
+                                appendixChars = "";
+                            }
+                            auto toManyChars = line.length() % 3;
+                            if (toManyChars > 0) {
+                                appendixChars = newLine.substr(line.length() - toManyChars, toManyChars);
+                                newLine = newLine.substr(0, line.length() - toManyChars);
+                            }
+
+                            newLine = translator::translate(newLine);
+                        }
+                        sequence += newLine;    // FASTA & FASTQ sequence -> read
                     }
                 }
             }

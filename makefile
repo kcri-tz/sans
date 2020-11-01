@@ -2,17 +2,17 @@
  CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64
 
 ## IF DEBUG
-#CC = g++ -g -march=native -DmaxK=33 -DmaxN=64
+# CC = g++ -g -march=native -DmaxK=33 -DmaxN=64
 
 ## IF BIFROST LIBRARY SHOULD BE USED
 # CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
 SANS: main.o
-	$(CC) -o SANS main.o graph.o graphAmino.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o $(BF)
+	$(CC) -o SANS main.o graph.o graphAmino.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o $(BF)
 	rm -rf obj/; mkdir obj/; mv *.o obj/
 
-main.o: src/main.cpp src/main.h graph.o graphAmino.o util.o
+main.o: src/main.cpp src/main.h translator.o graph.o graphAmino.o util.o
 	$(CC) -c src/main.cpp
 
 graph.o: src/graph.cpp src/graph.h kmer32.o kmerXX.o color64.o colorXX.o
@@ -41,3 +41,6 @@ colorXX.o: src/colorXX.cpp src/colorXX.h
 
 util.o: src/util.cpp src/util.h
 	$(CC) -c src/util.cpp
+
+translator.o: src/translator.cpp src/translator.h
+	$(CC) -c src/translator.cpp
