@@ -4,11 +4,6 @@
 #include <unordered_map>
 #include "translator.h"
 
-#ifndef default_translate_codons
-#define READ_DEFAULT() readDefault()
-#define default_translate_codons READ_DEFAULT()
-#endif
-
 
 string translator::defaultCodon = "";
 unordered_map<string, string> translator::codonTable;
@@ -29,14 +24,18 @@ bool translator::init(string &codonfile) {
             initialized = true;
         }
     } else {
+        readDefault();
         size_t pos = 0;
         string delimiter = ";";
         string token;
-        while ((pos = translator::defaultCodon.find(delimiter)) != string::npos) {
-            token = translator::defaultCodon.substr(0, pos);
+        string searchString;
+        searchString.assign(translator::defaultCodon);
+        while ((pos = searchString.find(delimiter)) != string::npos) {
+            token = searchString.substr(0, pos);
             translator::addTranslationUnit(token);
-            translator::defaultCodon.erase(0, pos + delimiter.length());
+            searchString.erase(0, pos + delimiter.length());
         }
+        translator::addTranslationUnit(searchString);
         initialized = true;
     }
 
@@ -54,20 +53,22 @@ void translator::initAllowedBases() {
 void translator::addTranslationUnit(string &unit) {
     if (unit[0] != '>') {
         size_t pos = 0;
+        string searchString;
         string token;
         string delimiter = "=";
         string triplet;
         string amino;
 
-        while ((pos = unit.find(delimiter)) != string::npos) {
-            triplet = unit.substr(0, pos);
-            amino = unit.substr(pos+1, unit.length());
-            unit.erase(0, pos + delimiter.length());
+        searchString.assign(unit);
+        while ((pos = searchString.find(delimiter)) != string::npos) {
+            triplet = searchString.substr(0, pos);
+            amino = searchString.substr(pos+1, searchString.length());
+            searchString.erase(0, pos + delimiter.length());
         }
 
         if (translator::checkUnit(triplet)) {
             codonTable[triplet] = amino;
-            cout << "Base " << triplet << " Amino " << codonTable[triplet] << endl;
+           // cout << "Base " << triplet << " Amino " << codonTable[triplet] << endl;
         }else{
             cerr << "Unknown base in triplet ->" << unit;
         }
@@ -77,14 +78,29 @@ void translator::addTranslationUnit(string &unit) {
 }
 
 string translator::getTranslatedAminoAcid(string &unit) {
+    string translated;
     // To imitate the biological process. Can be omitted in favour of the runtime.
     std::replace( unit.begin(), unit.end(), 'T', 'U');
-    return translator::codonTable.find(unit)->second;
+    auto iterator = translator::codonTable.find(unit);
+
+    if (iterator == translator::codonTable.end()) {
+        cerr << "Could not find translation for " << unit << ", skipping sequence" << endl;
+        translated = "";
+    } else {
+        translated = iterator->second;
+
+        if (translated.find('#') != string::npos) {
+            cerr << "Found stop codon for sequence " << unit << ", skipping sequence" << endl;
+            translated = "";
+        }
+    }
+
+    return  translated;
 }
 
 void translator::readDefault() {
-    initAllowedBases();
-    translator::defaultCodon = "D";
+    //we could read the default data from a remote-stream later
+    translator::defaultCodon = "UUU=F;UUC=F;UUA=L;UUG=L;UCU=S;UCC=S;UCA=S;UCG=S;UAU=Y;UAC=Y;UAA=#;UAG=#;UGU=C;UGC=C;UGA=#;UGG=W;CUU=L;CUC=L;CUA=L;CUG=L;CCU=P;CCC=P;CCA=P;CCG=P;CAU=H;CAC=H;CAA=Q;CAG=Q;CGU=R;CGC=R;CGA=R;CGG=R;AUU=I;AUC=I;AUA=I;AUG=M;ACU=T;ACC=T;ACA=T;ACG=T;AAU=N;AAC=N;AAA=K;AAG=K;AGU=S;AGC=S;AGA=R;AGG=R;GUU=V;GUC=V;GUA=V;GUG=V;GCU=A;GCC=A;GCA=A;GCG=A;GAU=D;GAC=D;GAA=D;GAG=D;GGU=G;GGC=G;GGA=G;GGG=G";
 }
 
 bool translator::checkUnit(string &basicString) {

@@ -1,4 +1,4 @@
->> This file provides the default codon table for all possible base triplets
+>> This file provides an example for the default codon table for all possible base triplets
 >> Usage: 
 >> base_triplet=amino acid
 >> # marks a stop codon

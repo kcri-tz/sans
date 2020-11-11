@@ -13,7 +13,6 @@ class translator {
 
 private:
     static unordered_map<string, string> codonTable;
-    static string defaultCodon;
     static void readDefault();
     static vector<char> bases;
 
@@ -27,6 +26,7 @@ public:
 
 protected:
     static void initAllowedBases();
+    static string defaultCodon;
 };
 
 

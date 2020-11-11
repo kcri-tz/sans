@@ -6,6 +6,7 @@
 #include "graph.h"
 #include "graphAmino.h"
 #include "util.h"
+#include "translator.h"
 
 #ifndef MAX_KMER_SIZE
     #define MAX_KMER_SIZE maxK

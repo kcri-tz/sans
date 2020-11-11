@@ -1,5 +1,4 @@
 #include "main.h"
-#include "translator.h"
 
 /**
  * This is the entry point of the program.
@@ -179,7 +178,16 @@ int main(int argc, char* argv[]) {
             amino = true;   // Input provides amino acid sequences
         }
         else if (strcmp(argv[i], "-tr") == 0 || strcmp(argv[i], "--translate") == 0) {
-            translate = argv[++i];    // codon file: defines codons for translation
+            if (i+1 < argc) {                                     // check if -tr is the last parameter
+                string param = argv[++i];                       // get following entry
+
+                if (param.find(".codon") != string::npos) {    //only .codon files are valid
+                    translate = param;
+                } else {
+                    i--;                                        // the next parameter is not an alternative translation.codon so we go back
+                }
+
+            }
             shouldTranslate = true;
         }
         else {
