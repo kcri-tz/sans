@@ -27,10 +27,10 @@ kmer32.o: src/kmer32.cpp src/kmer32.h
 kmerXX.o: src/kmerXX.cpp src/kmerXX.h
 	$(CC) -c src/kmerXX.cpp
 
-kmerAmino12.o: src/kmerAmino12.cpp src/kmerAmino12.h
+kmerAmino12.o: src/kmerAmino12.cpp src/kmerAmino12.h util.o
 	$(CC) -c src/kmerAmino12.cpp
 
-kmerAminoXX.o: src/kmerAminoXX.cpp src/kmerAminoXX.h
+kmerAminoXX.o: src/kmerAminoXX.cpp src/kmerAminoXX.h util.o
 	$(CC) -c src/kmerAminoXX.cpp
 
 color64.o: src/color64.cpp src/color64.h

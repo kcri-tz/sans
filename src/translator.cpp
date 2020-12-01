@@ -1,13 +1,9 @@
-#include <fstream>
-#include <algorithm>
-#include <string>
-#include <unordered_map>
 #include "translator.h"
 
 
 string translator::defaultCodon = "";
 unordered_map<string, string> translator::codonTable;
-vector<char> translator::bases;
+unordered_set<char> translator::bases;
 
 
 bool translator::init(string &codonfile) {
@@ -37,11 +33,11 @@ bool translator::init(string &codonfile) {
 }
 
 void translator::initAllowedBases() {
-    bases.push_back('A');
-    bases.push_back('C');
-    bases.push_back('G');
-    bases.push_back('T');
-    bases.push_back('U');
+    bases.insert('A');
+    bases.insert('C');
+    bases.insert('G');
+    bases.insert('T');
+    bases.insert('U');
 }
 
 void translator::addTranslationUnit(string &unit) {
@@ -54,7 +50,7 @@ void translator::addTranslationUnit(string &unit) {
         string amino;
 
         searchString.assign(unit);
-        while ((pos = searchString.find(delimiter)) != string::npos) {
+        if ((pos = searchString.find(delimiter)) != string::npos) {
             triplet = searchString.substr(0, pos);
             amino = searchString.substr(pos+1, searchString.length());
             searchString.erase(0, pos + delimiter.length());
@@ -112,6 +108,7 @@ bool translator::checkUnit(string &basicString) {
     bool ok = true;
 
     // unit has to be 3 chars
+    util::trim(basicString);
     ok = basicString.length() == 3;
     if(ok){
         // only valid DNA bases are allowed
@@ -130,13 +127,8 @@ bool translator::checkUnit(string &basicString) {
  * @return true if allowed, false otherwise
  */
 bool translator::isBase(char &base) {
-    bool allowed = false;
-
-    for(int i = 0; i < translator::bases.size() && !allowed; i++){
-        allowed =  translator::bases.at(i) == base;
-    }
-
-    return allowed;
+    unordered_set<char>::const_iterator got = translator::bases.find (base);
+    return got != translator::bases.end();
 }
 
 string translator::translate(string &line) {

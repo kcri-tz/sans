@@ -178,13 +178,13 @@ int main(int argc, char* argv[]) {
             amino = true;   // Input provides amino acid sequences
         }
         else if (strcmp(argv[i], "-tr") == 0 || strcmp(argv[i], "--translate") == 0) {
-            if (i+1 < argc) {                                     // check if -tr is the last parameter
+            if (i+1 < argc) {                                   // check if -tr is the last parameter
                 string param = argv[++i];                       // get following entry
 
-                if (param.find(".codon") != string::npos) {    //only .codon files are valid
+                if (param.rfind(-'-', 0) == 0) {        //check if the next param is a file or a new parameter
                     translate = param;
                 } else {
-                    i--;                                        // the next parameter is not an alternative translation.codon so we go back
+                    i--;                                       // the next parameter is not an alternative translation.codon so we go back
                 }
 
             }
@@ -212,6 +212,17 @@ int main(int argc, char* argv[]) {
         cerr << "Error: missing argument: --input <file_name> for option --amino" << endl;
         return 1;
     }
+
+    if (!splits.empty() && amino) {
+        cerr << "Error: too many input arguments: --splits and --amino" << endl;
+        return 1;
+    }
+
+    if (!graph.empty() && amino) {
+        cerr << "Error: too many input arguments: --graph and --amino" << endl;
+        return 1;
+    }
+
     if (output.empty() && newick.empty()) {
         cerr << "Error: missing argument: --output <file_name> or --newick <file_name>" << endl;
         return 1;
@@ -237,7 +248,7 @@ int main(int argc, char* argv[]) {
     if (shouldTranslate) {
         amino = true;
         if (!translator::init(translate)) {
-            cerr << "No translation data found" << translate << endl;
+            cerr << "Error: No translation data found" << translate << endl;
         }
     }
 

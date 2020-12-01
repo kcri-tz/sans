@@ -1,5 +1,6 @@
 #include <iostream>
 #include <bitset>
+#include "util.h"
 
 using namespace std;
 
@@ -64,21 +65,5 @@ public:
     static bool reverse_complement(bitset<5*maxK>& kmer, bool minimize);
 
 protected:
-
-    /**
-     * This function encodes a single character to five bits.
-     *
-     * @param c character
-     * @return bit sequence
-     */
-    static uint64_t char_to_bits(char& c);
-
-    /**
-     * This function decodes five bits to a single character.
-     *
-     * @param b bit sequence
-     * @return character
-     */
-    static char bits_to_char(uint64_t& b);
 
 };

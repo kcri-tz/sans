@@ -101,6 +101,10 @@ Usage: SANS [PARAMETERS]
 
     -n, --norev   	 Do not consider reverse complement k-mers
 
+    -a, --amino      Consider amino acids: --input provides amino acid sequences
+
+    -tr, --translate Translates DNA coding sequences. Can be used with an alternative translation file.   
+
     -v, --verbose 	 Print information messages during execution
 
     -h, --help    	 Display this help page and quit

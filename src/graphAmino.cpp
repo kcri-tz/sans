@@ -63,27 +63,32 @@ struct aminonode* newSet(color_t taxa, double weight, vector<aminonode*> subsets
 void graphAmino::init(uint64_t& top_size) {
     t = top_size;
 
-    graphAmino::allowedChars.push_back('P');
     graphAmino::allowedChars.push_back('A');
-    graphAmino::allowedChars.push_back('G');
-    graphAmino::allowedChars.push_back('Q');
-    graphAmino::allowedChars.push_back('N');
-    graphAmino::allowedChars.push_back('E');
-    graphAmino::allowedChars.push_back('D');
-    graphAmino::allowedChars.push_back('T');
-    graphAmino::allowedChars.push_back('S');
+    graphAmino::allowedChars.push_back('B');
     graphAmino::allowedChars.push_back('C');
-    graphAmino::allowedChars.push_back('V');
-    graphAmino::allowedChars.push_back('I');
-    graphAmino::allowedChars.push_back('M');
-    graphAmino::allowedChars.push_back('L');
+    graphAmino::allowedChars.push_back('D');
+    graphAmino::allowedChars.push_back('E');
     graphAmino::allowedChars.push_back('F');
-    graphAmino::allowedChars.push_back('Y');
-    graphAmino::allowedChars.push_back('W');
+    graphAmino::allowedChars.push_back('G');
     graphAmino::allowedChars.push_back('H');
+    graphAmino::allowedChars.push_back('I');
+    graphAmino::allowedChars.push_back('J');
     graphAmino::allowedChars.push_back('K');
+    graphAmino::allowedChars.push_back('L');
+    graphAmino::allowedChars.push_back('M');
+    graphAmino::allowedChars.push_back('N');
+    graphAmino::allowedChars.push_back('O');
+    graphAmino::allowedChars.push_back('P');
+    graphAmino::allowedChars.push_back('Q');
     graphAmino::allowedChars.push_back('R');
+    graphAmino::allowedChars.push_back('S');
+    graphAmino::allowedChars.push_back('T');
+    graphAmino::allowedChars.push_back('U');
+    graphAmino::allowedChars.push_back('V');
+    graphAmino::allowedChars.push_back('W');
     graphAmino::allowedChars.push_back('X');
+    graphAmino::allowedChars.push_back('Y');
+    graphAmino::allowedChars.push_back('Z');
     graphAmino::allowedChars.push_back('*');
 
 }
