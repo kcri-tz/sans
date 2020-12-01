@@ -180,8 +180,7 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-tr") == 0 || strcmp(argv[i], "--translate") == 0) {
             if (i+1 < argc) {                                   // check if -tr is the last parameter
                 string param = argv[++i];                       // get following entry
-
-                if (param.rfind(-'-', 0) == 0) {        //check if the next param is a file or a new parameter
+                if (param.rfind('-', 0) != 0) {        //check if the next param is a file or a new parameter
                     translate = param;
                 } else {
                     i--;                                       // the next parameter is not an alternative translation.codon so we go back
@@ -306,7 +305,6 @@ int main(int argc, char* argv[]) {
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
     amino ? graphAmino::init(top) : graph::init(top); // initialize the toplist size and the allowed characters
-
     if (!splits.empty()) {
         ifstream file(splits);
         if (!file.good()) {
@@ -339,7 +337,7 @@ int main(int argc, char* argv[]) {
         }
         file.close();
     }
-
+    
     kmer::init(kmer);      // initialize the k-mer length
     kmerAmino::init(kmer); // initialize the k-mer length
     color::init(num);    // initialize the color number
@@ -480,7 +478,13 @@ int main(int argc, char* argv[]) {
     if (verbose) {
         cout << "\33[2K\r" << "Filtering splits..." << flush;
     }
+    uint64_t splitCountBefore = graph::split_list.size();
+    double splitWeightCountBefore = 0;
     if (!filter.empty()) {    // apply filter
+        for (auto& split : (amino ? graphAmino::split_list : graph::split_list)) {
+             splitWeightCountBefore+=  split.first;
+        }
+
         if (filter == "strict" || filter == "tree") {
             if (!newick.empty()) {
                 ofstream file(newick);    // output file stream
@@ -510,14 +514,18 @@ int main(int argc, char* argv[]) {
     }
 
     if (verbose) {
-        cout << "\33[2K\r" << "Please wait..." << flush;
+        cout << "\33[2K\r" << "Please wait..." << flush << endl;
     }
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());
 
     uint64_t pos = 0;
+    uint64_t splitCountAfter = graph::split_list.size();
+    double splitWeightCountAfter = 0;
     for (auto& split : (amino ? graphAmino::split_list : graph::split_list)) {
-        stream << split.first;    // weight of the split
+        double weight = split.first;
+        splitWeightCountAfter+= weight;
+        stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
             if (color::test(split.second, pos)) {
                 if (i < files.size())
@@ -536,8 +544,27 @@ int main(int argc, char* argv[]) {
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
 
     if (verbose) {
-        cout << " Done!" << flush;    // print progress and time
+        if (!filter.empty()) {
+            cout << "Filter-Split-Ratio: " << splitCountAfter << "/" << splitCountBefore;
+            if (splitCountBefore > 0) {
+                cout  << " -> " << (splitCountAfter /  (double) splitCountBefore) << endl;
+            } else {
+                 cout << endl;
+            }
+
+            cout << "Filter-Weight-Ratio: " << splitWeightCountAfter << "/" << splitWeightCountBefore;
+            if (splitWeightCountBefore > 0) {
+             cout << " -> " << (splitWeightCountAfter /  splitWeightCountBefore) << endl;
+            } else {
+                cout  << endl;
+            }
+
+                    }
+        cout << " Done!" << flush << endl;    // print progress and time
         cout << " (" << util::format_time(end - begin) << ")" << endl;
     }
     return 0;
 }
+
+
+
