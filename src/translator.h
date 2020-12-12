@@ -22,12 +22,7 @@ private:
     /**
      * This map contains the corresponding amino acid for each triplet.
      */
-    static unordered_map<string, string> codonTable;
-
-    /**
-     * This method reads the default codons if no additional file is provided.
-     */
-    static void readDefault();
+    static struct translationTable translationTable;
 
     /**
      * This set contains all allowed characters.
@@ -50,13 +45,7 @@ public:
      * This method initializes the translator.
      * @param codonfile the path to a valid file
      */
-    static bool init(string& codonfile);
-
-    /**
-     * This method adds a new possible translation unit to the translator.
-     * @param unit new unit
-     */
-    static void addTranslationUnit(string& unit);
+    static bool init(uint64_t& id);
 
     /**
      * This method returns the amino acid for the given triplet or - if any base is invalid - an empty string.
@@ -77,11 +66,6 @@ protected:
      * This method initializes the data which is used to verify bases.
      */
     static void initAllowedBases();
-
-    /**
-     * This string contains the default codon table, if no other file is provided.
-     */
-    static string defaultCodon;
 };
 
 

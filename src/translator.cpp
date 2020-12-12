@@ -1,35 +1,113 @@
+#include <sstream>
 #include "translator.h"
+#include "gc.h"
 
 
-string translator::defaultCodon = "";
-unordered_map<string, string> translator::codonTable;
-unordered_set<char> translator::bases;
+/**
+ * codon and translationTable structs to save genetic code information
+ */
+struct codon {
+    string triplet;
+    string amino;
+    bool isStart;
+    bool isStop;
 
-
-bool translator::init(string &codonfile) {
-    bool initialized = false;
-    initAllowedBases();
-    if (!codonfile.empty()) {
-        ifstream file(codonfile);
-        if (file.good()) {
-            string line;
-            while (getline(file, line)) {
-                translator::addTranslationUnit(line);
-            }
-            file.close();
-            initialized = true;
-        } else {
-            cerr << "Cannot find file " << codonfile << ", using default translation" << endl;
-            readDefault();
-            initialized = true;
-        }
-
-    } else {
-        readDefault();
-        initialized = true;
+    codon() {
+        triplet = "";
+        amino = "";
+        isStart = false;
+        isStop = false;
     }
 
-    return initialized;
+    bool isValid() const {
+        return triplet.length() == 3 && amino.length() == 1;
+    }
+
+    bool operator==(const codon &other) const {
+        return triplet == other.triplet;
+    }
+
+    size_t operator() (codon const& key) const {
+        return hash<string>()(key.triplet);
+    }
+};
+struct translationTable {
+
+    static const char* bases[];
+    unordered_set<string> names;
+    uint64_t id;
+    string ncbieaa;
+    string sncbieaa;
+    unordered_map<string, codon> codons;
+
+    void createCodons(){
+        if (!ncbieaa.empty() && !sncbieaa.empty()) {
+            for (int i = 0; i <= 63; i++) {
+                codon current = {};
+                current.triplet += bases[0][i];
+                current.triplet += bases[1][i];
+                current.triplet += bases[2][i];
+                current.amino += ncbieaa[i];
+                current.isStop = sncbieaa[i] == '*';
+                current.isStart = sncbieaa[i] == 'M';
+                codons[current.triplet] = current;
+            }
+        }
+    }
+
+    codon operator[](const string& triplet) {
+        auto it = codons.find(triplet);
+        return it == codons.end() ? codon() :  it->second;
+    }
+
+};
+
+struct translationTable translator::translationTable = {};
+unordered_set<char> translator::bases;
+const char* translationTable::bases[] = {"TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG",
+                                         "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG",
+                                         "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"};
+
+bool translator::init(uint64_t& id) {
+    string codonfile;
+
+    for (int i = 0; i < config_gc_prt_len; i++) {
+        codonfile += config_gc_prt[i];
+    }
+
+    std::stringstream ss(codonfile);
+    std::string to;
+
+    struct translationTable currentTranslationable = {};
+    bool found = false;
+    while (std::getline(ss,to,'\n') && !found) {
+        util::trim(to);
+        if (to.rfind("--", 0) != 0 && to.rfind("**", 0) != 0 && to.rfind("Genetic-code-table", 0) != 0 && !to.empty()) {
+
+            util::replaceAll(to, "\"", "");
+            util::replaceAll(to, ",", "");
+            vector<string> parts = util::split(to, " ");
+
+            if (to.rfind('{', 0) == 0) {
+                currentTranslationable = {};
+            } else if (parts.at(0) == "name") {
+                currentTranslationable.names.insert(parts.at(1));
+            } else if (parts.at(0) == "id") {
+                currentTranslationable.id = stol(parts.at(1));
+            } else if (parts.at(0) == "ncbieaa") {
+                currentTranslationable.ncbieaa = parts.at(1);
+            } else if (parts.at(0) == "sncbieaa") {
+                currentTranslationable.sncbieaa = parts.at(1);
+                currentTranslationable.createCodons();
+            } else if (to.rfind('}', 0) == 0) {
+                if (currentTranslationable.id == id) {
+                    translator::translationTable = currentTranslationable;
+                    found = true;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 void translator::initAllowedBases() {
@@ -37,71 +115,20 @@ void translator::initAllowedBases() {
     bases.insert('C');
     bases.insert('G');
     bases.insert('T');
-    bases.insert('U');
-}
-
-void translator::addTranslationUnit(string &unit) {
-    if (unit[0] != '>') {
-        size_t pos = 0;
-        string searchString;
-        string token;
-        string delimiter = "=";
-        string triplet;
-        string amino;
-
-        searchString.assign(unit);
-        if ((pos = searchString.find(delimiter)) != string::npos) {
-            triplet = searchString.substr(0, pos);
-            amino = searchString.substr(pos+1, searchString.length());
-            searchString.erase(0, pos + delimiter.length());
-        }
-
-        if (translator::checkUnit(triplet)) {
-            codonTable[triplet] = amino;
-           // cout << "Base " << triplet << " Amino " << codonTable[triplet] << endl;
-        }else{
-            cerr << "Unknown base in triplet ->" << unit;
-        }
-
-
-    }
 }
 
 string translator::getTranslatedAminoAcid(string &unit) {
     string translated;
-    // To imitate the biological process. Can be omitted in favour of the runtime.
-    std::replace( unit.begin(), unit.end(), 'T', 'U');
-    auto iterator = translator::codonTable.find(unit);
+    codon codon = translator::translationTable[unit];
 
-    if (iterator == translator::codonTable.end()) {
+    if (!codon.isValid()) {
         cerr << "Could not find translation for " << unit << ", skipping sequence" << endl;
         translated = "";
     } else {
-        translated = iterator->second;
-
-        if (translated.find('#') != string::npos) {
-            cerr << "Found stop codon for sequence " << unit << ", skipping sequence" << endl;
-            translated = "";
-        }
+        translated = codon.amino;
     }
 
     return  translated;
-}
-
-void translator::readDefault() {
-    //we could read the default data from a remote-stream later
-    translator::defaultCodon = "UUU=F;UUC=F;UUA=L;UUG=L;UCU=S;UCC=S;UCA=S;UCG=S;UAU=Y;UAC=Y;UAA=#;UAG=#;UGU=C;UGC=C;UGA=#;UGG=W;CUU=L;CUC=L;CUA=L;CUG=L;CCU=P;CCC=P;CCA=P;CCG=P;CAU=H;CAC=H;CAA=Q;CAG=Q;CGU=R;CGC=R;CGA=R;CGG=R;AUU=I;AUC=I;AUA=I;AUG=M;ACU=T;ACC=T;ACA=T;ACG=T;AAU=N;AAC=N;AAA=K;AAG=K;AGU=S;AGC=S;AGA=R;AGG=R;GUU=V;GUC=V;GUA=V;GUG=V;GCU=A;GCC=A;GCA=A;GCG=A;GAU=D;GAC=D;GAA=D;GAG=D;GGU=G;GGC=G;GGA=G;GGG=G";
-    size_t pos = 0;
-    string delimiter = ";";
-    string token;
-    string searchString;
-    searchString.assign(translator::defaultCodon);
-    while ((pos = searchString.find(delimiter)) != string::npos) {
-        token = searchString.substr(0, pos);
-        translator::addTranslationUnit(token);
-        searchString.erase(0, pos + delimiter.length());
-    }
-    translator::addTranslationUnit(searchString);
 }
 
 bool translator::checkUnit(string &basicString) {

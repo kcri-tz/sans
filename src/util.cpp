@@ -212,3 +212,34 @@ void util::trim(std::string &s) {
     util::rtrim(s);
 }
 
+void util::replaceAll(string &s, string replaceString, string newString){
+    if (!replaceString.empty()) {
+        size_t start_pos = 0;
+        while ((start_pos = s.find(replaceString, start_pos)) != std::string::npos) {
+            s.replace(start_pos, replaceString.length(), newString);
+            start_pos += newString.length();
+        }
+    }
+}
+
+vector<string> util::split(string &s, string delimiter) {
+    vector<string> vector;
+    auto start = 0U;
+    auto end = s.find(delimiter);
+    string basicString;
+    while (end != std::string::npos) {
+        basicString = s.substr(start, end - start);
+        if (!basicString.empty()) {
+            vector.push_back(basicString);
+        }
+        start = end + delimiter.length();
+        end = s.find(delimiter, start);
+    }
+
+    basicString = s.substr(start, end);
+    if (!basicString.empty()) {
+        vector.push_back(basicString);
+    }
+
+    return vector;
+}

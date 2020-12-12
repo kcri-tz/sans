@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 
@@ -85,6 +86,21 @@ public:
     * @param s
     */
     static void trim(string &s);
+
+    /**
+    * Replaces all occurrences of replaceString with the new string
+    * @param s the String which should be changed
+    * @param replaceString the string, which should be replaced
+    * @param newString the new string instead of the replaced one
+    */
+    static void replaceAll(string &s, string replaceString, string newString);
+
+    /**
+    * Splits the given string s into parts by a given delimiter
+    * @param s the string which should be splitted
+    * @param delimiter the delimiter
+    */
+    static vector<string> split(string &s, string delimiter);
 
 protected:
 };

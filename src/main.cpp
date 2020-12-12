@@ -1,5 +1,14 @@
 #include "main.h"
 
+struct filter_weight_stats {
+    double weight;
+    uint64_t color;
+
+    bool is(filter_weight_stats other) {
+        return other.weight == weight && other.color == color;
+    }
+};
+
 /**
  * This is the entry point of the program.
  *
@@ -71,7 +80,11 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
         cout << endl;
-        cout << "    -tr, --translate   \t Translates DNA coding sequences. Can be used with an alternative translation file." << endl;
+        cout << "    -tr, --translate   \t Translates DNA coding sequences." << endl;
+        cout << endl;
+        cout << "    -c, --code   \t The ID of the translation table which should be used." << endl;
+        cout << "                 \t See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details" << endl;
+        cout << "                 \t Default: 1" << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
@@ -102,6 +115,7 @@ int main(int argc, char* argv[]) {
     bool verbose = false;    // print messages during execution
     bool amino = false;      // input files are amino acid sequences
     bool shouldTranslate = false;   // translate input files
+    uint64_t code = 1;
 
     // parse the command line arguments and update the variables above
     for (int i = 1; i < argc; ++i) {
@@ -178,16 +192,10 @@ int main(int argc, char* argv[]) {
             amino = true;   // Input provides amino acid sequences
         }
         else if (strcmp(argv[i], "-tr") == 0 || strcmp(argv[i], "--translate") == 0) {
-            if (i+1 < argc) {                                   // check if -tr is the last parameter
-                string param = argv[++i];                       // get following entry
-                if (param.rfind('-', 0) != 0) {        //check if the next param is a file or a new parameter
-                    translate = param;
-                } else {
-                    i--;                                       // the next parameter is not an alternative translation.codon so we go back
-                }
-
-            }
             shouldTranslate = true;
+        }
+        else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--code") == 0) {
+            code = stoi(argv[++i]);
         }
         else {
             cerr << "Error: unknown argument: type --help" << endl;
@@ -246,7 +254,7 @@ int main(int argc, char* argv[]) {
     // check if we need to init translation
     if (shouldTranslate) {
         amino = true;
-        if (!translator::init(translate)) {
+        if (!translator::init(code)) {
             cerr << "Error: No translation data found" << translate << endl;
         }
     }
@@ -478,11 +486,14 @@ int main(int argc, char* argv[]) {
     if (verbose) {
         cout << "\33[2K\r" << "Filtering splits..." << flush;
     }
-    uint64_t splitCountBefore = graph::split_list.size();
-    double splitWeightCountBefore = 0;
+
+    vector<filter_weight_stats> weightsBefore;
     if (!filter.empty()) {    // apply filter
         for (auto& split : (amino ? graphAmino::split_list : graph::split_list)) {
-             splitWeightCountBefore+=  split.first;
+            struct filter_weight_stats st = {};
+            st.weight = split.first;
+            st.color = split.second;
+            weightsBefore.push_back(st);
         }
 
         if (filter == "strict" || filter == "tree") {
@@ -522,8 +533,14 @@ int main(int argc, char* argv[]) {
     uint64_t pos = 0;
     uint64_t splitCountAfter = graph::split_list.size();
     double splitWeightCountAfter = 0;
+    uint64_t splitCountBefore = 0;
+    double splitWeightCountBefore = 0;
+    struct filter_weight_stats smallestWeight = {};
     for (auto& split : (amino ? graphAmino::split_list : graph::split_list)) {
         double weight = split.first;
+        smallestWeight = {};
+        smallestWeight.weight = weight;
+        smallestWeight.color = split.second;
         splitWeightCountAfter+= weight;
         stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
@@ -539,6 +556,18 @@ int main(int argc, char* argv[]) {
         }
         stream << endl;
     }
+
+    bool smallestReached = false;
+
+    for (int i = 0; i< weightsBefore.size() && !smallestReached; i++) {
+        splitCountBefore++;
+        splitWeightCountBefore+= weightsBefore[i].weight;
+
+        if (weightsBefore[i].is(smallestWeight)) {
+            smallestReached = true;
+        }
+    }
+
     file.close();
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
@@ -559,7 +588,8 @@ int main(int argc, char* argv[]) {
                 cout  << endl;
             }
 
-                    }
+            //cout << "Smallest-Weight: " << smallestWeight.weight << endl;
+        }
         cout << " Done!" << flush << endl;    // print progress and time
         cout << " (" << util::format_time(end - begin) << ")" << endl;
     }

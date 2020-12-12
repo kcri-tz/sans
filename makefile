@@ -8,7 +8,9 @@
 # CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
+
 SANS: main.o
+	$(shell xxd -i config/gc.prt > src/gc.h)
 	$(CC) -o SANS main.o graph.o graphAmino.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o $(BF)
 	rm -rf obj/; mkdir obj/; mv *.o obj/
 
@@ -42,5 +44,5 @@ colorXX.o: src/colorXX.cpp src/colorXX.h
 util.o: src/util.cpp src/util.h
 	$(CC) -c src/util.cpp
 
-translator.o: src/translator.cpp src/translator.h
+translator.o: src/translator.cpp src/translator.h src/gc.h
 	$(CC) -c src/translator.cpp

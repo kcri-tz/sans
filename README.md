@@ -103,7 +103,11 @@ Usage: SANS [PARAMETERS]
 
     -a, --amino      Consider amino acids: --input provides amino acid sequences
 
-    -tr, --translate Translates DNA coding sequences. Can be used with an alternative translation file.   
+    -tr, --translate Translates DNA coding sequences.
+
+    -c, --code       The ID of the translation table which should be used.
+                     See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details
+                     Default: 1   
 
     -v, --verbose 	 Print information messages during execution
 
