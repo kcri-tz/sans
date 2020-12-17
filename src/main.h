@@ -3,7 +3,7 @@
 #include <cstring>
 #include <algorithm>
 
-#include "graphmerged.h"
+#include "graph.h"
 #include "util.h"
 #include "translator.h"
 

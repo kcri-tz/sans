@@ -72,9 +72,9 @@ int main(int argc, char* argv[]) {
         cout << "                  \t          n-tree: compatible to a union of n trees" << endl;
         cout << "                  \t                  (where n is an arbitrary number)" << endl;
         cout << endl;
-        cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases" << endl;
-        cout << "                  \t Specify a number to limit the k-mers per position" << endl;
-        cout << "                  \t between 1 (no ambiguity) and 4^k (allows NNN...N)" << endl;
+        cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases or amino acids" << endl;
+        cout << "                  \t Specify a number to limit the k-mers per position between" << endl;
+        cout << "                  \t 1 (no ambiguity) and 4^k respectively 22^k (allows NNN...N)" << endl;
         cout << endl;
         cout << "    -n, --norev   \t Do not consider reverse complement k-mers" << endl;
         cout << endl;

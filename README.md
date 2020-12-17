@@ -95,9 +95,9 @@ Usage: SANS [PARAMETERS]
                   	          n-tree: compatible to a union of n trees
                   	                  (where n is an arbitrary number)
 
-    -x, --iupac   	 Extended IUPAC alphabet, resolve ambiguous bases
-                  	 Specify a number to limit the k-mers per position
-                  	 between 1 (no ambiguity) and 4^k (allows NNN...N)
+    -x, --iupac   	 Extended IUPAC alphabet, resolve ambiguous bases or amino acids
+                  	 Specify a number to limit the k-mers per position between 
+                  	 1 (no ambiguity) and 4^k respectively 22^k (allows NNN...N)
 
     -n, --norev   	 Do not consider reverse complement k-mers
 

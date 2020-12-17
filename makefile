@@ -11,14 +11,14 @@
 $(shell xxd -i config/gc.prt > src/gc.h)
 
 SANS: main.o
-	$(CC) -o SANS main.o graphmerged.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o $(BF)
+	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o $(BF)
 	rm -rf obj/; mkdir obj/; mv *.o obj/
 
-main.o: src/main.cpp src/main.h translator.o graphmerged.o util.o
+main.o: src/main.cpp src/main.h translator.o graph.o util.o
 	$(CC) -c src/main.cpp
 
-graphmerged.o: src/graphmerged.cpp src/graphmerged.h kmer32.o kmerXX.o kmerAmino12.o kmerAminoXX.o color64.o colorXX.o
-	$(CC) -c src/graphmerged.cpp
+graph.o: src/graph.cpp src/graph.h kmer32.o kmerXX.o kmerAmino12.o kmerAminoXX.o color64.o colorXX.o
+	$(CC) -c src/graph.cpp
 
 kmer32.o: src/kmer32.cpp src/kmer32.h
 	$(CC) -c src/kmer32.cpp
