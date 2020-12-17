@@ -8,20 +8,17 @@
 # CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
+$(shell xxd -i config/gc.prt > src/gc.h)
 
 SANS: main.o
-	$(shell xxd -i config/gc.prt > src/gc.h)
-	$(CC) -o SANS main.o graph.o graphAmino.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o $(BF)
+	$(CC) -o SANS main.o graphmerged.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o $(BF)
 	rm -rf obj/; mkdir obj/; mv *.o obj/
 
-main.o: src/main.cpp src/main.h translator.o graph.o graphAmino.o util.o
+main.o: src/main.cpp src/main.h translator.o graphmerged.o util.o
 	$(CC) -c src/main.cpp
 
-graph.o: src/graph.cpp src/graph.h kmer32.o kmerXX.o color64.o colorXX.o
-	$(CC) -c src/graph.cpp
-
-graphAmino.o: src/graphAmino.cpp src/graphAmino.h kmerAmino12.o kmerAminoXX.o color64.o colorXX.o
-	$(CC) -c src/graphAmino.cpp
+graphmerged.o: src/graphmerged.cpp src/graphmerged.h kmer32.o kmerXX.o kmerAmino12.o kmerAminoXX.o color64.o colorXX.o
+	$(CC) -c src/graphmerged.cpp
 
 kmer32.o: src/kmer32.cpp src/kmer32.h
 	$(CC) -c src/kmer32.cpp

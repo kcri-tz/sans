@@ -3,8 +3,7 @@
 #include <cstring>
 #include <algorithm>
 
-#include "graph.h"
-#include "graphAmino.h"
+#include "graphmerged.h"
 #include "util.h"
 #include "translator.h"
 

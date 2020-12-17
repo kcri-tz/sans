@@ -2,7 +2,7 @@
 
 struct filter_weight_stats {
     double weight;
-    uint64_t color;
+    color_t color;
 
     bool is(filter_weight_stats other) {
         return other.weight == weight && other.color == color;
@@ -312,7 +312,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    amino ? graphAmino::init(top) : graph::init(top); // initialize the toplist size and the allowed characters
+    graph::init(top, amino); // initialize the toplist size and the allowed characters
     if (!splits.empty()) {
         ifstream file(splits);
         if (!file.good()) {
@@ -341,7 +341,7 @@ int main(int argc, char* argv[]) {
                 next = curr + 1;
             } while (curr != string::npos);
 
-            amino ? graphAmino::add_split(weight, color) : graph::add_split(weight, color);
+            graph::add_split(weight, color);
         }
         file.close();
     }
@@ -370,21 +370,14 @@ int main(int argc, char* argv[]) {
             while (getline(file, line)) {
                 if (line.length() > 0) {
                     if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
-                        if (amino) {
-                            if (window > 1) {
-                                graphAmino::add_minimizers(sequence, i, reverse, window);
-                            } else {
-                                graphAmino::add_kmers(sequence, i, reverse);
-                            }
+                        if (window > 1) {
+                            iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
+                                      : graph::add_minimizers(sequence, i, reverse, window);
                         } else {
-                            if (window > 1) {
-                                iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
-                                          : graph::add_minimizers(sequence, i, reverse, window);
-                            } else {
-                                iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
-                                          : graph::add_kmers(sequence, i, reverse);
-                            }
+                            iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
+                                      : graph::add_kmers(sequence, i, reverse);
                         }
+
                         sequence.clear();
 
                         if (verbose) {
@@ -414,20 +407,12 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-            if (amino) {
-                if (window > 1) {
-                    graphAmino::add_minimizers(sequence, i, reverse, window);
-                } else {
-                    graphAmino::add_kmers(sequence, i, reverse);
-                }
+            if (window > 1) {
+                iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
+                          : graph::add_minimizers(sequence, i, reverse, window);
             } else {
-                if (window > 1) {
-                    iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
-                              : graph::add_minimizers(sequence, i, reverse, window);
-                } else {
-                    iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
-                              : graph::add_kmers(sequence, i, reverse);
-                }
+                iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
+                          : graph::add_kmers(sequence, i, reverse);
             }
             sequence.clear();
 
@@ -481,7 +466,7 @@ int main(int argc, char* argv[]) {
     if (verbose) {
         cout << "Processing splits..." << flush;
     }
-    amino ? graphAmino::add_weights(mean, verbose)  : graph::add_weights(mean, verbose);    // accumulate split weights
+    graph::add_weights(mean, verbose);    // accumulate split weights
 
     if (verbose) {
         cout << "\33[2K\r" << "Filtering splits..." << flush;
@@ -489,7 +474,7 @@ int main(int argc, char* argv[]) {
 
     vector<filter_weight_stats> weightsBefore;
     if (!filter.empty()) {    // apply filter
-        for (auto& split : (amino ? graphAmino::split_list : graph::split_list)) {
+        for (auto& split : graph::split_list) {
             struct filter_weight_stats st = {};
             st.weight = split.first;
             st.color = split.second;
@@ -500,26 +485,24 @@ int main(int argc, char* argv[]) {
             if (!newick.empty()) {
                 ofstream file(newick);    // output file stream
                 ostream stream(file.rdbuf());
-                stream << (amino ? graphAmino::filter_strict(map, verbose) : graph::filter_strict(map, verbose));    // filter and output
+                stream << graph::filter_strict(map, verbose);    // filter and output
                 file.close();
             } else {
-               amino ? graphAmino::filter_strict(verbose) : graph::filter_strict(verbose);
+               graph::filter_strict(verbose);
             }
         }
         else if (filter == "weakly") {
-            amino ? graphAmino::filter_weakly(verbose) : graph::filter_weakly(verbose);
+           graph::filter_weakly(verbose);
         }
         else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
             if (!newick.empty()) {
                 ofstream file(newick);    // output file stream
                 ostream stream(file.rdbuf());
-                auto ot = amino ? graphAmino::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose)
-                        : graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
+                auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
                 stream <<  ot;
                 file.close();
             } else {
-                amino ? graphAmino::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose)
-                : graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
+               graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
             }
         }
     }
@@ -536,7 +519,7 @@ int main(int argc, char* argv[]) {
     uint64_t splitCountBefore = 0;
     double splitWeightCountBefore = 0;
     struct filter_weight_stats smallestWeight = {};
-    for (auto& split : (amino ? graphAmino::split_list : graph::split_list)) {
+    for (auto& split : graph::split_list) {
         double weight = split.first;
         smallestWeight = {};
         smallestWeight.weight = weight;
