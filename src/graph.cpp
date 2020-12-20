@@ -31,7 +31,7 @@ vector<char> graph::allowedChars;
 /**
  * This is a comparison function extending std::bitset.
  */
-#if maxK > 32 || maxN > 64
+#if maxK > 12 || maxN > 64
 namespace std {
     template <uint64_t N>
     bool operator<(const bitset<N>& x, const bitset<N>& y) {
