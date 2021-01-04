@@ -122,6 +122,9 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--window") == 0) {
             window = stoi(argv[++i]);    // Number of k-mers (default: 1)
+            if (window > 1) {
+                cerr << "Warning: using experimental feature --window" << endl;
+            }
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
             top = stoi(argv[++i]);    // Number of splits (default: all)
@@ -390,7 +393,7 @@ int main(int argc, char* argv[]) {
         #ifdef useBF
         else return cdbg.getColorName(i-files.size());
         #endif
-        cerr << "ERROR: Color bit does not correspond to color name" << endl;
+        cerr << "Error: color bit does not correspond to color name" << endl;
         exit(EXIT_FAILURE);
     };
 
