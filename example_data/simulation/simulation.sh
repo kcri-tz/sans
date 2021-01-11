@@ -1,3 +1,5 @@
+alias sans='../../SANS'
+
 # run ALF
 
 alfsim 100_5-params.drw
@@ -15,26 +17,26 @@ ls *.fa > list.txt
 # get reference tree
 
 ../../../../scripts/newick2sans.py ../results/100_5/RealTree.nwk > ../RealTree.sans
-sed -r -i "s/(SE...)/\1_dna\.fa/g" RealTree.sans
+sed -r -i "s/(SE...)/\1_dna\.fa/g" ../RealTree.sans
 
 
 # run SANS-serif
 
-SANS-serif -v -i list.txt -f strict -o ../noNs.sans
+sans -v -i list.txt -f strict -o ../noNs.sans
 
 
 # add N's
 
 mkdir ../iupac
-for f in `cat list.txt`; do ../IUPACize.py $f 0.001 -n > ../iupac/$f; done
+for f in `cat list.txt`; do ../../IUPACize.py $f 0.001 -n > ../iupac/$f; done
 cd ../iupac
 ls *.fa > list.txt
 
 
 # run SANS-serif
 
-SANS-serif -v -i list.txt -f strict -o ../skipNs.sans
-SANS-serif -v -i list.txt -f strict -x 16 -o ../x16.sans
+sans -v -i list.txt -f strict -o ../skipNs.sans
+sans -v -i list.txt -f strict -x 16 -o ../x16.sans
 
 
 # compare to reference

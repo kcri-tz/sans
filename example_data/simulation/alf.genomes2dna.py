@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from sys import stdout,stderr,exit,argv
 from optparse import OptionParser
-from random import gammavariate as gamma, choice 
+# from random import gammavariate as gamma, choice 
 from os.path import basename
-from cStringIO import StringIO
+# from cStringIO import StringIO
 import logging
 
 from Bio.Alphabet import generic_dna
