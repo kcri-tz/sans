@@ -5,9 +5,21 @@ CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64
 # CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
+# Wrap Windows / Unix commands
+ifeq ($(OS), Windows_NT)
+	MK = mkdir obj
+	RM = rmdir /s /q obj 
+	MV = cmd /C move *.o obj
+else
+	MK = mkdir obj/
+	RM = rm -rf obj/
+	MV = mv *.o obj/
+endif
+
 SANS: main.o
 	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o color64.o colorXX.o util.o $(BF)
-	rm -rf obj/; mkdir obj/; mv *.o obj/
+	$(MK)
+	$(MV)
 
 main.o: src/main.cpp src/main.h graph.o util.o
 	$(CC) -c src/main.cpp
@@ -29,3 +41,7 @@ colorXX.o: src/colorXX.cpp src/colorXX.h
 
 util.o: src/util.cpp src/util.h
 	$(CC) -c src/util.cpp
+
+.PHONY: clean
+clean:
+	$(RM)

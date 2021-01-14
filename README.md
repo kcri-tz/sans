@@ -82,7 +82,7 @@ Usage: SANS [PARAMETERS]
 
     -k, --kmer    	 Length of k-mers (default: 31)
 
-    -t, --top     	 Number of splits in the output list (default: all)
+    -t, --top     	 Number of splits in the output list (default: all). Use -t <multiplier>n to bind the split number to the input file count
 
     -m, --mean    	 Mean weight function to handle asymmetric splits
                   	 options: arith: arithmetic mean
