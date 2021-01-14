@@ -9,17 +9,15 @@
  */
 int main(int argc, char* argv[]) {
 
-    // check for a new version of SANS at program start if wget is defined
-    #if defined(unix) || defined(__unix__) || defined(__unix)
-        bool version_checked = false;
-        cout << "Checking for updates" << "\n";
-        if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")
-        && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
-            cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
-            version_checked = true;
-        }
-        if (!version_checked) {cout << "Connection failed" << "\n";}
-    #endif
+    // check for a new version of SANS at program start.
+    bool version_checked = false;
+    cout << "Checking for updates" << "\n";
+    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")
+    && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
+        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
+        version_checked = true;
+    }
+    if (!version_checked) {cout << "Connection failed" << "\n";}
 
     
     // print a help message describing the program arguments
@@ -57,7 +55,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
 //        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
 //        cout << endl;
-        cout << "    -t, --top     \t Number of splits in the output list (default: all). Use -t <multiplier>n to bind the split number to the input file count" << endl;
+        cout << "    -t, --top     \t Number of splits in the output list (default: all)." << endl;
+        cout << "                  \t Use -t <multiplier>n to bind the split number to the input file count" << endl;
         cout << endl;
         cout << "    -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
         cout << "                  \t options: arith: arithmetic mean" << endl;
