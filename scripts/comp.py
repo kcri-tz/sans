@@ -104,6 +104,8 @@ def split_comp(donor,reference,weighted):
     w_corr_ref=0.
     num_all=0
     num_corr=0
+    w_precision=-1.
+    w_recall=-1.
 
     if not weighted:
         print("#precision\trecall\t(unweighted)")
@@ -121,9 +123,11 @@ def split_comp(donor,reference,weighted):
  
         precision=(1.0*num_corr)/(1.0*num_all)
         recall=(1.0*num_corr)/(1.0*n)
-        
-        w_precision=(1.0*w_corr)/(1.0*w_all)
-        w_recall=(1.0*w_corr_ref)/(1.0*w_all_ref)
+
+        if w_all > 0:
+            w_precision=(1.0*w_corr)/(1.0*w_all)
+        if w_all_ref > 0 :
+            w_recall=(1.0*w_corr_ref)/(1.0*w_all_ref)
         
         if not weighted:
             print("\t".join([str(precision),str(recall)]))
