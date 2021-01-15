@@ -132,10 +132,10 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
             i++;
-            string top_str = argv[i++];
+            string top_str = argv[i];
             top = stoi(top_str); // Number of splits (default: all)
 
-            if (top_str[top_str.size() - 1] == 'n'){ // Dynamic splits (default: false)
+            if (top_str[top_str.size() - 1] == 'n'){ // Dynamic split num (default: false)
                 dyn_top = true;
             }
         }
