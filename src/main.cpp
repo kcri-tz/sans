@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
             verbose = true;    // Print messages during execution
         }
         else {
-            cerr << "Error: unknown argument: type --help" << endl;
+            cerr << "Error: unknown argument:" << argv[i] <<  "\t type --help" << endl;
             return 1;
         }
     }
