@@ -75,16 +75,19 @@ int main(int argc, char* argv[]) {
         cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases or amino acids" << endl;
         cout << "                  \t Specify a number to limit the k-mers per position between" << endl;
         cout << "                  \t 1 (no ambiguity) and 4^k respectively 22^k (allows NNN...N)" << endl;
+        cout << "                  \t Without --iupac respective k-mers are ignored" << endl;
         cout << endl;
         cout << "    -n, --norev   \t Do not consider reverse complement k-mers" << endl;
         cout << endl;
         cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
+        cout << "                  \t Implies --norev" << endl;
         cout << endl;
-        cout << "    -tr, --translate   \t Translates DNA coding sequences." << endl;
-        cout << endl;
-        cout << "    -c, --code   \t The ID of the translation table which should be used." << endl;
-        cout << "                 \t See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details" << endl;
+        cout << "    -c, --code   \t Translate DNA: --input provides coding sequences" << endl;
+        cout << "                 \t Implies --norev" << endl;
+        cout << "                 \t optional: ID of the genetic code to be used" << endl;
         cout << "                 \t Default: 1" << endl;
+        cout << "                 \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
+        cout << "                 \t (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)" << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
@@ -191,11 +194,17 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--amino") == 0) {
             amino = true;   // Input provides amino acid sequences
         }
-        else if (strcmp(argv[i], "-tr") == 0 || strcmp(argv[i], "--translate") == 0) {
-            shouldTranslate = true;
-        }
         else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--code") == 0) {
-            code = stoi(argv[++i]);
+            if (i+1 < argc) {
+                string param = argv[++i];
+                if (!util::is_number(param)){
+                    i--;
+                } else {
+                    code = stoi(param);     // Number of the genetic code to be used
+                }
+
+            }
+            shouldTranslate = true;
         }
         else {
             cerr << "Error: unknown argument: type --help" << endl;
@@ -364,6 +373,7 @@ int main(int argc, char* argv[]) {
             else if (verbose) {
                 cout << "\33[2K\r" << files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
             }
+            count::deleteCount();
 
             string appendixChars; 
             string line;    // read the file line by line
@@ -381,7 +391,7 @@ int main(int argc, char* argv[]) {
                         sequence.clear();
 
                         if (verbose) {
-                            cout << "\33[2K\r" << line << flush;    // print progress
+                            cout << "\33[2K\r" << line << flush << endl;    // print progress
                         }
                     }
                     else if (line[0] == '+') {    // FASTQ quality values -> ignore
@@ -406,6 +416,9 @@ int main(int argc, char* argv[]) {
                         sequence += newLine;    // FASTA & FASTQ sequence -> read
                     }
                 }
+            }
+            if (verbose && count::getCount() > 0) {
+                cerr << count::getCount()<< " triplets could not be translated."<< endl;
             }
             if (window > 1) {
                 iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
@@ -570,8 +583,6 @@ int main(int argc, char* argv[]) {
             } else {
                 cout  << endl;
             }
-
-            //cout << "Smallest-Weight: " << smallestWeight.weight << endl;
         }
         cout << " Done!" << flush << endl;    // print progress and time
         cout << " (" << util::format_time(end - begin) << ")" << endl;

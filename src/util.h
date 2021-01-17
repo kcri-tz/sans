@@ -71,24 +71,24 @@ public:
     static char amino_bits_to_char(uint64_t& b);
 
     /**
-     * Trims leading whitespaces from the string
+     * Trims leading whitespaces from the string.
      * @param s
      */
     static void ltrim(string &s);
     /**
-    * Trims trailing whitespaces from the string
+    * Trims trailing whitespaces from the string.
     * @param s
     */
     static void rtrim(string &s);
 
     /**
-    * Trims leading and trailing whitespaces from the string
+    * Trims leading and trailing whitespaces from the string.
     * @param s
     */
     static void trim(string &s);
 
     /**
-    * Replaces all occurrences of replaceString with the new string
+    * Replaces all occurrences of replaceString with the new string.
     * @param s the String which should be changed
     * @param replaceString the string, which should be replaced
     * @param newString the new string instead of the replaced one
@@ -96,11 +96,18 @@ public:
     static void replaceAll(string &s, string replaceString, string newString);
 
     /**
-    * Splits the given string s into parts by a given delimiter
+    * Splits the given string s into parts by a given delimiter.
     * @param s the string which should be splitted
     * @param delimiter the delimiter
     */
     static vector<string> split(string &s, string delimiter);
+
+    /**
+     * Checks if the string entered is a number.
+     * @param s the string
+     * @return bool
+     */
+    static bool is_number(string &s);
 
 protected:
 };

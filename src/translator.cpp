@@ -2,6 +2,21 @@
 #include "translator.h"
 #include "gc.h"
 
+namespace count {
+    int number = 0;
+
+    int getCount() {
+        return number;
+    }
+
+    void incrementCount() {
+        number += 1;
+    }
+
+    void deleteCount() {
+        number = 0;
+    }
+}
 
 /**
  * codon and translationTable structs to save genetic code information
@@ -61,7 +76,6 @@ struct translationTable {
     }
 
 };
-
 struct translationTable translator::translationTable = {};
 unordered_set<char> translator::bases;
 const char* translationTable::bases[] = {"TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG",
@@ -107,6 +121,10 @@ bool translator::init(uint64_t& id) {
             }
         }
     }
+    if (!found) {
+        cerr << "Error: Genetic code not found." << endl;
+        exit(1);
+    }
     return true;
 }
 
@@ -122,12 +140,11 @@ string translator::getTranslatedAminoAcid(string &unit) {
     codon codon = translator::translationTable[unit];
 
     if (!codon.isValid()) {
-        cerr << "Could not find translation for " << unit << ", skipping sequence" << endl;
+        count::incrementCount();
         translated = "";
     } else {
         translated = codon.amino;
     }
-
     return  translated;
 }
 
@@ -137,7 +154,7 @@ bool translator::checkUnit(string &basicString) {
     // unit has to be 3 chars
     util::trim(basicString);
     ok = basicString.length() == 3;
-    if(ok){
+    if (ok) {
         // only valid DNA bases are allowed
         ok = translator::isBase(basicString[0]);
         ok = ok && translator::isBase(basicString[1]);
@@ -160,10 +177,7 @@ bool translator::isBase(char &base) {
 
 string translator::translate(string &line) {
     string translated;
-    //cout << "Zeile ist " << line.length() << " lang";
-
-
-    for(auto pos = 0; pos+3 < line.length(); pos = pos +3){
+    for (auto pos = 0; pos+3 < line.length(); pos = pos +3) {
         string unit = line.substr(pos, 3);
         translated+= translator::getTranslatedAminoAcid(unit);
     }

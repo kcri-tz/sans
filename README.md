@@ -98,16 +98,19 @@ Usage: SANS [PARAMETERS]
     -x, --iupac   	 Extended IUPAC alphabet, resolve ambiguous bases or amino acids
                   	 Specify a number to limit the k-mers per position between 
                   	 1 (no ambiguity) and 4^k respectively 22^k (allows NNN...N)
+                  	 Without --iupac respective k-mers are ignored
 
     -n, --norev   	 Do not consider reverse complement k-mers
 
-    -a, --amino      Consider amino acids: --input provides amino acid sequences
+    -a, --amino   	 Consider amino acids: --input provides amino acid sequences
+                  	 Implies --norev
 
-    -tr, --translate Translates DNA coding sequences.
-
-    -c, --code       The ID of the translation table which should be used.
-                     See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details
-                     Default: 1   
+    -c, --code    	 Translate DNA: --input provides coding sequences
+                  	 Implies --norev
+                  	 optional: ID of the genetic code to be used
+                  	 Default: 1 (The Standard Code)
+                  	 Use 11 for Bacterial, Archaeal, and Plant Plastid Code
+                  	 (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)
 
     -v, --verbose 	 Print information messages during execution
 
@@ -147,17 +150,20 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
    cd <SANS directory>
    cd example_data/drosophila
 
-   # download data
-   ./download.sh
+   # download data: whole genome and coding sequences
+   ./download_WG.sh
+   ./download_CDS.sh
 
    # run SANS greedy tree
    cd fa
-   SANS -i list.txt -f strict -o ../sans_greedytree.splits -N sans_greedytree.new -t 130 -v
+   SANS -i list_WG.txt -f strict -o ../sans_greedytree_DNA.splits -N sans_greedytree_DNA.new -t 130 -v
+   SANS -i list_CDS.txt -f strict -o ../sans_greedytree_AA.splits -N sans_greedytree_AA.new -t 130 -v -c 11 -k 10
    cd ..
 
    # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
-   ../../scripts/comp.py sans_greedytree.splits Reference.splits fa/list.txt
+   ../../scripts/comp.py sans_greedytree_DNA.splits Reference.splits fa/list_WG.txt
+   ../../scripts/comp.py sans_greedytree_AA.splits Reference.splits fa/list_CDS.txt
    ```
 
 3. **Virus example data**

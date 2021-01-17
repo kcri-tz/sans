@@ -243,3 +243,7 @@ vector<string> util::split(string &s, string delimiter) {
 
     return vector;
 }
+
+bool util::is_number(string& s) {
+    return !s.empty() && find_if(s.begin(), s.end(), [](unsigned char c) { return !isdigit(c); }) == s.end();
+}
