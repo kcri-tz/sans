@@ -10,10 +10,13 @@
 
 ### Publications
 
-Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs.](https://pub.uni-bielefeld.de/download/2942421/2942423/s13015-020-00164-3.wittler.pdf)
+Rempel, A. and Wittler, R.: [SANS serif: alignment-free, whole-genome based phylogenetic reconstruction](https://www.biorxiv.org/content/10.1101/2020.12.31.424643v1.full.pdf).
+bioRxiv. doi:10.1101/2020.12.31.424643 (2021).
+
+Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs](https://pub.uni-bielefeld.de/download/2942421/2942423/s13015-020-00164-3.wittler.pdf).
 Algorithms for Molecular Biology. 15: 4 (2020).
 
-Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs.](http://drops.dagstuhl.de/opus/volltexte/2019/11032/pdf/LIPIcs-WABI-2019-2.pdf)
+Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs](http://drops.dagstuhl.de/opus/volltexte/2019/11032/pdf/LIPIcs-WABI-2019-2.pdf).
 In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Schloss Dagstuhl--Leibniz-Zentrum fuer Informatik, Dagstuhl, Germany (2019).
 
 ## Table of Contents
@@ -44,8 +47,6 @@ By default, the installation creates:
 You may want to make the binary (*SANS*) accessible via your *PATH* variable.
 
 Optional: If Bifrost should be used, change the SANS makefile accordingly (easy to see how). Please note the installation instructions regarding the default maximum *k*-mer size of Bifrost in its README. If during the compilation, the Bifrost library files are not found, make sure that the corresponding folder is found as include path by the C++ compiler. You may have to add `-I/usr/local/include` (with the corresponding folder) to the compiler flags in the makefile. We also recommend to have a look at the [FAQs of Bifrost](https://github.com/pmelsted/bifrost#faq).
-
-
 
 ## Usage:
 
@@ -126,12 +127,11 @@ For any question, feedback, or problem, please feel free to file an issue on thi
 
 SANS is provided as a service of the [German Network for Bioinformatics Infrastructure (de.NBI)](https://www.denbi.de/). We would appriciate if you would participate in the evaluation of SANS by completing this [very short survey](https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans).
 
-
 ### Examples
 
 1. **Determine splits from assemblies or read files**
    ```
-   SANS  -k 31 -i list.txt -o sans.splits
+   SANS -i list.txt -o sans.splits -k 31
    ```
    The 31-mers (`-k 31`) of those fasta or fastq files listed in *list.txt* (`-i list.txt`) are extracted. Splits are determined and written to *sans.splits* (`-o sans.splits`).
 
@@ -156,8 +156,8 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 
    # run SANS greedy tree
    cd fa
-   SANS -i list_WG.txt -f strict -o ../sans_greedytree_DNA.splits -N sans_greedytree_DNA.new -t 130 -v
-   SANS -i list_CDS.txt -f strict -o ../sans_greedytree_AA.splits -N sans_greedytree_AA.new -t 130 -v -c 11 -k 10
+   SANS -i list_WG.txt -o ../sans_greedytree_DNA.splits -t 130 -f strict -N sans_greedytree_DNA.new -v
+   SANS -i list_CDS.txt -o ../sans_greedytree_AA.splits -t 130 -f strict -N sans_greedytree_AA.new -v -c -k 10
    cd ..
 
    # compare to reference
@@ -186,8 +186,6 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
    ../../scripts/newick2sans.py Reference_Fig4.new > Reference_Fig4.splits
    ../../scripts/comp.py sans.splits Reference_Fig4.splits fa/list.txt
    ```
-
-
 
 ## License
 
