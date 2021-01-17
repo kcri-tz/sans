@@ -156,14 +156,14 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 
    # run SANS greedy tree
    cd fa
-   SANS -i list_WG.txt -o ../sans_greedytree_DNA.splits -t 130 -f strict -N sans_greedytree_DNA.new -v
-   SANS -i list_CDS.txt -o ../sans_greedytree_AA.splits -t 130 -f strict -N sans_greedytree_AA.new -v -c -k 10
+   SANS -i WG/list_WG.txt -o ../sans_greedytree_DNA.splits -t 130 -f strict -N sans_greedytree_DNA.new -v
+   SANS -i CDS/list_CDS.txt -o ../sans_greedytree_AA.splits -t 130 -f strict -N sans_greedytree_AA.new -v -c -k 10
    cd ..
 
    # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
-   ../../scripts/comp.py sans_greedytree_DNA.splits Reference.splits fa/list_WG.txt
-   ../../scripts/comp.py sans_greedytree_AA.splits Reference.splits fa/list_CDS.txt
+   ../../scripts/comp.py sans_greedytree_DNA.splits Reference.splits fa/WG/list_WG.txt
+   ../../scripts/comp.py sans_greedytree_AA.splits Reference.splits fa/CDS/list_CDS.txt
    ```
 
 3. **Virus example data**
