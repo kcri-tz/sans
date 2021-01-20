@@ -368,13 +368,20 @@ int main(int argc, char* argv[]) {
         }
         string sequence;    // read in the sequence files and extract the k-mers
 
+	// determine folder the list is contained in
+        string folder="";
+	uint64_t found=input.find_last_of("/\\");
+	if (found!=string::npos){
+	  folder=input.substr(0,found+1);
+	}
+
         for (uint64_t i = 0; i < files.size(); ++i) {
-            ifstream file(files[i]);    // input file stream
+            ifstream file(folder+files[i]);    // input file stream
             if (!file.good()) {
-                cout << "\33[2K\r" << "\u001b[31m" << files[i] << " (ERR)" << "\u001b[0m" << endl;    // could not read file
+                cout << "\33[2K\r" << "\u001b[31m" << folder+files[i] << " (ERR)" << "\u001b[0m" << endl;    // could not read file
             }
             else if (verbose) {
-                cout << "\33[2K\r" << files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
+                cout << "\33[2K\r" << folder+files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
             }
             count::deleteCount();
 
