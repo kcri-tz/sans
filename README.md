@@ -191,9 +191,9 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
    
    # compare to references
    ../../scripts/newick2sans.py Reference_Fig3.new > Reference_Fig3.splits
-   ../../scripts/comp.py sans.splits Reference_Fig3.splits fa/list.txt
+   ../../scripts/comp.py sans.splits Reference_Fig3.splits fa/list.txt > fig3.comp
    ../../scripts/newick2sans.py Reference_Fig4.new > Reference_Fig4.splits
-   ../../scripts/comp.py sans.splits Reference_Fig4.splits fa/list.txt
+   ../../scripts/comp.py sans.splits Reference_Fig4.splits fa/list.txt > fig4.comp
    ```
 
 ## License
