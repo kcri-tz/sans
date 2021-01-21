@@ -106,7 +106,7 @@ Usage: SANS [PARAMETERS]
     -n, --norev   	 Do not consider reverse complement k-mers
 
     -a, --amino   	 Consider amino acids: --input provides amino acid sequences
-                  	 Implies --norev
+                  	 Implies --norev and a default k of 10
 
     -c, --code    	 Translate DNA: --input provides coding sequences
                   	 Implies --norev
