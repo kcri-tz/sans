@@ -91,8 +91,8 @@ Usage: SANS [PARAMETERS]
                   	          geom2: geometric mean with pseudo-counts
 
     -f, --filter  	 Output (-o, -N) is a greedy maximum weight subset (see README)
-                         additional output: (weighted) cleanliness, i.e., ratio of filtered
-                                            splits w.r.t. original splits
+                         additional output: (weighted) cleanliness, i.e., ratio of 
+                                            filtered splits w.r.t. original splits
                   	 options: strict: compatible to a tree
                   	          weakly: weakly compatible network
                   	          n-tree: compatible to a union of n trees
