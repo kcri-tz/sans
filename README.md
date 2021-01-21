@@ -168,8 +168,8 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
    ./download_CDS.sh
 
    # run SANS greedy tree
-   ../../SANS -i WG/list.txt -o ../sans_greedytree_WG.splits -t 130 -f strict -N ../sans_greedytree_WG.new -v
-   ../../SANS -i CDS/list.txt -o ../sans_greedytree_CDS.splits -t 130 -f strict -N ../sans_greedytree_CDS.new -v -c -k 10
+   ../../SANS -i WG/list.txt -o sans_greedytree_WG.splits -f strict -N sans_greedytree_WG.new -v
+   ../../SANS -i CDS/list.txt -o sans_greedytree_CDS.splits -f strict -N sans_greedytree_CDS.new -v -c -k 10
    
    # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
@@ -187,7 +187,7 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
    ./download.sh
 
    # run SANS
-   ../../SANS -i fa/list.txt -o ../sans.splits -k 11 -t 130 -v
+   ../../SANS -i fa/list.txt -o sans.splits -k 11 -t 130 -v
    
    # compare to references
    ../../scripts/newick2sans.py Reference_Fig3.new > Reference_Fig3.splits
