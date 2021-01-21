@@ -90,7 +90,10 @@ Usage: SANS [PARAMETERS]
                   	          geom:  geometric mean (default)
                   	          geom2: geometric mean with pseudo-counts
 
-    -f, --filter  	 Output a greedy maximum weight subset
+    -f, --filter  	 Output (-o, -N) is a greedy maximum weight subset
+                         additional output: (weighted) cleanliness of original split set
+                                            ratio of (weights of) filtered splits w.r.t.
+                                            original splits up to weakest filtered split
                   	 options: strict: compatible to a tree
                   	          weakly: weakly compatible network
                   	          n-tree: compatible to a union of n trees
@@ -119,7 +122,18 @@ Usage: SANS [PARAMETERS]
   
 ```
 
-### Contact
+# Details on filter option
+
+The sorted list of splits is greedily filtered, i.e., splits are iterated from strongest to weakest and a split is kept if and only if the filter criterion is met.
+
+strict filter: a split is kept if it is compatible to all previously filtered splits, i.e., the resulting set of splits is equivalent to a tree.
+weakly: a split is kept if it is weakly compatible to all previously filtered splits (see publication for definition of "weak compatibility").
+n-tree: several sets of compatible splits (=trees) are maintained. A split is added to the first, second, ... n-th set if possible (compatible).
+
+Cleanliness: The filtered set of splits is compared to the originally given (--splits) or computed (--input, --graph) set of splits to obtain a measure of how many incompatible splits have been filtered out. Consider a list of splits S=\[s_1, ..., s_n\] that has been filtered to the sublist F=\[s_f_1, ..., s_f_m\], both sorted in descending order. To make the measure robust against low weighting splits and the choice of paramter t, we truncate S to "just contain F": let S':=\[s_, ...,s_f_m\] be the shortest prefix of S that contains F. Then the "cleanliness" is m/f_m, i.e., the ratio of the length of F w.r.t. the length of S'. The "weighted cleanlines" is the ratio of the corresponding sum of weights of splits in F and S', resp. 
+
+
+## Contact
 
 For any question, feedback, or problem, please feel free to file an issue on this Git repository or write an email and we will get back to you as soon as possible.
 
@@ -127,7 +141,7 @@ For any question, feedback, or problem, please feel free to file an issue on thi
 
 SANS is provided as a service of the [German Network for Bioinformatics Infrastructure (de.NBI)](https://www.denbi.de/). We would appriciate if you would participate in the evaluation of SANS by completing this [very short survey](https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans).
 
-### Examples
+## Examples
 
 1. **Determine splits from assemblies or read files**
    ```
