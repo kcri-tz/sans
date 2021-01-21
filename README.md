@@ -81,7 +81,7 @@ Usage: SANS [PARAMETERS]
 
   Optional arguments:
 
-    -k, --kmer    	 Length of k-mers (default: 31, or 10 for -a)
+    -k, --kmer    	 Length of k-mers (default: 31, or 10 for --amino)
 
     -t, --top     	 Number of splits in the output list (default: all)
 
