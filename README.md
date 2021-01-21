@@ -143,11 +143,11 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
    ./download.sh
 
    # run SANS greedy tree
-   ../../SANS -i fa/list.txt -o ../sans_greedytree.splits -t 130 -f strict -N sans_greedytree.new -v
+   ../../SANS -i fa/list.txt -o sans_greedytree.splits -f strict -N sans_greedytree.new -v
    
    # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
-   ../../scripts/comp.py sans_greedytree.splits Reference.splits fa/list.txt
+   ../../scripts/comp.py sans_greedytree.splits Reference.splits fa/list.txt > sans_greedytree.comp
    ```
 
 3. **Virus example data**
@@ -160,13 +160,13 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
    ./download.sh
 
    # run SANS
-   ../../SANS -i fa/list.txt -o ../sans.splits -k 11 -t 130 -v
+   ../../SANS -i fa/list.txt -o sans.splits -k 11 -t 130 -v
    
    # compare to references
    ../../scripts/newick2sans.py Reference_Fig3.new > Reference_Fig3.splits
-   ../../scripts/comp.py sans.splits Reference_Fig3.splits fa/list.txt
+   ../../scripts/comp.py sans.splits Reference_Fig3.splits fa/list.txt > fig3.comp
    ../../scripts/newick2sans.py Reference_Fig4.new > Reference_Fig4.splits
-   ../../scripts/comp.py sans.splits Reference_Fig4.splits fa/list.txt
+   ../../scripts/comp.py sans.splits Reference_Fig4.splits fa/list.txt > fig4.comp
    ```
 
 ## License
