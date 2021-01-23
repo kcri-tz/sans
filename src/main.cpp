@@ -60,6 +60,8 @@ int main(int argc, char* argv[]) {
         cout << "                  \t          geom2: geometric mean with pseudo-counts" << endl;
         cout << endl;
         cout << "    -f, --filter  \t Output a greedy maximum weight subset" << endl;
+        // cout << "                  \t additional output: (weighted) cleanliness, i.e., ratio of" << endl;
+        // cout << "                  \t filtered splits w.r.t. original splits" << endl;
         cout << "                  \t options: strict: compatible to a tree" << endl;
         cout << "                  \t          weakly: weakly compatible network" << endl;
         cout << "                  \t          n-tree: compatible to a union of n trees" << endl;
@@ -498,10 +500,10 @@ int main(int argc, char* argv[]) {
         cout << "\33[2K\r" << "Filtering splits..." << flush;
     }
 
-    cleanliness cleanliness;
+    //cleanliness cleanliness;
     if (!filter.empty()) {    // apply filter
         for (auto& split : graph::split_list) {
-            cleanliness.addWeightStateBefore(split.first, split.second);
+            //cleanliness.addWeightStateBefore(split.first, split.second);
         }
 
         if (filter == "strict" || filter == "tree") {
@@ -537,10 +539,10 @@ int main(int argc, char* argv[]) {
     ostream stream(file.rdbuf());
 
     uint64_t pos = 0;
-    cleanliness.setFilteredCount(graph::split_list.size());
+    //cleanliness.setFilteredCount(graph::split_list.size());
     for (auto& split : graph::split_list) {
         double weight = split.first;
-        cleanliness.setSmallestWeight(weight, split.second);
+       // cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
             if (color::test(split.second, pos)) {
@@ -556,7 +558,7 @@ int main(int argc, char* argv[]) {
         stream << endl;
     }
 
-    cleanliness.calculateWeightBeforeCounter();
+    //cleanliness.calculateWeightBeforeCounter();
 
     file.close();
 
@@ -564,7 +566,7 @@ int main(int argc, char* argv[]) {
 
     if (verbose) {
         if (!filter.empty()) {
-           cleanliness.reportCleanliness();
+          // cleanliness.reportCleanliness();
         }
         cout << " Done!" << flush << endl;    // print progress and time
         cout << " (" << util::format_time(end - begin) << ")" << endl;
