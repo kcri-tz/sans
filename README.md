@@ -167,7 +167,7 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 
    # run SANS greedy tree
    ../../SANS -i WG/list.txt -o sans_greedytree_WG.splits -f strict -N sans_greedytree_WG.new -v
-   ../../SANS -i CDS/list.txt -o sans_greedytree_CDS.splits -f strict -N sans_greedytree_CDS.new -v -c -k 10
+   ../../SANS -i CDS/list.txt -o sans_greedytree_CDS.splits -f strict -N sans_greedytree_CDS.new -v -c
    
    # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits

@@ -42,15 +42,15 @@ void cleanliness::setFilteredCount(uint64_t splitCountAfter) {
 
 void cleanliness::reportCleanliness() {
     cout << "cleanliness: " <<  this->splitCountAfter << "/" <<  this->splitCountBefore;
-    if ( this->splitCountBefore > 0) {
-        cout  << " -> " << ( this->splitCountAfter /  (double)  this->splitCountBefore) << endl;
+    if (this->splitCountBefore > 0) {
+        cout  << " -> " << (this->splitCountAfter /  (double)  this->splitCountBefore) << endl;
     } else {
         cout << endl;
     }
 
     cout << "weighted cleanliness: " <<  this->splitWeightCountAfter << "/" <<  this->splitWeightCountBefore;
     if (this->splitWeightCountBefore > 0) {
-        cout << " -> " << (this->splitWeightCountAfter /  this->splitWeightCountBefore) << endl;
+        cout << " -> " << (this->splitWeightCountAfter / this->splitWeightCountBefore) << endl;
     } else {
         cout  << endl;
     }

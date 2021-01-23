@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
-        cout << "    -k, --kmer    \t Length of k-mers (default: 31)" << endl;
+        cout << "    -k, --kmer    \t Length of k-mers (default: 31, or 10 for --amino)" << endl;
         cout << endl;
 //        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
 //        cout << endl;
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         cout << "    -n, --norev   \t Do not consider reverse complement k-mers" << endl;
         cout << endl;
         cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
-        cout << "                  \t Implies --norev" << endl;
+        cout << "                  \t Implies --norev and a default k of 10" << endl;
         cout << endl;
         cout << "    -c, --code   \t Translate DNA: --input provides coding sequences" << endl;
         cout << "                 \t Implies --norev" << endl;
@@ -102,7 +102,6 @@ int main(int argc, char* argv[]) {
     string translate; // name of translate file
 
     uint64_t kmer = 31;    // length of k-mers
-    bool userKmer = false; //is k-mer default or from user
     uint64_t window = 1;    // number of k-mers
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
@@ -114,6 +113,7 @@ int main(int argc, char* argv[]) {
     bool verbose = false;    // print messages during execution
     bool amino = false;      // input files are amino acid sequences
     bool shouldTranslate = false;   // translate input files
+    bool userKmer = false; // is k-mer default or custom
     uint64_t code = 1;
 
     // parse the command line arguments and update the variables above
@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
             newick = argv[++i];    // Output newick file
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {
-            kmer = stoi(argv[++i]);    // Length of k-mers (default: 31)
+            kmer = stoi(argv[++i]);    // Length of k-mers (default: 31, 10 for amino acids)
             userKmer = true;
         }
         else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--window") == 0) {
@@ -212,10 +212,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if(!userKmer){
-        if(!amino){
+    if (!userKmer) {
+        if (!amino) {
             kmer = 31;
-        }else{
+        } else {
             kmer = 10;
         }
     }
