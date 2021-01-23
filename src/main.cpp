@@ -1,13 +1,6 @@
 #include "main.h"
 
-struct filter_weight_stats {
-    double weight;
-    color_t color;
 
-    bool is(filter_weight_stats other) {
-        return other.weight == weight && other.color == color;
-    }
-};
 
 /**
  * This is the entry point of the program.
@@ -107,6 +100,7 @@ int main(int argc, char* argv[]) {
     string translate; // name of translate file
 
     uint64_t kmer = 31;    // length of k-mers
+    bool userKmer = false; //is k-mer default or from user
     uint64_t window = 1;    // number of k-mers
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
@@ -143,6 +137,7 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {
             kmer = stoi(argv[++i]);    // Length of k-mers (default: 31)
+            userKmer = true;
         }
         else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--window") == 0) {
             window = stoi(argv[++i]);    // Number of k-mers (default: 1)
@@ -212,6 +207,14 @@ int main(int argc, char* argv[]) {
         else {
             cerr << "Error: unknown argument: type --help" << endl;
             return 1;
+        }
+    }
+
+    if(!userKmer){
+        if(!amino){
+            kmer = 31;
+        }else{
+            kmer = 10;
         }
     }
 
@@ -495,13 +498,10 @@ int main(int argc, char* argv[]) {
         cout << "\33[2K\r" << "Filtering splits..." << flush;
     }
 
-    vector<filter_weight_stats> weightsBefore;
+    cleanliness cleanliness;
     if (!filter.empty()) {    // apply filter
         for (auto& split : graph::split_list) {
-            struct filter_weight_stats st = {};
-            st.weight = split.first;
-            st.color = split.second;
-            weightsBefore.push_back(st);
+            cleanliness.addWeightStateBefore(split.first, split.second);
         }
 
         if (filter == "strict" || filter == "tree") {
@@ -537,17 +537,10 @@ int main(int argc, char* argv[]) {
     ostream stream(file.rdbuf());
 
     uint64_t pos = 0;
-    uint64_t splitCountAfter = graph::split_list.size();
-    double splitWeightCountAfter = 0;
-    uint64_t splitCountBefore = 0;
-    double splitWeightCountBefore = 0;
-    struct filter_weight_stats smallestWeight = {};
+    cleanliness.setFilteredCount(graph::split_list.size());
     for (auto& split : graph::split_list) {
         double weight = split.first;
-        smallestWeight = {};
-        smallestWeight.weight = weight;
-        smallestWeight.color = split.second;
-        splitWeightCountAfter+= weight;
+        cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
             if (color::test(split.second, pos)) {
@@ -563,16 +556,7 @@ int main(int argc, char* argv[]) {
         stream << endl;
     }
 
-    bool smallestReached = false;
-
-    for (int i = 0; i< weightsBefore.size() && !smallestReached; i++) {
-        splitCountBefore++;
-        splitWeightCountBefore+= weightsBefore[i].weight;
-
-        if (weightsBefore[i].is(smallestWeight)) {
-            smallestReached = true;
-        }
-    }
+    cleanliness.calculateWeightBeforeCounter();
 
     file.close();
 
@@ -580,19 +564,7 @@ int main(int argc, char* argv[]) {
 
     if (verbose) {
         if (!filter.empty()) {
-            cout << "Filter-Split-Ratio: " << splitCountAfter << "/" << splitCountBefore;
-            if (splitCountBefore > 0) {
-                cout  << " -> " << (splitCountAfter /  (double) splitCountBefore) << endl;
-            } else {
-                 cout << endl;
-            }
-
-            cout << "Filter-Weight-Ratio: " << splitWeightCountAfter << "/" << splitWeightCountBefore;
-            if (splitWeightCountBefore > 0) {
-             cout << " -> " << (splitWeightCountAfter /  splitWeightCountBefore) << endl;
-            } else {
-                cout  << endl;
-            }
+           cleanliness.reportCleanliness();
         }
         cout << " Done!" << flush << endl;    // print progress and time
         cout << " (" << util::format_time(end - begin) << ")" << endl;

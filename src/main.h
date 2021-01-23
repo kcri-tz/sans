@@ -3,9 +3,9 @@
 #include <cstring>
 #include <algorithm>
 
-#include "graph.h"
 #include "util.h"
 #include "translator.h"
+#include "cleanliness.h"
 
 #ifndef MAX_KMER_SIZE
     #define MAX_KMER_SIZE maxK+1
