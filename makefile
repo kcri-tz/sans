@@ -7,16 +7,26 @@ CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64
 
 # Wrap Windows / Unix commands
 ifeq ($(OS), Windows_NT)
+	TD = obj
 	MK = mkdir obj
 	RM = rmdir /s /q obj 
 	MV = cmd /C move *.o obj
 else
+	TD = obj/
 	MK = mkdir obj/
 	RM = rm -rf obj/
 	MV = mv *.o obj/
 endif
 
+ifeq ("$(wildcard $(TD))", "")
+    RM = @echo ""
+endif
+
+
+
+
 SANS: main.o
+	$(RM)
 	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o color64.o colorXX.o util.o $(BF)
 	$(MK)
 	$(MV)
