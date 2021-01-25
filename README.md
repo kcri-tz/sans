@@ -81,7 +81,7 @@ Usage: SANS [PARAMETERS]
 
   Optional arguments:
 
-    -k, --kmer    	 Length of k-mers (default: 31, or 10 for --amino)
+    -k, --kmer    	 Length of k-mers (default: 31, or 10 for --amino and --code)
 
     -t, --top     	 Number of splits in the output list (default: all)
 
@@ -107,7 +107,7 @@ Usage: SANS [PARAMETERS]
                   	 Implies --norev and a default k of 10
 
     -c, --code    	 Translate DNA: --input provides coding sequences
-                  	 Implies --norev
+                  	 Implies --norev and a default k of 10
                   	 optional: ID of the genetic code to be used
                   	 Default: 1 (The Standard Code)
                   	 Use 11 for Bacterial, Archaeal, and Plant Plastid Code

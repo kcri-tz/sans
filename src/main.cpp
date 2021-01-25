@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
-        cout << "    -k, --kmer    \t Length of k-mers (default: 31, or 10 for --amino)" << endl;
+        cout << "    -k, --kmer    \t Length of k-mers (default: 31, or 10 for --amino and --code)" << endl;
         cout << endl;
 //        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
 //        cout << endl;
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
         cout << "                  \t Implies --norev and a default k of 10" << endl;
         cout << endl;
         cout << "    -c, --code   \t Translate DNA: --input provides coding sequences" << endl;
-        cout << "                 \t Implies --norev" << endl;
+        cout << "                 \t Implies --norev and a default k of 10" << endl;
         cout << "                 \t optional: ID of the genetic code to be used" << endl;
         cout << "                 \t Default: 1" << endl;
         cout << "                 \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
