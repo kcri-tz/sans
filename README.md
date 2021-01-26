@@ -7,6 +7,7 @@
 * Alignment-free
 * Assembled genomes or reads as input
 * Phylogenetic splits or tree as output
+* **NEW:** Coding sequences / amino acid sequneces as input (see --code and -- amino)
 
 ### Publications
 
