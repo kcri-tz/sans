@@ -1,11 +1,11 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
- CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64
+ CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=1024
 
 ## IF DEBUG
-# CC = g++ -g -march=native -DmaxK=33 -DmaxN=64
+# CC = g++ -g -march=native -DmaxK=33 -DmaxN=1024
 
 ## IF BIFROST LIBRARY SHOULD BE USED
-# CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -DuseBF
+# CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=1024 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
 $(shell xxd -i config/gc.prt > src/gc.h)
