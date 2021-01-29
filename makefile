@@ -14,6 +14,7 @@ ifeq ($(OS), Windows_NT)
 	MK = mkdir obj
 	RM = rmdir /s /q obj 
 	MV = cmd /C move *.o obj
+
 else
 	TD = obj/
 	MK = mkdir obj/
@@ -26,10 +27,11 @@ ifeq ("$(wildcard $(TD))", "")
 endif
 
 
-$(shell xxd -i config/gc.prt > src/gc.h)
+# Please don't hardcode unix shell commands into the makefile
+# $(shell xxd -i config/gc.prt > src/gc.h)
+
 
 SANS: main.o
-	$(RM)
 	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o $(BF)
 	$(RM)
 	$(MK)
