@@ -1,6 +1,12 @@
+#ifndef SANS_UTIL_H
+#define SANS_UTIL_H
+
+
 #include <iostream>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 
@@ -48,6 +54,62 @@ public:
      */
     static string format_time(chrono::high_resolution_clock::duration time);
 
-protected:
+    /**
+     * This function encodes a single character to five bits.
+     *
+     * @param c character
+     * @return bit sequence
+     */
+    static uint64_t amino_char_to_bits(char& c);
 
+    /**
+     * This function decodes five bits to a single character.
+     *
+     * @param b bit sequence
+     * @return character
+     */
+    static char amino_bits_to_char(uint64_t& b);
+
+    /**
+     * Trims leading whitespaces from the string.
+     * @param s
+     */
+    static void ltrim(string &s);
+    /**
+    * Trims trailing whitespaces from the string.
+    * @param s
+    */
+    static void rtrim(string &s);
+
+    /**
+    * Trims leading and trailing whitespaces from the string.
+    * @param s
+    */
+    static void trim(string &s);
+
+    /**
+    * Replaces all occurrences of replaceString with the new string.
+    * @param s the String which should be changed
+    * @param replaceString the string, which should be replaced
+    * @param newString the new string instead of the replaced one
+    */
+    static void replaceAll(string &s, string replaceString, string newString);
+
+    /**
+    * Splits the given string s into parts by a given delimiter.
+    * @param s the string which should be splitted
+    * @param delimiter the delimiter
+    */
+    static vector<string> split(string &s, string delimiter);
+
+    /**
+     * Checks if the string entered is a number.
+     * @param s the string
+     * @return bool
+     */
+    static bool is_number(string &s);
+
+protected:
 };
+
+#endif

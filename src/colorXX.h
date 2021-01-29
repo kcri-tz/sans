@@ -1,3 +1,5 @@
+#ifndef COLORXX_H
+#define COLORXX_H
 #include <iostream>
 #include <bitset>
 
@@ -109,3 +111,4 @@ public:
 protected:
 
 };
+#endif

@@ -3,11 +3,12 @@
 #include <cstring>
 #include <algorithm>
 
-#include "graph.h"
 #include "util.h"
+#include "translator.h"
+#include "cleanliness.h"
 
 #ifndef MAX_KMER_SIZE
-    #define MAX_KMER_SIZE maxK
+    #define MAX_KMER_SIZE maxK+1
 #endif
 #ifdef useBF
     #include <bifrost/CompactedDBG.hpp>
@@ -18,7 +19,7 @@ using namespace std;
 
 // Symmetric Alignment-free phylogeNomic Splits
 // simple efficient re-implementation + filters
-#define SANS_VERSION "2.0_10C"    // SANS serif
+#define SANS_VERSION "2.1_01B"    // SANS serif
 
 /**
  * This is the entry point of the program.

@@ -23,6 +23,8 @@ template <typename T>
 
 #include "kmer32.h"
 #include "kmerXX.h"
+#include "kmerAmino12.h"
+#include "kmerAminoXX.h"
 
 #if maxK > 32 // store k-mers in a bitset, allows larger k-mers
     typedef kmerXX kmer;
@@ -31,6 +33,16 @@ template <typename T>
     typedef kmer32 kmer;
     typedef uint64_t kmer_t;
 #endif
+
+#if maxK > 12 // store k-mers in a bitset, allows larger k-mers
+    typedef kmerAminoXX kmerAmino;
+    typedef bitset<5*maxK> kmerAmino_t;
+#else // store k-mer bits in an integer, optimizes performance
+    typedef kmerAmino12 kmerAmino;
+    typedef uint64_t kmerAmino_t;
+#endif
+
+
 
 #include "color64.h"
 #include "colorXX.h"
@@ -59,10 +71,17 @@ class graph {
 
 private:
 
+    static bool isAmino;
+
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
     static hash_map<kmer_t, color_t> kmer_table;
+    /**
+     * This is a hash table mapping k-mers to colors [O(1)].
+     */
+    static hash_map<kmerAmino_t, color_t> kmer_tableAmino;
+
 
     /**
      * This is a hash table mapping colors to weights [O(1)].
@@ -82,11 +101,17 @@ public:
     static uint64_t t;
 
     /**
-     * This function initializes the top list size.
+    * These are the allowed chars.
+    */
+    static vector<char> allowedChars;
+
+
+    /**
+     * This function initializes the top list size and the allowed chars.
      *
      * @param t top list size
      */
-    static void init(uint64_t& top_size);
+    static void init(uint64_t& top_size, bool isAmino);
 
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
@@ -222,6 +247,15 @@ protected:
     static void iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& input);
 
     /**
+   * This function shifts a base into a set of ambiguous iupac k-mers.
+   *
+   * @param prev set of k-mers
+   * @param next set of k-mers
+   * @param input iupac character
+   */
+    static void iupac_shift(hash_set<kmerAmino_t>& prev, hash_set<kmerAmino_t>& next, char& input);
+
+    /**
      * This function returns a tree structure (struct node) generated from the given list of color sets.
      *
      * @param color_set list of color sets
@@ -246,4 +280,11 @@ protected:
      */
     static string print_tree(node* root, std::function<string(const uint64_t&)> map);
 
+    /**
+     * This function checks if the character at the given position is allowed.
+     * @param pos position in str
+     * @param str the current part of the sequence
+     * @return true if allowed, false otherwise
+     */
+    static bool isAllowedChar(uint64_t pos, string &str);
 };

@@ -1,5 +1,7 @@
 #include "main.h"
 
+
+
 /**
  * This is the entry point of the program.
  *
@@ -51,7 +53,7 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
-        cout << "    -k, --kmer    \t Length of k-mers (default: 31)" << endl;
+        cout << "    -k, --kmer    \t Length of k-mers (default: 31, or 10 for --amino and --code)" << endl;
         cout << endl;
 //        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
 //        cout << endl;
@@ -64,16 +66,29 @@ int main(int argc, char* argv[]) {
         cout << "                  \t          geom2: geometric mean with pseudo-counts" << endl;
         cout << endl;
         cout << "    -f, --filter  \t Output a greedy maximum weight subset" << endl;
+        // cout << "                  \t additional output: (weighted) cleanliness, i.e., ratio of" << endl;
+        // cout << "                  \t filtered splits w.r.t. original splits" << endl;
         cout << "                  \t options: strict: compatible to a tree" << endl;
         cout << "                  \t          weakly: weakly compatible network" << endl;
         cout << "                  \t          n-tree: compatible to a union of n trees" << endl;
         cout << "                  \t                  (where n is an arbitrary number)" << endl;
         cout << endl;
-        cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases" << endl;
-        cout << "                  \t Specify a number to limit the k-mers per position" << endl;
-        cout << "                  \t between 1 (no ambiguity) and 4^k (allows NNN...N)" << endl;
+        cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases or amino acids" << endl;
+        cout << "                  \t Specify a number to limit the k-mers per position between" << endl;
+        cout << "                  \t 1 (no ambiguity) and 4^k respectively 22^k (allows NNN...N)" << endl;
+        cout << "                  \t Without --iupac respective k-mers are ignored" << endl;
         cout << endl;
         cout << "    -n, --norev   \t Do not consider reverse complement k-mers" << endl;
+        cout << endl;
+        cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
+        cout << "                  \t Implies --norev and a default k of 10" << endl;
+        cout << endl;
+        cout << "    -c, --code   \t Translate DNA: --input provides coding sequences" << endl;
+        cout << "                 \t Implies --norev and a default k of 10" << endl;
+        cout << "                 \t optional: ID of the genetic code to be used" << endl;
+        cout << "                 \t Default: 1" << endl;
+        cout << "                 \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
+        cout << "                 \t (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)" << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
@@ -90,6 +105,7 @@ int main(int argc, char* argv[]) {
     string splits;    // name of splits file
     string output;    // name of output file
     string newick;    // name of newick output file
+    string translate; // name of translate file
 
     uint64_t kmer = 31;    // length of k-mers
     uint64_t window = 1;    // number of k-mers
@@ -102,6 +118,10 @@ int main(int argc, char* argv[]) {
     uint64_t iupac = 1;    // allow extended iupac characters
     bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
+    bool amino = false;      // input files are amino acid sequences
+    bool shouldTranslate = false;   // translate input files
+    bool userKmer = false; // is k-mer default or custom
+    uint64_t code = 1;
 
     // parse the command line arguments and update the variables above
     for (int i = 1; i < argc; ++i) {
@@ -125,10 +145,14 @@ int main(int argc, char* argv[]) {
             newick = argv[++i];    // Output newick file
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {
-            kmer = stoi(argv[++i]);    // Length of k-mers (default: 31)
+            kmer = stoi(argv[++i]);    // Length of k-mers (default: 31, 10 for amino acids)
+            userKmer = true;
         }
         else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--window") == 0) {
             window = stoi(argv[++i]);    // Number of k-mers (default: 1)
+            if (window > 1) {
+                cerr << "Warning: using experimental feature --window" << endl;
+            }
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
             i++;
@@ -180,9 +204,32 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
             verbose = true;    // Print messages during execution
         }
+        else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--amino") == 0) {
+            amino = true;   // Input provides amino acid sequences
+        }
+        else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--code") == 0) {
+            if (i+1 < argc) {
+                string param = argv[++i];
+                if (!util::is_number(param)){
+                    i--;
+                } else {
+                    code = stoi(param);     // Number of the genetic code to be used
+                }
+
+            }
+            shouldTranslate = true;
+        }
         else {
             cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
             return 1;
+        }
+    }
+
+    if (!userKmer) {
+        if (!amino) {
+            kmer = 31;
+        } else {
+            kmer = 10;
         }
     }
 
@@ -198,6 +245,21 @@ int main(int argc, char* argv[]) {
         cerr << "Error: too many input arguments: --graph and --splits" << endl;
         return 1;
     }
+    if (input.empty() && amino) {
+        cerr << "Error: missing argument: --input <file_name> for option --amino" << endl;
+        return 1;
+    }
+
+    if (!splits.empty() && amino) {
+        cerr << "Error: too many input arguments: --splits and --amino" << endl;
+        return 1;
+    }
+
+    if (!graph.empty() && amino) {
+        cerr << "Error: too many input arguments: --graph and --amino" << endl;
+        return 1;
+    }
+
     if (output.empty() && newick.empty()) {
         cerr << "Error: missing argument: --output <file_name> or --newick <file_name>" << endl;
         return 1;
@@ -217,6 +279,14 @@ int main(int argc, char* argv[]) {
     if (input.empty() && !splits.empty() && !newick.empty()) {
         cerr << "Note: Newick output from a list of splits, some taxa could be missing" << endl;
         cerr << "      --input can be used to provide the original list of taxa" << endl;
+    }
+
+    // check if we need to init translation
+    if (shouldTranslate) {
+        amino = true;
+        if (!translator::init(code)) {
+            cerr << "Error: No translation data found" << translate << endl;
+        }
     }
 
     // parse the list of input sequence files
@@ -277,8 +347,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    graph::init(top);    // initialize the toplist size
-
+    graph::init(top, amino); // initialize the toplist size and the allowed characters
     if (!splits.empty()) {
         ifstream file(splits);
         if (!file.good()) {
@@ -311,8 +380,9 @@ int main(int argc, char* argv[]) {
         }
         file.close();
     }
-
-    kmer::init(kmer);    // initialize the k-mer length
+    
+    kmer::init(kmer);      // initialize the k-mer length
+    kmerAmino::init(kmer); // initialize the k-mer length
     color::init(num);    // initialize the color number
 
     if (!input.empty() && splits.empty()) {
@@ -321,15 +391,24 @@ int main(int argc, char* argv[]) {
         }
         string sequence;    // read in the sequence files and extract the k-mers
 
+	// determine folder the list is contained in
+        string folder="";
+	uint64_t found=input.find_last_of("/\\");
+	if (found!=string::npos){
+	  folder=input.substr(0,found+1);
+	}
+
         for (uint64_t i = 0; i < files.size(); ++i) {
-            ifstream file(files[i]);    // input file stream
+            ifstream file(folder+files[i]);    // input file stream
             if (!file.good()) {
-                cout << "\33[2K\r" << "\u001b[31m" << files[i] << " (ERR)" << "\u001b[0m" << endl;    // could not read file
+                cout << "\33[2K\r" << "\u001b[31m" << folder+files[i] << " (ERR)" << "\u001b[0m" << endl;    // could not read file
             }
             else if (verbose) {
-                cout << "\33[2K\r" << files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
+                cout << "\33[2K\r" << folder+files[i] << " (" << i+1 << "/" << files.size() << ")" << endl;    // print progress
             }
+            count::deleteCount();
 
+            string appendixChars; 
             string line;    // read the file line by line
             while (getline(file, line)) {
                 if (line.length() > 0) {
@@ -341,10 +420,11 @@ int main(int argc, char* argv[]) {
                             iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
                                       : graph::add_kmers(sequence, i, reverse);
                         }
+
                         sequence.clear();
 
                         if (verbose) {
-                            cout << "\33[2K\r" << line << flush;    // print progress
+                            cout << "\33[2K\r" << line << flush << endl;    // print progress
                         }
                     }
                     else if (line[0] == '+') {    // FASTQ quality values -> ignore
@@ -352,9 +432,26 @@ int main(int argc, char* argv[]) {
                     }
                     else {
                         transform(line.begin(), line.end(), line.begin(), ::toupper);
-                        sequence += line;    // FASTA & FASTQ sequence -> read
+                        string newLine = line;
+                        if (shouldTranslate) {
+                            if (appendixChars.length() >0 ) {
+                                newLine= appendixChars + newLine;
+                                appendixChars = "";
+                            }
+                            auto toManyChars = line.length() % 3;
+                            if (toManyChars > 0) {
+                                appendixChars = newLine.substr(line.length() - toManyChars, toManyChars);
+                                newLine = newLine.substr(0, line.length() - toManyChars);
+                            }
+
+                            newLine = translator::translate(newLine);
+                        }
+                        sequence += newLine;    // FASTA & FASTQ sequence -> read
                     }
                 }
+            }
+            if (verbose && count::getCount() > 0) {
+                cerr << count::getCount()<< " triplets could not be translated."<< endl;
             }
             if (window > 1) {
                 iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
@@ -408,7 +505,7 @@ int main(int argc, char* argv[]) {
         #ifdef useBF
         else return cdbg.getColorName(i-files.size());
         #endif
-        cerr << "ERROR: Color bit does not correspond to color name" << endl;
+        cerr << "Error: color bit does not correspond to color name" << endl;
         exit(EXIT_FAILURE);
     };
 
@@ -420,7 +517,13 @@ int main(int argc, char* argv[]) {
     if (verbose) {
         cout << "\33[2K\r" << "Filtering splits..." << flush;
     }
+
+    //cleanliness cleanliness;
     if (!filter.empty()) {    // apply filter
+        for (auto& split : graph::split_list) {
+            //cleanliness.addWeightStateBefore(split.first, split.second);
+        }
+
         if (filter == "strict" || filter == "tree") {
             if (!newick.empty()) {
                 ofstream file(newick);    // output file stream
@@ -428,33 +531,37 @@ int main(int argc, char* argv[]) {
                 stream << graph::filter_strict(map, verbose);    // filter and output
                 file.close();
             } else {
-                graph::filter_strict(verbose);
+               graph::filter_strict(verbose);
             }
         }
         else if (filter == "weakly") {
-            graph::filter_weakly(verbose);
+           graph::filter_weakly(verbose);
         }
         else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
             if (!newick.empty()) {
                 ofstream file(newick);    // output file stream
                 ostream stream(file.rdbuf());
-                stream << graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
+                auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
+                stream <<  ot;
                 file.close();
             } else {
-                graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
+               graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
             }
         }
     }
 
     if (verbose) {
-        cout << "\33[2K\r" << "Please wait..." << flush;
+        cout << "\33[2K\r" << "Please wait..." << flush << endl;
     }
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());
 
     uint64_t pos = 0;
+    //cleanliness.setFilteredCount(graph::split_list.size());
     for (auto& split : graph::split_list) {
-        stream << split.first;    // weight of the split
+        double weight = split.first;
+       // cleanliness.setSmallestWeight(weight, split.second);
+        stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
             if (color::test(split.second, pos)) {
                 if (i < files.size())
@@ -468,13 +575,22 @@ int main(int argc, char* argv[]) {
         }
         stream << endl;
     }
+
+    //cleanliness.calculateWeightBeforeCounter();
+
     file.close();
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
 
     if (verbose) {
-        cout << " Done!" << flush;    // print progress and time
+        if (!filter.empty()) {
+          // cleanliness.reportCleanliness();
+        }
+        cout << " Done!" << flush << endl;    // print progress and time
         cout << " (" << util::format_time(end - begin) << ")" << endl;
     }
     return 0;
 }
+
+
+
