@@ -8,8 +8,6 @@
 # CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=1024 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
-# $(shell xxd -i config/gc.prt > src/gc.h)
-
 SANS: main.o
 	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o $(BF)
 	rm -rf obj/; mkdir obj/; mv *.o obj/
