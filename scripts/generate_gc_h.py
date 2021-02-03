@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+import urllib.request
+
+# Update gc.prt
+url = 'ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt'
+urllib.request.urlretrieve(url, '../config/gc.prt')
 
 prs = argparse.ArgumentParser(description='Generate binary header output file gc.h for SANS by using the given genetic code file from NCBI')
 prs.add_argument('-i', '--input', required=False, help='Input: genetic code file from NCBI. Default: ../config/gc.prt')
