@@ -120,7 +120,7 @@ Usage: SANS [PARAMETERS]
   
 ```
 
-# Details on filter option
+## Details on filter option
 
 The sorted list of splits is greedily filtered, i.e., splits are iterated from strongest to weakest and a split is kept if and only if the filter criterion is met.
 
