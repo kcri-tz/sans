@@ -43,7 +43,7 @@ namespace std {
     }
 }
 
-#elif (maxK > 12 || maxN > 64) 
+#else
 namespace std {
     template <uint32_t N>
         bool operator<(const bitset<N>& x, const bitset<N>& y) {
@@ -53,7 +53,6 @@ namespace std {
         return false;
     }
 }
-
 #endif
 
 /**
