@@ -259,6 +259,8 @@ public:
 
 #if MAX_SIZE >= ULLONG_MAX
 #define TSL_REHASH_PRIMES 51
+#elif MAX_SIZE >= ULONG_MAX
+#define TSL_REHASH_PRIMES 40
 #else
 #define TSL_REHASH_PRIMES 23
 #endif
@@ -271,13 +273,18 @@ private:
             1u, 5u, 17u, 29u, 37u, 53u, 67u, 79u, 97u, 131u, 193u, 257u, 389u, 521u, 769u, 1031u, 1543u,
             2053u, 3079u, 6151u, 12289u, 24593u, 49157u
             
+            #if MAX_SIZE >= ULONG_MAX
+            , 98317ull, 196613ull, 393241ull, 786433ull, 1572869ull, 3145739ull,
+            6291469ull, 12582917ull, 25165843ull, 50331653ull, 100663319ull, 201326611ull, 402653189ull, 805306457ull, 1610612741ull,
+            3221225473ull, 4294967291ull
+            #endif
+
             #if MAX_SIZE >= ULLONG_MAX
-            , 98317ul, 196613ul, 393241ul, 786433ul, 1572869ul, 3145739ul,
-            6291469ul, 12582917ul, 25165843ul, 50331653ul, 100663319ul, 201326611ul, 402653189ul, 805306457ul, 1610612741ul,
-            3221225473ul, 4294967291ul
             , 6442450939ull, 12884901893ull, 25769803751ull, 51539607551ull, 103079215111ull
             , 206158430209ull, 412316860441ull, 824633720831ull, 1649267441651ull, 3298534883309ull, 6597069766657ull
             #endif
+
+
         }};
 
         static_assert(std::numeric_limits<decltype(m_iprime)>::max() >= PRIMES.size(),
