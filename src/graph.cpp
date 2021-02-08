@@ -28,10 +28,10 @@ multimap<double, color_t, greater<>> graph::split_list;
 * These are the allowed chars.
 */
 vector<char> graph::allowedChars;
+
 /**
  * This is a comparison function extending std::bitset.
- */
-
+ * This fix us currently not working !!!Revisit before merge!!!
 #if (maxK > 12 || maxN > 64) && (MAX_SIZE >= ULONG_MAX)
 namespace std {
     template <uint64_t N>
@@ -47,6 +47,22 @@ namespace std {
 namespace std {
     template <uint32_t N>
         bool operator<(const bitset<N>& x, const bitset<N>& y) {
+        for (uint32_t i = N-1; i != -1; --i) {
+            if (x[i] ^ y[i]) return y[i];
+        }
+        return false;
+    }
+}
+#endif
+*/
+
+/**
+ * This is a comparison function extending std::bitset.
+ */ 
+#if (maxK > 12 || maxN > 64)
+namespace std {
+    template <uint64_t N>
+    bool operator<(const bitset<N>& x, const bitset<N>& y) {
         for (uint64_t i = N-1; i != -1; --i) {
             if (x[i] ^ y[i]) return y[i];
         }
@@ -54,6 +70,7 @@ namespace std {
     }
 }
 #endif
+
 
 /**
  * Initializes a new node struct.
