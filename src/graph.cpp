@@ -35,7 +35,7 @@ vector<char> graph::allowedChars;
  */ 
 #if (maxK > 12 || maxN > 64)
 namespace std {
-    template <uint64_t N>
+    template <size_t N>
     bool operator<(const bitset<N>& x, const bitset<N>& y) {
         for (uint64_t i = N-1; i != -1; --i) {
             if (x[i] ^ y[i]) return y[i];
