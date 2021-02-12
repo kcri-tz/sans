@@ -1,5 +1,5 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
- CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=1024
+ CC = g++ -DmaxK=32 -DmaxN=1024
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=1024
@@ -25,8 +25,6 @@ endif
 ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
-
-# $(shell xxd -i config/gc.prt > src/gc.h)
 
 SANS: main.o
 	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o $(BF)
