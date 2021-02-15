@@ -11,21 +11,6 @@
  */
 int main(int argc, char* argv[]) {
 
-    // check for a new version of SANS at program start.
-    bool version_checked = false;
-    cout << "Checking for updates" << "\n";
-    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")){
-        version_checked = true;
-        if (system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
-        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
-        }
-        else{
-            cout << "Version up to date";
-        }
-    }
-    if (!version_checked) {cout << "Connection failed" << "\n";}
-
-    
     // print a help message describing the program arguments
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;
@@ -228,6 +213,19 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
+
+    // check for a new version of SANS at program start.
+    if (verbose){cout << "Checking for updates" << "\n";}
+    bool version_checked = false;
+    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")){
+        version_checked = true;
+        if (system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
+        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
+        }
+        else if(verbose){cout << "Version up to date";}
+    }
+    if (!version_checked && verbose) {cout << "Connection failed" << "\n";}
+
 
     if (!userKmer) {
         if (!amino) {
