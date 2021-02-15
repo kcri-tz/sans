@@ -216,16 +216,16 @@ int main(int argc, char* argv[]) {
     }
 
     // check for a new version of SANS at program start.
-    if (verbose){cout << "Checking for updates" << "\n";}
+    if (verbose){cout << "Checking for updates" << endl;}
     bool version_checked = false;
     if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")){
         version_checked = true;
         if (system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
         cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
         }
-        else if(verbose){cout << "Version up to date" << "\n";}
+        else if(verbose){cout << "Version up to date" << endl;}
     }
-    if (!version_checked && verbose) {cout << "Could not fetch version information" << "\n";}
+    if (!version_checked && verbose) {cout << "Could not fetch version information" << endl;}
 
 
     if (!userKmer) {
