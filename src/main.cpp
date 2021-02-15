@@ -222,9 +222,9 @@ int main(int argc, char* argv[]) {
         if (system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
         cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
         }
-        else if(verbose){cout << "Version up to date";}
+        else if(verbose){cout << "Version up to date" << "\n";}
     }
-    if (!version_checked && verbose) {cout << "Connection failed" << "\n";}
+    if (!version_checked && verbose) {cout << "Could not fetch version information" << "\n";}
 
 
     if (!userKmer) {
