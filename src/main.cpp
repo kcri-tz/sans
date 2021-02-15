@@ -58,7 +58,8 @@ int main(int argc, char* argv[]) {
 //        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
 //        cout << endl;
         cout << "    -t, --top     \t Number of splits in the output list (default: all)." << endl;
-        cout << "                  \t Use -t <multiplier>n to bind the split number to the input file count" << endl;
+        cout << "                  \t Use -t <integer>n to limit relative to number of input files, or" << endl;
+        cout << "                  \t use -t <integer> to limit by absolute value." << endl;
         cout << endl;
         cout << "    -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
         cout << "                  \t options: arith: arithmetic mean" << endl;
