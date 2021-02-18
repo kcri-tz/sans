@@ -11,12 +11,6 @@
  */
 int main(int argc, char* argv[]) {
 
-    // check for a new version of SANS at program start
-    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")
-      && system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
-        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
-    }
-
     // print a help message describing the program arguments
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;
@@ -52,7 +46,9 @@ int main(int argc, char* argv[]) {
         cout << endl;
 //        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
 //        cout << endl;
-        cout << "    -t, --top     \t Number of splits in the output list (default: all)" << endl;
+        cout << "    -t, --top     \t Number of splits in the output list (default: all)." << endl;
+        cout << "                  \t Use -t <integer>n to limit relative to number of input files, or" << endl;
+        cout << "                  \t use -t <integer> to limit by absolute value." << endl;
         cout << endl;
         cout << "    -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
         cout << "                  \t options: arith: arithmetic mean" << endl;
@@ -105,6 +101,7 @@ int main(int argc, char* argv[]) {
     uint64_t window = 1;    // number of k-mers
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
+    bool dyn_top = false; // bind number of splits to num
 
     auto mean = util::geometric_mean;    // weight function
     string filter;    // filter function
@@ -148,7 +145,13 @@ int main(int argc, char* argv[]) {
             }
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
-            top = stoi(argv[++i]);    // Number of splits (default: all)
+            i++;
+            string top_str = argv[i];
+            top = stoi(top_str); // Number of splits (default: all)
+
+            if (top_str[top_str.size() - 1] == 'n'){ // Dynamic split num (default: false)
+                dyn_top = true;
+            }
         }
         else if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--mean") == 0) {
             string arg = argv[++i];    // Mean weight function to handle asymmetric splits
@@ -207,10 +210,23 @@ int main(int argc, char* argv[]) {
             shouldTranslate = true;
         }
         else {
-            cerr << "Error: unknown argument: type --help" << endl;
+            cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
             return 1;
         }
     }
+
+    // check for a new version of SANS at program start.
+    if (verbose){cout << "Checking for updates" << endl;}
+    bool version_checked = false;
+    if (!system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q SANS_VERSION")){
+        version_checked = true;
+        if (system("wget --timeout=1 --tries=1 -qO- https://gitlab.ub.uni-bielefeld.de/gi/sans/raw/master/src/main.h | grep -q " SANS_VERSION)) {
+        cout << "NEW VERSION AVAILABLE: https://gitlab.ub.uni-bielefeld.de/gi/sans" << endl;
+        }
+        else if(verbose){cout << "Version up to date" << endl;}
+    }
+    if (!version_checked && verbose) {cout << "Could not fetch version information" << endl;}
+
 
     if (!userKmer) {
         if (!amino) {
@@ -297,6 +313,11 @@ int main(int argc, char* argv[]) {
             cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl;
             return 1;
         }
+    }
+
+    // Set dynamic top
+    if (dyn_top){
+        top = top * num;
     }
 
 #ifdef useBF

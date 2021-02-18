@@ -5,6 +5,8 @@ import sys
 import os
 import pygtrie
 
+fileext=[".fa",".fas",".fastq",".mfasta",".fasta"]
+
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -29,6 +31,9 @@ def unify(split, taxa):
 def readtaxa(filename):
     taxa=set()
     for line in (s.strip() for s in open(filename)):
+        # remove file extensions
+        if os.path.splitext(line)[1] in fileext:
+            line=os.path.splitext(line)[0]
         taxa.add(line)
     return(taxa)
 
@@ -43,6 +48,9 @@ def readfile(filename,taxa,min_size):
         split = fields[1:]
         #store tax names if necessary
         for f in split:
+            # remove file extensions
+            if os.path.splitext(f)[1] in fileext:
+                f=os.path.splitext(f)[0]
             if f not in taxa:
                 eprint("taxa from split not in taxa: "+f)
                 exit(1)
@@ -158,7 +166,7 @@ if len(sys.argv)>4:
 
 if len(sys.argv)<4:
     eprint("Usage: comp.py <list of splits 1> <list of splits 2> <list of genomes (file names)>  [minimum split size] -w")
-    eprint("list of splits in SANS output format: Per split one line: weight genomeA genomeB ...")
+    eprint("list of splits in SANS output format: Per split one line: weight genomeA genomeB ... (fasta file extensions are ignored: "+", ".join(fileext)+")")
     eprint("Output on stdout: precision and recall of splits 1 w.r.t. splits 2 in terms of topological RF-distance for increasing number of splits considered, i.e., precision and recall for *all* splits are in last line.")
     eprint("Only splits of size at least <minimum split size> are considered (default = 1, i.e. all; choose 2 to ignore trivial splits, i.e. leaf edges).")
     eprint("Default:     Precision = (number of splits 1 that are also in splits 2) / (total number of splits 1)")

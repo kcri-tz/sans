@@ -8,9 +8,29 @@
 # CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=1024 -DuseBF
 # BF = -lbifrost -lpthread -lz
 
+# Wrap Windows / Unix commands
+ifeq ($(OS), Windows_NT)
+	TD = obj
+	MK = mkdir obj
+	RM = rmdir /s /q obj
+	MV = cmd /C move *.o obj
+
+else
+	TD = obj/
+	MK = mkdir obj/
+	RM = rm -rf obj/
+	MV = mv *.o obj/
+endif
+
+ifeq ("$(wildcard $(TD))", "")
+    RM = @echo ""
+endif
+
 SANS: main.o
 	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o $(BF)
-	rm -rf obj/; mkdir obj/; mv *.o obj/
+	$(RM)
+	$(MK)
+	$(MV)
 
 main.o: src/main.cpp src/main.h translator.o graph.o util.o cleanliness.o
 	$(CC) -c src/main.cpp
@@ -44,3 +64,7 @@ translator.o: src/translator.cpp src/translator.h src/gc.h
 
 cleanliness.o: src/cleanliness.cpp src/cleanliness.h
 	$(CC) -c src/cleanliness.cpp
+
+.PHONY: clean
+clean:
+	$(RM)

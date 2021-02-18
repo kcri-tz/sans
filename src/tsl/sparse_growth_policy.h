@@ -257,14 +257,29 @@ public:
         m_iprime = 0;
     }
 
+
+#if MAX_SIZE >= ULLONG_MAX
+#define TSL_REHASH_PRIMES 51
+#else
+#define TSL_REHASH_PRIMES 40
+#endif
+
+
 private:
-    static const std::array<std::size_t, 51>& primes() {
-        static const std::array<std::size_t, 51> PRIMES = {{
-            1ul, 5ul, 17ul, 29ul, 37ul, 53ul, 67ul, 79ul, 97ul, 131ul, 193ul, 257ul, 389ul, 521ul, 769ul, 1031ul, 1543ul,
-            2053ul, 3079ul, 6151ul, 12289ul, 24593ul, 49157ul, 98317ul, 196613ul, 393241ul, 786433ul, 1572869ul, 3145739ul,
+    static const std::array<std::size_t, TSL_REHASH_PRIMES>& primes() {
+        static const std::array<std::size_t, TSL_REHASH_PRIMES> PRIMES = {{
+
+            1u, 5u, 17u, 29u, 37u, 53u, 67u, 79u, 97u, 131u, 193u, 257u, 389u, 521u, 769u, 1031u, 1543u,
+            2053u, 3079u, 6151u, 12289u, 24593u, 49157u
+            , 98317ul, 196613ul, 393241ul, 786433ul, 1572869ul, 3145739ul,
             6291469ul, 12582917ul, 25165843ul, 50331653ul, 100663319ul, 201326611ul, 402653189ul, 805306457ul, 1610612741ul,
-            3221225473ul, 4294967291ul, 6442450939ull, 12884901893ull, 25769803751ull, 51539607551ull, 103079215111ull,
-            206158430209ull, 412316860441ull, 824633720831ull, 1649267441651ull, 3298534883309ull, 6597069766657ull
+            3221225473ul, 4294967291ul
+
+            #if MAX_SIZE >= ULLONG_MAX
+            , 6442450939ull, 12884901893ull, 25769803751ull, 51539607551ull, 103079215111ull
+            , 206158430209ull, 412316860441ull, 824633720831ull, 1649267441651ull, 3298534883309ull, 6597069766657ull
+            #endif
+
         }};
 
         static_assert(std::numeric_limits<decltype(m_iprime)>::max() >= PRIMES.size(),
