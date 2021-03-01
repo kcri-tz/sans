@@ -364,11 +364,11 @@ int main(int argc, char* argv[]) {
 
             gen_files.push_back(target_files); // store files for this target
             num++;
+            if (num > maxN) {
+                cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl;
+                return 1;
+            }
         }
-    }
-    if (num > maxN) {
-        cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl;
-        return 1;
     }
 
     // Set dynamic top
@@ -459,7 +459,7 @@ int main(int argc, char* argv[]) {
 
             for (string file_name: target_files){
                 ifstream file(folder+file_name);    // input file stream
-                else if (verbose) {
+                if (verbose) {
                     cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << target_files.size() << ")" << endl;    // print progress
                 }
                 count::deleteCount();
@@ -546,7 +546,7 @@ int main(int argc, char* argv[]) {
 
             for (; it != end; ++it) {
                 auto seq = sequence.substr(it.getKmerPosition(), kmer);
-                auto col = files.size() + it.getColorID();
+                auto col = denom_names.size() + it.getColorID();
                 graph::add_kmers(seq, col, reverse);
             }
         }
@@ -560,7 +560,7 @@ int main(int argc, char* argv[]) {
     std::function<string(const uint64_t&)> map=[=](uint64_t i) {
         if (i < denom_names.size()) return denom_names[i];
         #ifdef useBF
-        else return cdbg.getColorName(i-files.size());
+        else return cdbg.getColorName(i-denom_names.size());
         #endif
         cerr << "Error: color bit does not correspond to color name" << endl;
         exit(EXIT_FAILURE);
