@@ -325,6 +325,7 @@ int main(int argc, char* argv[]) {
             is_first = true;
             cut_at = line.find_first_of(" ");
             while (cut_at != string::npos){
+                if (cut_at == 0){line = line.substr(1, line.length()); cut_at = line.find_first_of(" "); continue;} // If multiple spaces are used
                 line = line.substr(0, line.length());
                 file_name = line.substr(0, cut_at); // add the file and cut the line
                 target_files.push_back(file_name);
@@ -336,7 +337,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 line = line.substr(cut_at + 1, line.length());
-                cut_at = line.find_first_of("\t");
+                cut_at = line.find_first_of(" ");
             }
 
             // add the last entry of the  line
@@ -353,7 +354,7 @@ int main(int argc, char* argv[]) {
             for(string file_name: target_files){
                 ifstream file_stream = ifstream(folder+file_name);
                 if (!file_stream.good()) { // catch unreadable file
-                    cout << "\33[2K\r" << "\u001b[31m" << folder+file_name << " (ERR)" << "\u001b[0m" << "Could not read file" << endl;
+                    cout << "\33[2K\r" << "\u001b[31m" << "(ERR) Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
                     file_stream.close();
                     return 1;
                 }
@@ -460,7 +461,7 @@ int main(int argc, char* argv[]) {
             for (string file_name: target_files){
                 ifstream file(folder+file_name);    // input file stream
                 if (verbose) {
-                    cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << target_files.size() << ")" << endl;    // print progress
+                    cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << denom_names.size() << ")" << endl;    // print progress
                 }
                 count::deleteCount();
 
@@ -625,7 +626,7 @@ int main(int argc, char* argv[]) {
                     stream << '\t' << denom_names[i];    // name of the file
                 #ifdef useBF
                 else
-                    stream << '\t' << cdbg.getColorName(i-files.size());
+                    stream << '\t' << cdbg.getColorName(i-denom_names.size());
                 #endif
             }
             split.second >>= 01u;
@@ -648,6 +649,3 @@ int main(int argc, char* argv[]) {
     }
     return 0;
 }
-
-
-
