@@ -354,7 +354,7 @@ int main(int argc, char* argv[]) {
             for(string file_name: target_files){
                 ifstream file_stream = ifstream(folder+file_name);
                 if (!file_stream.good()) { // catch unreadable file
-                    cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << "\u001b[0m" << " Could not read file " <<  folder+file_name << endl;
+                    cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
                     file_stream.close();
                     return 1;
                 }
