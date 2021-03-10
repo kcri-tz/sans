@@ -383,6 +383,7 @@ int main(int argc, char* argv[]) {
     if (!graph.empty()) {
         if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) {
             num += cdbg.getNbColors();
+            cout << "Graph read completed" << endl;
         } else {
             cerr << "Error: could not load Bifrost graph" << endl;
             return 1;
