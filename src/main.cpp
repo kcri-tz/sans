@@ -10,7 +10,8 @@
  * @return exit status
  */
 int main(int argc, char* argv[]) {
-
+    cout << MAX_KMER_SIZE << endl;
+    
     // print a help message describing the program arguments
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;

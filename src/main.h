@@ -8,7 +8,7 @@
 #include "cleanliness.h"
 
 #ifndef MAX_KMER_SIZE
-    #define MAX_KMER_SIZE maxK+1
+    #define MAX_KMER_SIZE (((maxK-1)/32) + 1) * 32
 #endif
 #ifdef useBF
     #include <bifrost/CompactedDBG.hpp>
