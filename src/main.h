@@ -10,8 +10,10 @@
 #ifdef useBF
     #ifndef MAX_KMER_SIZE
         #define MAX_KMER_SIZE (((maxK-1)/32) + 1) * 32
-        cout << MAX_KMER_SIZE << endl;
+    #else
+        # define maxK MAX_KMER_SIZE
     #endif
+    std::cout <<"BF: " << MAX_KMER_SIZE << " SANS: " << maxK << std::endl;
     #include <bifrost/CompactedDBG.hpp>
     #include <bifrost/ColoredCDBG.hpp>
 #endif
