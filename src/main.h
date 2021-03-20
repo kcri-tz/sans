@@ -7,10 +7,11 @@
 #include "translator.h"
 #include "cleanliness.h"
 
-#ifndef MAX_KMER_SIZE
-    #define MAX_KMER_SIZE (((maxK-1)/32) + 1) * 32
-#endif
 #ifdef useBF
+    #ifndef MAX_KMER_SIZE
+        #define MAX_KMER_SIZE (((maxK-1)/32) + 1) * 32
+        cout << MAX_KMER_SIZE << endl;
+    #endif
     #include <bifrost/CompactedDBG.hpp>
     #include <bifrost/ColoredCDBG.hpp>
 #endif
