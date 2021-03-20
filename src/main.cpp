@@ -10,6 +10,7 @@
  * @return exit status
  */
 int main(int argc, char* argv[]) {
+
     // print a help message describing the program arguments
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         cout << endl;
@@ -377,6 +378,8 @@ int main(int argc, char* argv[]) {
     }
 
 #ifdef useBF
+    cout << "SANS: " << maxK << endl;
+    cout << "BF: " << MAX_KMER_SIZE << endl;
     // load an existing Bifrost graph
     ColoredCDBG<> cdbg(kmer);
     if (!graph.empty()) {
