@@ -522,6 +522,7 @@ int main(int argc, char* argv[]) {
                 }
                 sequence.clear();
 
+                
                 if (verbose) {
                     cout << "\33[2K\r" << flush;
                 }
