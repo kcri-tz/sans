@@ -12,7 +12,7 @@
 ifeq ($(OS), Windows_NT)
 	TD = obj
 	MK = mkdir obj
-	RM = rmdir /s /q obj 
+	RM = rmdir /s /q obj
 	MV = cmd /C move *.o obj
 
 else

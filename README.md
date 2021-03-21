@@ -7,7 +7,7 @@
 * Alignment-free
 * Assembled genomes or reads as input
 * Phylogenetic splits or tree as output
-* **NEW:** Coding sequences / amino acid sequneces as input (see --code and -- amino)
+* **NEW:** Coding sequences / amino acid sequences as input (see --code and -- amino)
 
 ### Publications
 
@@ -30,7 +30,9 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 
 ## Requirements
 
-For the main program, there are no strict dependencies. However, there are some optional features:
+For the main program, there are no strict dependencies other than C++ version 14.
+
+However, there are some _optional_ features:
 * To read in a **colored de Bruijn graph**, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost).
 * To convert the output into NEXUS format, the provided script requires Python 3.
 * To visualize the splits, we recommend the tool [SplitsTree](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree).
@@ -122,7 +124,7 @@ Usage: SANS [PARAMETERS]
   
 ```
 
-# Details on filter option
+## Details on filter option
 
 The sorted list of splits is greedily filtered, i.e., splits are iterated from strongest to weakest and a split is kept if and only if the filter criterion is met.
 

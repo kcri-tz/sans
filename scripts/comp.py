@@ -47,10 +47,11 @@ def readfile(filename,taxa,min_size):
         weight = float(fields[0])
         split = fields[1:]
         #store tax names if necessary
-        for f in split:
+        for idx,f in enumerate(split):
             # remove file extensions
             if os.path.splitext(f)[1] in fileext:
                 f=os.path.splitext(f)[0]
+                split[idx]=f
             if f not in taxa:
                 eprint("taxa from split not in taxa: "+f)
                 exit(1)
