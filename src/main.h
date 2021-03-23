@@ -9,9 +9,7 @@
 
 #ifdef useBF
     #ifndef MAX_KMER_SIZE
-        #define MAX_KMER_SIZE (((maxK-1)/32) + 1) * 32
-    #else
-        #define maxK ((maxK) < (MAX_KMER_SIZE) ? : (maxK) : (MAX_KMER_SIZE))
+        #define MAX_KMER_SIZE maxK+1
     #endif
     #include <bifrost/CompactedDBG.hpp>
     #include <bifrost/ColoredCDBG.hpp>

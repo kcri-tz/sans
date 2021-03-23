@@ -378,8 +378,6 @@ int main(int argc, char* argv[]) {
     }
 
 #ifdef useBF
-    cout << "SANS: " << maxK << endl;
-    cout << "BF: " << MAX_KMER_SIZE << endl;
     // load an existing Bifrost graph
     ColoredCDBG<> cdbg(kmer);
     if (!graph.empty()) {
