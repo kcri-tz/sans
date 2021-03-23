@@ -64,7 +64,7 @@ Usage: SANS [PARAMETERS]
   Input arguments:
 
     -i, --input   	 Input file: list of sequence files, one per line
-                     (use space-separated filenames if multiple files correspond to the same target, i.e. paired-end data)
+                     (use space-separated filenames if multiple files correspond to the same genome, i.e. paired-end data)
 
     -g, --graph   	 Graph file: load a Bifrost graph, file name prefix
                   	 (requires compiler flag -DuseBF, please edit makefile)
