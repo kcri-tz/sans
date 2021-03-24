@@ -665,6 +665,13 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
             color_t& color = it.value();    // get the color set for each k-mer
             bool pos = color::complement(color, true);    // invert the color set, if necessary
             if (color == 0) continue;    // ignore empty splits
+
+            // Temporary Debug statement 
+            else if (color >= color_table.size())
+            {
+                cout << "Unknown color error: " << color << ">" << color_table.size() << endl;
+            }
+            
             array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
 
             double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
