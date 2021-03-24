@@ -681,7 +681,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
                         break;
                     }
                 }
-                cout << "Checked weights" << endl;
+            cout << "Checked weights" << endl;
 
             }
             weight[pos]++;    // update the weight or the inverse weight of the current color set
@@ -693,7 +693,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
                     split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
                     min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
                 }
-                cout << "updated top list" << endl;
+            cout << "updated top list" << endl;
             }
         }
     } else {
