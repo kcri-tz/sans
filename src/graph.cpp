@@ -663,14 +663,10 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
                 prog = next; cur++;
             }
 
-            cout << "checking color" << endl;
-
             color_t& color = it.value();    // get the color set for each k-mer
             bool pos = color::complement(color, true);    // invert the color set, if necessary
             if (color == 0) continue;    // ignore empty splits
             array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
-            
-            cout << "got color " << endl; 
 
             double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
             if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
@@ -681,8 +677,6 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
                         break;
                     }
                 }
-            cout << "Checked weights" << endl;
-
             }
             weight[pos]++;    // update the weight or the inverse weight of the current color set
 
@@ -693,7 +687,6 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
                     split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
                     min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
                 }
-            cout << "updated top list" << endl;
             }
         }
     } else {

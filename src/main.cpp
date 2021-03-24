@@ -563,8 +563,7 @@ int main(int argc, char* argv[]) {
     std::function<string(const uint64_t&)> map=[=](uint64_t i) {
         if (i < denom_names.size()) return denom_names[i];
         #ifdef useBF
-            else if (!input.empty()) return cdbg.getColorName(i-denom_names.size());
-            else return cdbg.getColorName(i);
+        else return cdbg.getColorName(i-denom_names.size());
         #endif
         cerr << "Error: color bit does not correspond to color name" << endl;
         exit(EXIT_FAILURE);
