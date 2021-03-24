@@ -670,7 +670,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
             if (color == 0) continue;    // ignore empty splits
             array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
             
-            cout << "got color " << color << endl; 
+            cout << "got color " << endl; 
 
             double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
             if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
