@@ -564,7 +564,7 @@ int main(int argc, char* argv[]) {
         if (i < denom_names.size()) return denom_names[i];
         #ifdef useBF
             else if (!input.empty()) return cdbg.getColorName(i-denom_names.size());
-            else return cdbg.getColorName(i)
+            else return cdbg.getColorName(i);
         #endif
         cerr << "Error: color bit does not correspond to color name" << endl;
         exit(EXIT_FAILURE);
