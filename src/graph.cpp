@@ -667,7 +667,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
             if (color == 0) continue;    // ignore empty splits
 
             // Temporary Debug statement 
-            else if (color >= color_table.size())
+            else if (color >= maxN)
             {
                 cout << "Unknown color error: " << color << ">" << color_table.size() << endl;
             }
