@@ -662,6 +662,9 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
                 if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
                 prog = next; cur++;
             }
+
+            cout << "checking color" << endl;
+
             color_t& color = it.value();    // get the color set for each k-mer
             bool pos = color::complement(color, true);    // invert the color set, if necessary
             if (color == 0) continue;    // ignore empty splits
