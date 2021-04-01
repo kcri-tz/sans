@@ -327,7 +327,8 @@ int main(int argc, char* argv[]) {
         while(true){
             vector<string> target_files; // container of the current target files
             if (is_sox){ // Parse sox
-                line = line.substr(0, line.find_first_of("!") + 1); // Cut off tail
+                if (line.find("!") != line.npos){line = line.substr(0, line.find_first_of("!") + 1);} // Cut off tail
+                else if (line.back() == ' '){}
                 string denom = line.substr(0, line.find_first_of(" ")); // Get the dataset-id
                 denom_names.push_back(denom); // Add id to denominators
                 num ++;
