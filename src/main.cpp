@@ -1,6 +1,5 @@
 #include "main.h"
-
-
+#include <regex>
 
 /**
  * This is the entry point of the program.
@@ -312,43 +311,61 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
+
         // parse the list of input sequence files
-
         string line; // the iterated input line
-        string file_name; // the current file name 
-        size_t cut_at; // the index of the next cut
-        bool is_first; // indicating the first filename of a line
+        string file_name; // the current file name
+        bool is_first; // indicating the first filename of a line (For file list)
 
-        while (getline(file, line)) {
-            // extract all target files and update the name_table
+        getline(file, line);
+        // Check the file format
+        std::smatch matches;
+        std::regex_search(line, matches, std::regex("(:)"));
+        bool is_sox = !matches.empty();
+
+        // Parse lines
+        while(true){
             vector<string> target_files; // container of the current target files
-            is_first = true;
-            cut_at = line.find_first_of(" ");
-            while (cut_at != string::npos){
-                if (cut_at == 0){line = line.substr(1, line.length()); cut_at = line.find_first_of(" "); continue;} // If multiple spaces are used
-                line = line.substr(0, line.length());
-                file_name = line.substr(0, cut_at); // add the file and cut the line
-                target_files.push_back(file_name);
-                name_table[file_name] = num;
-                // Store a representative for this color
-                if (is_first){
-                    denom_names.push_back(file_name);
-                    is_first = false;
+            if (is_sox){ // Parse sox
+                line = line.substr(0, line.find_first_of("!") + 1); // Cut off tail
+                string denom = line.substr(0, line.find_first_of(" ")); // Get the dataset-id
+                denom_names.push_back(denom); // Add id to denominators
+                num ++;
+                line = line.substr(line.find_first_of(":") + 2, line.npos); // Cut off the dataset-id
+
+                std::smatch matches; // Match files
+                while (std::regex_search(line, matches, std::regex("[ ; ]|[ !]"))){
+                    file_name = matches.prefix().str();
+                    line=matches.suffix().str();
+                    if (file_name.length() == 0){continue;}
+                    else {target_files.push_back(file_name);}
+                    }
+            }
+
+            else{ // Parse file list
+                is_first = true;
+                string file_name = "";
+                size_t it = 0;
+                size_t line_length = line.length();
+                for (auto x: line){
+                    it ++;
+                    if (x == ' ' | it == line_length){
+                        if (it == line_length){file_name += x;} // Add last character to the last file name
+                        if (file_name.length() == 0){file_name = ""; continue;} // Skip continuous spaces
+                        
+                        if (is_first){ // Use first file name as nenom name
+                        denom_names.push_back(file_name); // Set denom name
+                        is_first = false;
+                        num ++;    
+                        }
+                        target_files.push_back(file_name);
+                        file_name = "";
+                    }
+                    else{file_name += x;}
                 }
-
-                line = line.substr(cut_at + 1, line.length());
-                cut_at = line.find_first_of(" ");
             }
 
-            // add the last entry of the  line
-            file_name = line; // add the file and cut the line
-            target_files.push_back(file_name);
-
-            // Store a representative for this color if not already added
-            if (is_first){
-                denom_names.push_back(file_name);
-                is_first = false;
-            }
+            if (num > maxN) {cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl; return 1;} // Check if the number of genomes exceeded maxN
 
             // check files
             for(string file_name: target_files){
@@ -362,13 +379,8 @@ int main(int argc, char* argv[]) {
                     file_stream.close();
                 }
             }
-
-            gen_files.push_back(target_files); // store files for this target
-            num++;
-            if (num > maxN) {
-                cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl;
-                return 1;
-            }
+            gen_files.push_back(target_files);
+            if (!getline(file, line)) {break;}
         }
     }
 
