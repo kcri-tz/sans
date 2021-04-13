@@ -348,6 +348,7 @@ int main(int argc, char* argv[]) {
             if (is_first){
                 denom_names.push_back(file_name);
                 is_first = false;
+                name_table[file_name]=num; 
             }
 
             // check files
