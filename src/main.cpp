@@ -327,8 +327,11 @@ int main(int argc, char* argv[]) {
         while(true){
             vector<string> target_files; // container of the current target files
             if (is_sox){ // Parse sox
-                if (line.find("!") != line.npos){line = line.substr(0, line.find_first_of("!") + 1);} // Cut off tail
-                else if (line.back() == ' '){}
+                // Ensure the terminal sign exists.
+                if (line.find('!') != line.npos){line = line.substr(0, line.find_first_of('!') + 1);} // Cut off tail
+                else if (line.back() == ' '){line += '!';} // Append terminal sign if missing
+                else {line += " !";} // Append both terminal signs
+
                 string denom = line.substr(0, line.find_first_of(" ")); // Get the dataset-id
                 denom_names.push_back(denom); // Add id to denominators
                 num ++;
@@ -354,7 +357,7 @@ int main(int argc, char* argv[]) {
                         if (it == line_length){file_name += x;} // Add last character to the last file name
                         if (file_name.length() == 0){file_name = ""; continue;} // Skip continuous spaces
                         
-                        if (is_first){ // Use first file name as nenom name
+                        if (is_first){ // Use first file name as denom name
                         denom_names.push_back(file_name); // Set denom name
                         is_first = false;
                         num ++;    
