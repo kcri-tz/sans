@@ -300,11 +300,11 @@ int main(int argc, char* argv[]) {
 
     // parse the list of input sequence files
     hash_map<string, uint64_t> name_table; // the name to color map
-    vector<string> denom_names; // Storing the representative name per color
-    vector<vector<string>> gen_files; // file_name container
+    vector<string> denom_names; // storing the representative name per color
+    vector<vector<string>> gen_files; // genome file collection
 
     if (!input.empty()) {
-        // check input file 
+        // check the input file 
         ifstream file(input);
         if (!file.good()) {
             cerr << "Error: could not read input file: " << input << endl;
@@ -318,58 +318,58 @@ int main(int argc, char* argv[]) {
         bool is_first; // indicating the first filename of a line (For file list)
 
         getline(file, line);
-        // Check the file format
+        // check the file format
         std::smatch matches;
         std::regex_search(line, matches, std::regex("(:)"));
-        bool is_sox = !matches.empty();
+        bool is_kmt = !matches.empty();
 
-        // Parse lines
+        // parse file of files
         while(true){
             vector<string> target_files; // container of the current target files
-            if (is_sox){ // Parse sox
-                // Ensure the terminal sign exists.
-                if (line.find('!') != line.npos){line = line.substr(0, line.find_first_of('!') + 1);} // Cut off tail
-                else if (line.back() == ' '){line += '!';} // Append terminal sign if missing
-                else {line += " !";} // Append both terminal signs
+            if (is_kmt){ // parse kmt format
+                // ensure the terminal signs " !" exists.
+                if (line.find_first_of('!') != line.npos){line = line.substr(0, line.find_first_of('!') + 1);} // cut off unused tail
+                else if (line.back() == ' '){line += '!';} // append terminal sign if missing
+                else {line += " !";} // append both terminal signs if missing
 
-                string denom = line.substr(0, line.find_first_of(" ")); // Get the dataset-id
-                denom_names.push_back(denom); // Add id to denominators
+                string denom = line.substr(0, line.find_first_of(" ")); // get the dataset-id
+                denom_names.push_back(denom); // add id to denominators
                 num ++;
-                line = line.substr(line.find_first_of(":") + 2, line.npos); // Cut off the dataset-id
+                line = line.substr(line.find_first_of(":") + 2, line.npos); // cut off the dataset-id
 
                 std::smatch matches; // Match files
                 while (std::regex_search(line, matches, std::regex("[ ; ]|[ !]"))){
-                    file_name = matches.prefix().str();
-                    line=matches.suffix().str();
-                    if (file_name.length() == 0){continue;}
-                    else {target_files.push_back(file_name);}
+                    file_name = matches.prefix().str(); // get filename from match
+                    line=matches.suffix().str(); // update the line
+                    if (file_name.length() == 0){continue;} // skip empty file name
+                    else {target_files.push_back(file_name); name_table[file_name] = num;} // add the file name to target files and name table
                     }
             }
 
-            else{ // Parse file list
+            else{ // parse file list format
                 is_first = true;
                 string file_name = "";
                 size_t it = 0;
                 size_t line_length = line.length();
-                for (auto x: line){
+                for (auto x: line){ // iterate the line
                     it ++;
-                    if (x == ' ' | it == line_length){
-                        if (it == line_length){file_name += x;} // Add last character to the last file name
-                        if (file_name.length() == 0){file_name = ""; continue;} // Skip continuous spaces
-                        
-                        if (is_first){ // Use first file name as denom name
-                        denom_names.push_back(file_name); // Set denom name
-                        is_first = false;
-                        num ++;    
+                    if (x == ' ' | it == line_length){ // checkout the file name if a space occurs or the line ends
+                        if (it == line_length){file_name += x;} // add the last character to the last file name
+                        if (file_name.length() == 0){file_name = ""; continue;} // skip continuous spaces
+                        if (is_first){ // use first file name as denom name
+                            denom_names.push_back(file_name); // set denom name
+                            is_first = false;
+                            num ++;    
                         }
-                        target_files.push_back(file_name);
+                        target_files.push_back(file_name); // add the file_name to the genome file vector
+                        name_table[file_name] = num; // add the file tp the name_table
                         file_name = "";
                     }
                     else{file_name += x;}
                 }
             }
 
-            if (num > maxN) {cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl; return 1;} // Check if the number of genomes exceeded maxN
+            if (num > maxN) {cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl; return 1;} // check if the number of genomes exceeded maxN
 
             // check files
             for(string file_name: target_files){
@@ -383,7 +383,7 @@ int main(int argc, char* argv[]) {
                     file_stream.close();
                 }
             }
-            gen_files.push_back(target_files);
+            gen_files.push_back(target_files); // add the files of the current genome to the genome collection
             if (!getline(file, line)) {break;}
         }
     }
