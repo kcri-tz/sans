@@ -63,11 +63,11 @@ Usage: SANS [PARAMETERS]
 
   Input arguments:
 
-    -i, --input   	 Input file: 
-                  	 Either: List of sequence files, one genome per line
+    -i, --input   	 Input file: file of files format
+                  	 Either: list of sequence files, one genome per line
                   	 (use space-separated filenames if multiple files correspond to the same genome, i.e. paired-end data)
                   	 Or: kmtricks input format
-                  	 (See https://github.com/tlemane/kmtricks)
+                  	 (see https://github.com/tlemane/kmtricks)
 
     -g, --graph   	 Graph file: load a Bifrost graph, file name prefix
                   	 (requires compiler flag -DuseBF, please edit makefile)
