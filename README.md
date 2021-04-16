@@ -64,7 +64,7 @@ Usage: SANS [PARAMETERS]
   Input arguments:
 
     -i, --input   	 Input file: file of files format
-                  	 Either: list of files, one genome per line (space-separate for multifile genomes)
+                  	 Either: list of files, one genome per line (space-separated for multifile genomes)
                   	 Or: kmtricks input format (see https://github.com/tlemane/kmtricks)
 
     -g, --graph   	 Graph file: load a Bifrost graph, file name prefix
