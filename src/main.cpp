@@ -18,7 +18,9 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "  Input arguments:" << endl;
         cout << endl;
-        cout << "    -i, --input   \t Input file: list of sequence files, one per line" << endl;
+        cout << "    -i, --input   \t Input file: file of files format" << endl;
+        cout << "                  \t Either: one genome per line (space-separated for multifile genomes)" << endl;
+        cout << "                  \t Or: kmtricks input format (see https://github.com/tlemane/kmtricks)" << endl;
         cout << endl;
         cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
 #ifndef useBF
