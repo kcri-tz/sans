@@ -654,13 +654,21 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
     double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
     uint64_t cur=0, prog=0, next;
 
-    // Check table (Amino or base)
+    // check table (Amino or base)
     uint64_t max; // table size
     if (isAmino){max=kmer_tableAmino.size();} // use amino table size
     else {max=kmer_table.size();} // use base table size
     auto amino_it = kmer_tableAmino.begin(); // amino table iterator
     auto base_it = kmer_table.begin(); // base table iterator
-    while (true) {
+
+    while (true) { // process splits
+        // show progress
+        if (verbose) { 
+            next = 100*cur/max;
+            if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
+            prog = next; cur++;
+        }
+        // update iterator
         color_t* color_ref; // reference of the current color
         if (isAmino) { // if the amino table is used, update the amino iterator
             if (amino_it == kmer_tableAmino.end()){break;} // stop iterating if done
@@ -670,6 +678,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), bool& verbose) {
             if (base_it == kmer_table.end()){break;} // stop itearating if done
             else {color_ref = &base_it.value(); ++base_it;} // iterate the base table
             }
+        // process
         color_t& color = *color_ref;
         bool pos = color::complement(color, true);    // invert the color set, if necessary
         if (color == 0) continue;    // ignore empty splits
