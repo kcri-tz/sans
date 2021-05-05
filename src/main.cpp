@@ -573,7 +573,7 @@ int main(int argc, char* argv[]) {
             }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
-                string kmer_sequence = unitig_sequence.substr(i, kmer::k + 1); // the k-mer sequence
+                string kmer_sequence = sequence.substr(i, kmer::k + 1); // the k-mer sequence
                 auto kmer_colors = uc_kmers[i]; // the k-mer colors
             }
 
