@@ -559,16 +559,24 @@ int main(int argc, char* argv[]) {
                 cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
             }   cur++;
 
-            auto sequence = unitig.mappedSequenceToString();
-            auto *colors = unitig.getData()->getUnitigColors(unitig);
-            auto it = colors->begin(unitig);
+            auto num_kmers = unitig.size - kmer::k + 1; // the number of kmers in this unitig
+            auto *uc_kmers = new UnitigColors[num_kmers]; // storage for unitig colored kmers
+            auto unitig_map = UnitigMapBase(0, 1, kmer::k, true); // first two parameters ?
+
+            auto sequence = unitig.mappedSequenceToString(); // the mapped unitig sequence
+            auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color iterator of this unitig
+            auto it = colors->begin(unitig); 
             auto end = colors->end();
 
-            for (; it != end; ++it) {
-                auto seq = sequence.substr(it.getKmerPosition(), kmer);
-                auto col = denom_names.size() + it.getColorID();
-                graph::add_kmers(seq, col, reverse);
+            for (; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
+                uc_kmers[it.getKmerPosition()].add(unitig_map, denom_names.size() + it.getColorID());
             }
+            
+            for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
+                string kmer_sequence = unitig_sequence.substr(i, kmer::k + 1); // the k-mer sequence
+                auto kmer_colors = uc_kmers[i]; // the k-mer colors
+            }
+
         }
         if (verbose) {
             cout << "\33[2K\r" << "Processed " << max << " unitigs (100%)" << endl;

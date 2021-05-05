@@ -721,6 +721,17 @@ void graph::add_split(double& weight, color_t& color) {
 }
 
 /**
+ * This function adds a single split from a CDBG to the output list. 
+ * 
+ * @param seq kmer
+ * @param color the plit colors
+ */
+void graph::add_cdbg_split(double mean(uint32_t&, uint32_t&), string seq, color_t& color){
+    array<uint32_t,2>& weight = color_table[color];
+    
+}
+
+/**
  * This function filters a greedy maximum weight tree compatible subset.
  *
  * @param verbose print progress

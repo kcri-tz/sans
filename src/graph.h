@@ -170,6 +170,15 @@ public:
     static void add_split(double& weight, color_t& color);
 
     /**
+     * This funtion adds a simgle split from a cdbg to the output list.
+     * 
+     * @param seq kmer
+     * @param color split colors 
+     */
+     static void add_cdbg_split(double mean(uint32_t&, uint32_t&), string seq, color_t& color); 
+     
+
+    /**
      * This function filters a greedy maximum weight tree compatible subset.
      *
      * @param verbose print progress
