@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
     // load an existing Bifrost graph
     ColoredCDBG<> cdbg(kmer);
     if (!graph.empty()) {
-        if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) {
+        if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) { // Allow parallel reading with new t parameter.
             num += cdbg.getNbColors();
 
         } else {
@@ -575,6 +575,7 @@ int main(int argc, char* argv[]) {
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
                 string kmer_sequence = sequence.substr(i, kmer::k + 1); // the k-mer sequence
                 auto kmer_colors = uc_kmers[i]; // the k-mer colors
+                graph::add_cdbg_colored_kmer(mean, k_mer_sequence, kmer_colors)
             }
 
         }

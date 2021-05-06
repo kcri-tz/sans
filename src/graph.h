@@ -172,10 +172,12 @@ public:
     /**
      * This funtion adds a simgle split from a cdbg to the output list.
      * 
+     * @param mean mean function
      * @param seq kmer
-     * @param color split colors 
+     * @param color split colors
+     * @param verbose print progress 
      */
-     static void add_cdbg_split(double mean(uint32_t&, uint32_t&), string seq, color_t& color); 
+     static void add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& color); 
      
 
     /**

@@ -721,14 +721,38 @@ void graph::add_split(double& weight, color_t& color) {
 }
 
 /**
- * This function adds a single split from a CDBG to the output list. 
+ * This function computes a split from the current map and cdbg colored kamer. 
  * 
  * @param seq kmer
  * @param color the plit colors
  */
-void graph::add_cdbg_split(double mean(uint32_t&, uint32_t&), string seq, color_t& color){
-    array<uint32_t,2>& weight = color_table[color];
-    
+void graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& color){
+    double min_value = split_list.rbegin()->first;
+    if (kmer_table.size() == 0){ // If the graph is the only input, compute the split directly
+        bool pos = color::complement(color, true);    // invert the color set, if necessary
+        array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
+        double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
+
+        if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
+            auto range = split_list.equal_range(old_value);    // get all color sets with the given weight
+            for (auto it = range.first; it != range.second; ++it) {
+                if (it->second == color) {    // iterate over the color sets to find the correct one
+                    split_list.erase(it);    // erase the entry with the old weight
+                    break;
+                }
+            }
+        }
+        weight[pos]++;    // update the weight or the inverse weight of the current color set
+
+        double new_value = mean(weight[0], weight[1]);    // calculate the new mean value
+        if (new_value >= min_value) {    // if it is greater than the min. value, add it to the top list
+            split_list.emplace(new_value, color);    // insert it at the correct position ordered by weight
+            if (split_list.size() > t) {
+                split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
+                min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
+            }
+        }
+    }
 }
 
 /**
