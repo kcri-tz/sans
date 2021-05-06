@@ -392,7 +392,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef useBF
     // load an existing Bifrost graph
-    ColoredCDBG<> cdbg(kmer);
+    const ColoredCDBG<> cdbg(kmer);
     if (!graph.empty()) {
         if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) { // Allow parallel reading with new t parameter.
             num += cdbg.getNbColors();
@@ -410,6 +410,8 @@ int main(int argc, char* argv[]) {
             }
             cerr << "Warning: setting k-mer length to " << kmer << endl;
         }
+
+
         if (num > maxN) {
             cerr << "Error: number of colors exceeds -DmaxN=" << maxN << endl;
             return 1;
