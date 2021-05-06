@@ -575,8 +575,8 @@ int main(int argc, char* argv[]) {
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
                 string kmer_sequence = sequence.substr(i, kmer::k + i); // the k-mer sequence
                 color_t color = 0;
-                for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_it.end(); ++uc_it){
-                    color::set(uc_it.getColor_ID(), 0); // set the k-mer color
+                for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
+                    color::set(uc_it.getColorID(), uc_it.getColorID()); // set the k-mer color
                 }
                 graph::add_cdbg_colored_kmer(mean, kmer_sequence, color);
             }
