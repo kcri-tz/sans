@@ -565,7 +565,7 @@ int main(int argc, char* argv[]) {
 
             auto sequence = unitig.mappedSequenceToString(); // the mapped unitig sequence
             auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color iterator of this unitig
-            auto it = colors->begin(unitig); 
+            auto it = colors->begin(unitig);
             auto end = colors->end();
 
             for (; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
@@ -573,10 +573,10 @@ int main(int argc, char* argv[]) {
             }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
-                string kmer_sequence = sequence.substr(i, kmer::k + 1); // the k-mer sequence
+                string kmer_sequence = sequence.substr(i, kmer::k + i); // the k-mer sequence
                 color_t color = 0;
                 for (auto uc_it=uc_kmers[i]; uc_it.begin(unitig_map); uc_it.end()){
-                    color::set(uc_it, uc_it); // set the k-mer color
+                    color::set(uc_it.getColor_ID(), 0); // set the k-mer color
                 }
                 graph::add_cdbg_colored_kmer(mean, kmer_sequence, color);
             }
