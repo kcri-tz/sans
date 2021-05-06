@@ -392,10 +392,9 @@ int main(int argc, char* argv[]) {
 
 #ifdef useBF
     // load an existing Bifrost graph
-    const ColoredCDBG<> cdbg(kmer);
+    ColoredCDBG<> cdbg(kmer);
     if (!graph.empty()) {
         if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) { // Allow parallel reading with new t parameter.
-            num += cdbg.getNbColors();
 
         } else {
             cerr << "Error: could not load Bifrost graph" << endl;
@@ -411,6 +410,11 @@ int main(int argc, char* argv[]) {
             cerr << "Warning: setting k-mer length to " << kmer << endl;
         }
 
+        vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
+        for (auto it; it != cdbg_names.size(); ++it){ // iterate the cdbg names and transcribe them to the name table
+            name_table[cdbg_names[it]] = ++num;
+            denom_names.push_back(cdbg_names[it]);
+        }
 
         if (num > maxN) {
             cerr << "Error: number of colors exceeds -DmaxN=" << maxN << endl;
@@ -571,14 +575,14 @@ int main(int argc, char* argv[]) {
             auto end = colors->end();
 
             for (; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
-                uc_kmers[it.getKmerPosition()].add(unitig_map, denom_names.size() + it.getColorID());
+                uc_kmers[it.getKmerPosition()].add(unitig_map, it.getColorID());
             }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
                 string kmer_sequence = sequence.substr(i, kmer::k + i); // the k-mer sequence
                 color_t color = 0;
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
-                    color::set(color, uc_it.getColorID()); // set the k-mer color
+                    color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
                 }
                 graph::add_cdbg_colored_kmer(mean, kmer_sequence, color);
             }
