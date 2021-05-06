@@ -411,7 +411,7 @@ int main(int argc, char* argv[]) {
         }
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
-        for (auto it=cdbf_names.begin(); it != cdbg_names.end(); ++it){ // iterate the cdbg names and transcribe them to the name table
+        for (auto it=cdbg_names.begin(); it != cdbg_names.end(); ++it){ // iterate the cdbg names and transcribe them to the name table
             name_table[cdbg_names[it]] = ++num;
             denom_names.push_back(cdbg_names[it]);
         }
