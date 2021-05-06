@@ -560,7 +560,7 @@ int main(int argc, char* argv[]) {
             }   cur++;
 
             auto num_kmers = unitig.size - kmer::k + 1; // the number of kmers in this unitig
-            auto *uc_kmers = new UnitigColors[num_kmers]; // storage for unitig colored kmers
+            auto uc_kmers = new UnitigColors[num_kmers]; // storage for unitig colored kmers
             auto unitig_map = UnitigMapBase(0, 1, kmer::k, true); // first two parameters ?
 
             auto sequence = unitig.mappedSequenceToString(); // the mapped unitig sequence
@@ -576,7 +576,7 @@ int main(int argc, char* argv[]) {
                 string kmer_sequence = sequence.substr(i, kmer::k + i); // the k-mer sequence
                 color_t color = 0;
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
-                    color::set(color, &uc_it.getColorID()); // set the k-mer color
+                    color::set(color, uc_it.getColorID()); // set the k-mer color
                 }
                 graph::add_cdbg_colored_kmer(mean, kmer_sequence, color);
             }
