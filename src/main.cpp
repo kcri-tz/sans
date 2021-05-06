@@ -573,10 +573,12 @@ int main(int argc, char* argv[]) {
             }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
-                color_t color = 0;
                 string kmer_sequence = sequence.substr(i, kmer::k + 1); // the k-mer sequence
-                color::set(uc_kmers[i], ""); // set the k-mer colors, ignore the color name (mapped below)
-                graph::add_cdbg_colored_kmer(mean, kmer_sequence, color);
+                color_t color = 0;
+                for (auto uc_it=uc_kmers[i]; uc_it.begin(unitig_map); uc_it.end()){
+                    color::set(uc_it.getColor_ID, uc_it.getColor_ID); // set the k-mer color
+                }
+                graph::add_cdbg_colored_kmer(mean, kmer_sequence, color)
             }
 
         }
