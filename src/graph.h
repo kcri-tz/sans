@@ -158,8 +158,10 @@ public:
      *
      * @param mean weight function
      * @param verbose print progress
+     * @param min_value the minimal weight currently represented in the top list
+     * @return The minimal weight currently represented in the top list
      */
-    static void add_weights(double mean(uint32_t&, uint32_t&), bool& verbose);
+    static double add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose);
 
     /**
      * This function adds a single split (weight and colors) to the output list.
@@ -170,14 +172,15 @@ public:
     static void add_split(double& weight, color_t& color);
 
     /**
-     * This funtion adds a simgle split from a cdbg to the output list.
+     * This funtion adds a sigle split from a cdbg to the output list.
      * 
      * @param mean mean function
      * @param seq kmer
      * @param color split colors
-     * @param verbose print progress 
+     * @param min_value the minimal weight currently represented in the top list
+     * @return The minimal weight currently represented in the top list
      */
-     static void add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& color); 
+     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value); 
      
 
     /**
