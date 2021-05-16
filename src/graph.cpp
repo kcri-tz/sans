@@ -727,7 +727,7 @@ void graph::add_split(double& weight, color_t& color) {
  * @param color the plit colors
  */
 void graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& color){
-    double min_value = split_list.rbegin()->first;
+    double min_value = numeric_limits<double>::min();
     if (kmer_table.size() == 0){ // If the graph is the only input, compute the split directly
         bool pos = color::complement(color, true);    // invert the color set, if necessary
         array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
