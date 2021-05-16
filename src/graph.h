@@ -161,7 +161,7 @@ public:
      * @param min_value the minimal weight currently represented in the top list
      * @return The minimal weight currently represented in the top list
      */
-    static double add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose);
+    static void add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose);
 
     /**
      * This function adds a single split (weight and colors) to the output list.
@@ -180,7 +180,7 @@ public:
      * @param min_value the minimal weight currently represented in the top list
      * @return The minimal weight currently represented in the top list
      */
-     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value); 
+     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value, bool reverse); 
      
 
     /**

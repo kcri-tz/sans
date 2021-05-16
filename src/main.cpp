@@ -585,7 +585,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
                     color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
                 }
-                min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
+                min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value, reverse);
             }
         }
         if (verbose) {

@@ -650,14 +650,18 @@ void graph::iupac_shift_amino(hash_set<kmerAmino_t>& prev, hash_set<kmerAmino_t>
  * @param mean weight function
  * @param verbose print progess
  */
-double graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
-     //double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
+void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
+    //double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
     uint64_t cur=0, prog=0, next;
 
     // check table (Amino or base)
     uint64_t max; // table size
     if (isAmino){max=kmer_tableAmino.size();} // use amino table size
     else {max=kmer_table.size();} // use base table size
+
+    if (max==0){
+        return;
+    }
     auto amino_it = kmer_tableAmino.begin(); // amino table iterator
     auto base_it = kmer_table.begin(); // base table iterator
 
@@ -705,7 +709,6 @@ double graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, b
             }
         }
     }
-    return min_value;
 }
 
 /**
@@ -727,14 +730,23 @@ void graph::add_split(double& weight, color_t& color) {
  * @param seq kmer
  * @param kmer_color the split colors
  */
-double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value){
+double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value, bool reverse){
     if (kmer_table.size()!= 0){ // Find the kmer entry in the k_mer table
-        kmer_t kmer;
+        kmer_t kmer; // create a bit sequence for currently stored colors
+        kmer_t rcmer;  // create a bit sequence for the currently stored reverse complement
+
         for (int pos=0; pos < kmer_seq.length(); ++pos) {kmer::shift_right(kmer, kmer_seq[pos]);} // collect the bases from the k-mer sequence.
+        rcmer = kmer;
+        if (reverse) kmer::reverse_complement(rcmer, true); // invert the k-mer, if necessary
+
         color_t hashed_color = kmer_table[kmer];
+        color_t hashed_rc_color = kmer_table[rcmer];
         for (uint64_t pos=0; pos < maxN; ++pos){ // Transcribe hashed colores to the cdbg color set
             if(color::test(hashed_color, pos)){
-                (color::set(kmer_color, pos));
+                color::set(kmer_color, pos);
+            }
+            if(reverse && color::test(hashed_rc_color, pos)){
+                color::set(kmer_color, pos);
             }
         }
         kmer_table.erase(kmer);
