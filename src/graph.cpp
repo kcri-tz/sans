@@ -722,7 +722,7 @@ void graph::add_split(double& weight, color_t& color) {
 }
 
 /**
- * This function computes a split from the current map and cdbg colored kamer. 
+ * This function computes a split from the current map and cdbg colored kmer. 
  * 
  * @param seq kmer
  * @param kmer_color the split colors
@@ -731,7 +731,11 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
     if (kmer_table.size()!= 0){ // Find the kmer entry in the k_mer table
         kmer_t kmer;
         for (int pos=0; pos < kmer_seq.length(); ++pos) {kmer::shift_right(kmer, kmer_seq[pos]);} // collect the bases from the k-mer sequence.
-        color::set(kmer_table[kmer], kmer_color);
+        for (uint64_t pos=0; pos < maxN; ++pos){ // Transcribe hashed colores to the cdbg color set
+            if(color::test(kmer, pos)){
+                (color::set(kmer_color, pos));
+            }
+        }
         kmer_table.erase(kmer);
     }
     bool pos = color::complement(kmer_color, true);    // invert the color set, if necessary
