@@ -731,8 +731,9 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
     if (kmer_table.size()!= 0){ // Find the kmer entry in the k_mer table
         kmer_t kmer;
         for (int pos=0; pos < kmer_seq.length(); ++pos) {kmer::shift_right(kmer, kmer_seq[pos]);} // collect the bases from the k-mer sequence.
+        color_t hashed_color = kmer_table[kmer];
         for (uint64_t pos=0; pos < maxN; ++pos){ // Transcribe hashed colores to the cdbg color set
-            if(color::test(kmer, pos)){
+            if(color::test(hashed_color, pos)){
                 (color::set(kmer_color, pos));
             }
         }
