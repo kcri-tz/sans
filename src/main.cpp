@@ -389,6 +389,7 @@ int main(int argc, char* argv[]) {
             if (!getline(file, line)) {break;}
         }
     }
+    int denom_file_count = denom_names.size(); 
 
 #ifdef useBF
     // load an existing Bifrost graph
@@ -485,7 +486,7 @@ int main(int argc, char* argv[]) {
             for (string file_name: target_files){
                 ifstream file(folder+file_name);    // input file stream
                 if (verbose) {
-                    cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << denom_names.size() << ")" << endl;    // print progress
+                    cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
                 }
                 count::deleteCount();
 

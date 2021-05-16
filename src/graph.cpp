@@ -731,7 +731,7 @@ void graph::add_split(double& weight, color_t& color) {
  * @param kmer_color the split colors
  */
 double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value, bool reverse){
-    if (kmer_table.size()!= 0){ // Find the kmer entry in the k_mer table
+    if (kmer_table.size()!= 0){ // check if the kmer is already stored
         kmer_t kmer; // create a bit sequence for currently stored colors
         kmer_t rcmer;  // create a bit sequence for the currently stored reverse complement
 
@@ -739,17 +739,18 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
         rcmer = kmer;
         if (reverse) kmer::reverse_complement(rcmer, true); // invert the k-mer, if necessary
 
-        color_t hashed_color = kmer_table[kmer];
-        color_t hashed_rc_color = kmer_table[rcmer];
-        for (uint64_t pos=0; pos < maxN; ++pos){ // Transcribe hashed colores to the cdbg color set
-            if(color::test(hashed_color, pos)){
+        color_t hashed_color = kmer_table[kmer]; // the currently stored colores of the kmer
+        color_t hashed_rc_color = kmer_table[rcmer]; // the currently stored colores of the reverse complement
+        for (uint64_t pos=0; pos < maxN; ++pos){ // transcribe hashed colores to the cdbg color set
+            if(color::test(hashed_color, pos)){ // test if the color is set in the stored color set
                 color::set(kmer_color, pos);
             }
-            if(reverse && color::test(hashed_rc_color, pos)){
+            if(reverse && color::test(hashed_rc_color, pos)){ // test if the color is set in the stored reverse complement color set
                 color::set(kmer_color, pos);
             }
         }
-        kmer_table.erase(kmer);
+        kmer_table.erase(kmer); // remove the kmer from the table
+        if (reverse) {kmer_table.erase(rcmer);} // remove the reverse complement color set
     }
     bool pos = color::complement(kmer_color, true);    // invert the color set, if necessary
     array<uint32_t,2>& weight = color_table[kmer_color];    // get the weight and inverse weight for the color set
