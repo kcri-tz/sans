@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
     string graph;    // name of graph file
     string splits;    // name of splits file
     string output;    // name of output file
-    string newick;    // name of newick output file
+    string newick;    // name of newick output file // Todo
     string translate; // name of translate file
 
     uint64_t kmer = 31;    // length of k-mers
@@ -413,7 +413,7 @@ int main(int argc, char* argv[]) {
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
         for (auto it=0; it != cdbg_names.size(); ++it){ // iterate the cdbg names and transcribe them to the name table
-            name_table[cdbg_names[it]] = ++num;
+            name_table[cdbg_names[it]] = num++; // num++???
             denom_names.push_back(cdbg_names[it]);
         }
 
@@ -586,7 +586,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
                     color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
                 }
-                min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value, reverse);
+                min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value, reverse); // reverse ergibt hier keinen Sinn
             }
         }
         if (verbose) {
