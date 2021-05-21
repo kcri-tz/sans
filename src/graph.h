@@ -175,12 +175,12 @@ public:
      * This funtion adds a sigle split from a cdbg to the output list.
      * 
      * @param mean mean function
-     * @param seq kmer
-     * @param color split colors
+     * @param kmer_seq kmer
+     * @param kmer_color split colors
      * @param min_value the minimal weight currently represented in the top list
      * @return The minimal weight currently represented in the top list
      */
-     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value, bool reverse); 
+     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value); 
      
 
     /**

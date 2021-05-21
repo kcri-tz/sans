@@ -413,8 +413,10 @@ int main(int argc, char* argv[]) {
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
         for (auto it=0; it != cdbg_names.size(); ++it){ // iterate the cdbg names and transcribe them to the name table
-            name_table[cdbg_names[it]] = num++; // num++???
-            denom_names.push_back(cdbg_names[it]);
+            if (name_table.find(cdbg_names[it]) == name_table.end()){
+                            name_table[cdbg_names[it]] = num++;
+                            denom_names.push_back(cdbg_names[it]);
+            }
         }
 
         if (num > maxN) {
@@ -569,7 +571,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 
             auto num_kmers = unitig.size - kmer::k + 1; // the number of kmers in this unitig
             auto uc_kmers = new UnitigColors[num_kmers]; // storage for unitig colored kmers
-            auto unitig_map = UnitigMapBase(0, 1, kmer::k, true); // first two parameters ?
+            auto unitig_map = UnitigMapBase(0, 1, kmer::k, true);
 
             auto sequence = unitig.mappedSequenceToString(); // the mapped unitig sequence
             auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color iterator of this unitig
@@ -586,7 +588,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
                     color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
                 }
-                min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value, reverse); // reverse ergibt hier keinen Sinn
+                min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
             }
         }
         if (verbose) {
@@ -598,9 +600,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     // function to map color position to file name
     std::function<string(const uint64_t&)> map=[=](uint64_t i) {
         if (i < denom_names.size()) return denom_names[i];
-        #ifdef useBF
-        else return cdbg.getColorName(i-denom_names.size());
-        #endif
         cerr << "Error: color bit does not correspond to color name" << endl;
         exit(EXIT_FAILURE);
     };
