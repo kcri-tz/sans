@@ -177,6 +177,12 @@ int main(int argc, char* argv[]) {
                 // weakly compatible network
             }
             else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
+                for (const char &c: filter.substr(0, filter.find("tree"))){
+                    if (!isdigit(c)){
+                        cerr << "Error: unexpected argument: --filter " << filter << " Please specify n (Example usage: --filter 3tree)" << endl; // Specify n
+                        return 1;
+                    }
+                }
                 stoi(filter.substr(0, filter.find("tree")));
             }
             else {
