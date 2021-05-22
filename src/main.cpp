@@ -51,8 +51,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -m, --mean    \t Mean weight function to handle asymmetric splits" << endl;
         cout << "                  \t options: arith: arithmetic mean" << endl;
-        cout << "                  \t          geom:  geometric mean (default)" << endl;
-        cout << "                  \t          geom2: geometric mean with pseudo-counts" << endl;
+        cout << "                  \t          geom:  geometric mean" << endl;
+        cout << "                  \t          geom2: geometric mean with pseudo-counts (default)" << endl;
         cout << endl;
         cout << "    -f, --filter  \t Output a greedy maximum weight subset" << endl;
         // cout << "                  \t additional output: (weighted) cleanliness, i.e., ratio of" << endl;
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
         cout << "                  \t options: strict: compatible to a tree" << endl;
         cout << "                  \t          weakly: weakly compatible network" << endl;
         cout << "                  \t          n-tree: compatible to a union of n trees" << endl;
-        cout << "                  \t                  (where n is an arbitrary number)" << endl;
+        cout << "                  \t                  (where n is an arbitrary number, e.g. 2-tree)" << endl;
         cout << endl;
         cout << "    -x, --iupac   \t Extended IUPAC alphabet, resolve ambiguous bases or amino acids" << endl;
         cout << "                  \t Specify a number to limit the k-mers per position between" << endl;
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
     uint64_t top = -1;    // number of splits
     bool dyn_top = false; // bind number of splits to num
 
-    auto mean = util::geometric_mean;    // weight function
+    auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
     uint64_t iupac = 1;    // allow extended iupac characters
     bool reverse = true;    // consider reverse complement k-mers
@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
             else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
                 for (const char &c: filter.substr(0, filter.find("tree"))){
                     if (!isdigit(c)){
-                        cerr << "Error: unexpected argument: --filter " << filter << ". Please specify n (Example usage: --filter 3tree)" << endl;
+                        cerr << "Error: unexpected argument: --filter " << filter << ". Please specify n (Example usage: --filter 2-tree)" << endl;
                         return 1;
                     }
                 }
