@@ -176,6 +176,15 @@ int main(int argc, char* argv[]) {
             else if (filter == "weakly") {
                 // weakly compatible network
             }
+            else if (filter.find("-tree") != -1 && filter.substr(filter.find("-tree")) == "-tree") {
+                for (const char &c: filter.substr(0, filter.find("-tree"))){
+                    if (!isdigit(c)){
+                        cerr << "Error: unexpected argument: --filter " << filter << ". Please specify n (Example usage: --filter 2-tree)" << endl;
+                        return 1;
+                    }
+                }
+                stoi(filter.substr(0, filter.find("-tree")));
+            }
             else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
                 for (const char &c: filter.substr(0, filter.find("tree"))){
                     if (!isdigit(c)){
