@@ -748,6 +748,8 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
         
     }
     bool pos = color::complement(kmer_color, true);    // invert the color set, if necessary
+    if (kmer_color == 0) return min_value;
+
     array<uint32_t,2>& weight = color_table[kmer_color];    // get the weight and inverse weight of the color set
     double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
 

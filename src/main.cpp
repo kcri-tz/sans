@@ -434,7 +434,7 @@ int main(int argc, char* argv[]) {
             if (name_table.find(cdbg_names[it]) == name_table.end()){
                             name_table[cdbg_names[it]] = num++;
                             denom_names.push_back(cdbg_names[it]);
-            }
+	    }
         }
 
         if (num > maxN) {
