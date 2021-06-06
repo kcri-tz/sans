@@ -443,7 +443,10 @@ int main(int argc, char* argv[]) {
         }
         if (verbose) {
             cout << endl;
-        }
+	}
+	for (auto entry: name_table){
+		cout << entry.first << "\t" << entry.second << "\t" << denom_names[entry.second] << endl;
+	}
     }
 #endif
     // Set dynamic top
@@ -677,10 +680,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
             if (color::test(split.second, pos)) {
                 if (i < denom_names.size())
                     stream << '\t' << denom_names[i];    // name of the file
-                #ifdef useBF
-                else
-                    stream << '\t' << cdbg.getColorName(i-denom_names.size());
-                #endif
             }
             split.second >>= 01u;
         }

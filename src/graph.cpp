@@ -738,8 +738,8 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
 
         if (kmer_table.contains(kmer)){ // Check if additional colors are stored for this kmer
                 color_t hashed_color = kmer_table[kmer]; // the currently stored colores of the kmer
-        for (uint64_t pos=0; pos < maxN; ++pos){ // transcribe hashed colores to the cdbg color set
-                if(color::test(hashed_color, pos)){ // test if the color is set in the stored color set
+        for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
+                if(color::test(hashed_color, pos) && !color::test(kmer_color, pos)){ // test if the color is set in the stored color set
                     color::set(kmer_color, pos);
                 }
             }
