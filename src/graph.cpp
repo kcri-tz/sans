@@ -122,7 +122,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer;    // create a bit sequence for the reverse complement
 
-    kmerAmino_t kmerAmino;    // create a new empty bit sequence for the k-mer
+    kmerAmino_t kmerAmino=0;    // create a new empty bit sequence for the k-mer
 
     uint64_t begin = 0;
 next_kmer:

@@ -123,7 +123,7 @@ uint64_t util::amino_char_to_bits(char& c) {
             return 0b11010u;
         default:
             cerr << "Error: Invalid character " << c << "." << endl;
-            return -1;
+            exit(1);
     }
 }
 
@@ -191,7 +191,7 @@ char util::amino_bits_to_char(uint64_t& b) {
             return '*';
         default:
             cerr << "Error: Invalid bit sequence " << b << "." << endl;
-            return -1;
+            exit(1);
     }
 }
 
