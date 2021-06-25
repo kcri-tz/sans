@@ -107,7 +107,8 @@ def split_comp(donor,reference,weighted):
     ref_list=reference.keys()
     n=len(ref_list)
     w_all_ref=sum([w for (_,w) in reference.items()])
-    
+    num_all_ref=len(reference.items())
+
     w_all=0.
     w_corr=0.
     w_corr_ref=0.
@@ -115,11 +116,13 @@ def split_comp(donor,reference,weighted):
     num_corr=0
     w_precision=-1.
     w_recall=-1.
+    dist=0.
+    w_dist=0.
 
     if not weighted:
-        print("#precision\trecall\t(unweighted)")
+        print("#precision\trecall\tsymmetric_distance\t(unweighted)")
     else:
-        print("#precision\trecall\t(weighted)")
+        print("#precision\trecall\tsymmetric_distance\t(weighted)")
 
     for (w,s) in donor_sorted:
         w_all+=w
@@ -132,19 +135,22 @@ def split_comp(donor,reference,weighted):
  
         precision=(1.0*num_corr)/(1.0*num_all)
         recall=(1.0*num_corr)/(1.0*n)
+        dist=((1.0*num_all-num_corr)/(1.0*num_all)) + ((1.0*num_all_ref-num_corr)/(1.0*num_all_ref))
 
         if w_all > 0:
             w_precision=(1.0*w_corr)/(1.0*w_all)
         if w_all_ref > 0 :
             w_recall=(1.0*w_corr_ref)/(1.0*w_all_ref)
-        
-        if not weighted:
-            print("\t".join([str(precision),str(recall)]))
-        else: # weighted
-            print("\t".join([str(w_precision),str(w_recall)]))
+            if w_all > 0:
+                w_dist=((w_all-w_corr)/(w_all)) + ((w_all_ref-w_corr_ref)/(w_all_ref))
 
-    eprint("\t".join([str(precision),str(recall),"unweighted"]))
-    eprint("\t".join([str(w_precision),str(w_recall),"weighted"]))
+        if not weighted:
+            print("\t".join([str(precision),str(recall),str(dist)]))
+        else: # weighted
+            print("\t".join([str(w_precision),str(w_recall),str(w_dist)]))
+
+    eprint("\t".join([str(precision),str(recall),str(dist),"unweighted"]))
+    eprint("\t".join([str(w_precision),str(w_recall),str(w_dist),"weighted"]))
                      
 
                         
@@ -168,12 +174,16 @@ if len(sys.argv)>4:
 if len(sys.argv)<4:
     eprint("Usage: comp.py <list of splits 1> <list of splits 2> <list of genomes (file names)>  [minimum split size] -w")
     eprint("list of splits in SANS output format: Per split one line: weight genomeA genomeB ... (fasta file extensions are ignored: "+", ".join(fileext)+")")
-    eprint("Output on stdout: precision and recall of splits 1 w.r.t. splits 2 in terms of topological RF-distance for increasing number of splits considered, i.e., precision and recall for *all* splits are in last line.")
+    eprint("Output on stdout: precision and recall of splits 1 w.r.t. splits 2 in terms of topological RF-distance as well as symmetric distance; for increasing number of splits considered, i.e., precision, recall and distance for *all* splits are in last line.")
     eprint("Only splits of size at least <minimum split size> are considered (default = 1, i.e. all; choose 2 to ignore trivial splits, i.e. leaf edges).")
     eprint("Default:     Precision = (number of splits 1 that are also in splits 2) / (total number of splits 1)")
     eprint("             Recall    = (number of splits 2 that are also in splits 1) / (total number of splits 2)")
+    eprint("             Distance  = (number of splits 1 that are not in splits 2) / (total number of splits 1)")
+    eprint("                       + (number of splits 2 that are not in splits 1) / (total number of splits 2)") 
     eprint("-w Weighted: Precision = (total weight of splits 1 that are also in splits 2) / (total weight of all splits 1)")
     eprint("             Recall    = (total weight of splits 2 that are also in splits 1) / (total weight of all splits 2)")
+    eprint("             Distance  = (total weight of splits 1 that are not in splits 2) / (total weight of splits 1)")
+    eprint("                       + (total weight of splits 2 that are not in splits 1) / (total weight of splits 2)")
     eprint("Both unweighed and weighted statistics are output on stderr in any case.")
     sys.exit(1)
 
