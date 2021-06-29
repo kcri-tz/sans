@@ -124,9 +124,9 @@ def split_comp(donor,reference,weighted):
 
 
     if not weighted:
-        print("#precision\trecall\tsymmetric_distance\tRF-distance\t(unweighted)")
+        print("#precision\trecall\tF1-score\tsymmetric_distance\tRF-distance\t(unweighted)")
     else:
-        print("#precision\trecall\tsymmetric_distance\tbranch score\t(weighted)")
+        print("#precision\trecall\tF1-score\tsymmetric_distance\tbranch score\t(weighted)")
 
     for (w,s) in donor_sorted:
         w_all+=w
@@ -152,13 +152,13 @@ def split_comp(donor,reference,weighted):
                 w_dist=((w_all-w_corr)/(w_all)) + ((w_all_ref-w_corr_ref)/(w_all_ref))
 
         if not weighted:
-            print("\t".join([str(precision),str(recall),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr))]))
+            print("\t".join([str(precision),str(recall),str(2*precision*recall/(precision+recall)),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr))]))
         else: # weighted
-            print("\t".join([str(w_precision),str(w_recall),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref)]))
+            print("\t".join([str(w_precision),str(w_recall),str(2*w_precision*w_recall/(w_precision+w_recall)),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref)]))
 
 
-    eprint("\t".join([str(precision),str(recall),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr)),"unweighted"]))
-    eprint("\t".join([str(w_precision),str(w_recall),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref),"weighted"]))
+    eprint("\t".join([str(precision),str(recall),str(2*precision*recall/(precision+recall)),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr)),"unweighted"]))
+    eprint("\t".join([str(w_precision),str(w_recall),str(2*w_precision*w_recall/(w_precision+w_recall)),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref),"weighted"]))
                      
 
                         
@@ -186,12 +186,14 @@ if len(sys.argv)<4:
     eprint("Only splits of size at least <minimum split size> are considered (default = 1, i.e. all; choose 2 to ignore trivial splits, i.e. leaf edges).")
     eprint("Default:     Precision = (number of splits 1 that are also in splits 2) / (total number of splits 1)")
     eprint("             Recall    = (number of splits 2 that are also in splits 1) / (total number of splits 2)")
+    eprint("             F1-score  = Harmonic mean of precision and recall")
     eprint("             Distance  = (number of splits 1 that are not in splits 2) / (total number of splits 1)")
     eprint("                       + (number of splits 2 that are not in splits 1) / (total number of splits 2)") 
     eprint("             RF-Dist.  = number of splits 1 that are not in splits 2")
     eprint("                       + number of splits 2 that are not in splits 1")
     eprint("-w Weighted: Precision = (total weight of splits 1 that are also in splits 2) / (total weight of all splits 1)")
     eprint("             Recall    = (total weight of splits 2 that are also in splits 1) / (total weight of all splits 2)")
+    eprint("             F1-score  = Harmonic mean of weighted precision and weighted recall")
     eprint("             Distance  = (total weight of splits 1 that are not in splits 2) / (total weight of splits 1)")
     eprint("                       + (total weight of splits 2 that are not in splits 1) / (total weight of splits 2)")
     eprint("             Branch score = Sum of weight differences per split")
