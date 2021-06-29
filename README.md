@@ -11,8 +11,7 @@
 
 ### Publications
 
-Rempel, A. and Wittler, R.: [SANS serif: alignment-free, whole-genome based phylogenetic reconstruction](https://www.biorxiv.org/content/10.1101/2020.12.31.424643v1.full.pdf).
-bioRxiv. doi:10.1101/2020.12.31.424643 (2021).
+Rempel, A., Wittler, R.: [SANS serif: alignment-free, whole-genome based phylogenetic reconstruction](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btab444/6300510). Bioinformatics. (2021).
 
 Wittler, R.: [Alignment- and reference-free phylogenomics with colored de Bruijn graphs](https://pub.uni-bielefeld.de/download/2942421/2942423/s13015-020-00164-3.wittler.pdf).
 Algorithms for Molecular Biology. 15: 4 (2020).
