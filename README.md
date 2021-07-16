@@ -228,7 +228,7 @@ Further information on the datasets can be found in the initial publication of S
 220 genomes, k=31
 
 | Preprocessing | Running time <br> pre-processing | Running time <br>SANS | Running time both <br>(parall. pre-proc.,<br> factor 16) | F1-Score <br> (weighted) |
-|:--|--:|--:|--:|--:|--:|
+|:--|--:|--:|--:|--:|
 | none (whole genome) | -- | **610s** | -- | **0.878 <br> (0.999)** |
 | Getorf (-find 0) | 247s | 459s | 706s <br> (474s) | 0.881 <br> (0.999) |
 | Getorf (-find 1) | 199s | 339s | 538s <br> (351s) | 0.868 <br> (0.999) |
@@ -239,7 +239,7 @@ Further information on the datasets can be found in the initial publication of S
 2964 genomes, k=21
 
 | Preprocessing | Running time <br> pre-processing | Running time <br>SANS | Running time both <br>(parall. pre-proc.,<br> factor 16) | F1-Score <br> (weighted) |
-|:--|--:|--:|--:|--:|--:|
+|:--|--:|--:|--:|--:|
 | none (whole genome) | -- | **190min** | -- | **0.587 <br> (0.792)** |
 | Getorf (-find 0) | 55min | 220min | 274min <br> (223min) | 0.624 <br> (0.807) |
 | Getorf (-find 1) | 48min | 165min | 213min <br> (168min) | 0.620 <br> (0.799) |
