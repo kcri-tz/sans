@@ -217,10 +217,10 @@ For estimating the reconstruction accuracy, the (weighted) F1 score has been det
 | Measure ||
 |--|--|
 |F1-score  | harmonic mean of precision and recall |
-|Precision | (number of called splits that are also in reference) <br> / (total number of called splits) |
-|Recall    | (number of reference splits that are also called) <br> / (total number of reference splits) |
-|weighted Precision | (total weight of called splits that are also in reference) <br> / (total weight of all called splits) |
-|weighted Recall | (total weight of reference splits that are also called) <br> / (total weight of all reference splits) |
+|precision | (number of called splits that are also in reference) <br> / (total number of called splits) |
+|recall    | (number of reference splits that are also called) <br> / (total number of reference splits) |
+|weighted precision | (total weight of called splits that are also in reference) <br> / (total weight of all called splits) |
+|weighted recall | (total weight of reference splits that are also called) <br> / (total weight of all reference splits) |
 
 Further information on the datasets can be found in the initial publication of SANS (Wittler, 2019), see above.
 
