@@ -7,7 +7,7 @@
 * Alignment-free
 * Assembled genomes or reads as input
 * Phylogenetic splits or tree as output
-* **NEW:** Coding sequences / amino acid sequences as input (see --code and --amino)
+* **NEW:** Coding sequences / amino acid sequences as input (see --code and --amino), implemented by Marco Sohn
 
 ### Publications
 
@@ -26,7 +26,7 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 * [Usage](#usage)
 * [Details on filter option](#details-on-filter-option)
 * [Examples](#examples)
-* [Performance evaluation on predicted open reading frames](#Performance-evaluation-on-predicted-open-reading-frames)
+* [Performance evaluation on predicted open reading frames](#performance-evaluation-on-predicted-open-reading-frames)
 * [Contact](#contact)
 * [License](#license)
 
