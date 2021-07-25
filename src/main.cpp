@@ -436,7 +436,11 @@ int main(int argc, char* argv[]) {
                             denom_names.push_back(cdbg_names[it]);
 			    vector<string> dummy;	
 			    gen_files.push_back(dummy);
-	    }
+	        }
+            else
+            {
+                cout << "Warning: " << cdbg_names[it] << "exists in input and graph. It is treated as one sequence" << endl;
+            }
         }
 
         if (num > maxN) {
