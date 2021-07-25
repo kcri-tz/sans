@@ -736,16 +736,17 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
 
         for (int pos=0; pos < kmer_seq.length(); ++pos) {kmer::shift_right(kmer, kmer_seq[pos]);} // collect the bases from the k-mer sequence.
 
+	kmer::reverse_complement(kmer,true);
+
         if (kmer_table.contains(kmer)){ // Check if additional colors are stored for this kmer
-                color_t hashed_color = kmer_table[kmer]; // the currently stored colores of the kmer
-        for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
-                if(color::test(hashed_color, pos) && !color::test(kmer_color, pos)){ // test if the color is set in the stored color set
-                    color::set(kmer_color, pos);
-                }
-            }
-            kmer_table.erase(kmer); // remove the kmer from the table
-        }
-        
+           color_t hashed_color = kmer_table[kmer]; // the currently stored colores of the kmer
+	   for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
+              	if(color::test(hashed_color, pos) && !color::test(kmer_color, pos)){ // test if the color is set in the stored color set
+              		color::set(kmer_color, pos);
+               	}
+           }
+           kmer_table.erase(kmer); // remove the kmer from the table
+	}
     }
     bool pos = color::complement(kmer_color, true);    // invert the color set, if necessary
     if (kmer_color == 0) return min_value;

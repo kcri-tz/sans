@@ -434,6 +434,8 @@ int main(int argc, char* argv[]) {
             if (name_table.find(cdbg_names[it]) == name_table.end()){
                             name_table[cdbg_names[it]] = num++;
                             denom_names.push_back(cdbg_names[it]);
+			    vector<string> dummy;	
+			    gen_files.push_back(dummy);
 	    }
         }
 
@@ -444,10 +446,8 @@ int main(int argc, char* argv[]) {
         if (verbose) {
             cout << endl;
 	}
-	for (auto entry: name_table){
-		cout << entry.first << "\t" << entry.second << "\t" << denom_names[entry.second] << endl;
-	}
     }
+
 #endif
     // Set dynamic top
     if (dyn_top){
@@ -602,14 +602,15 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
             }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
-                string kmer_sequence = sequence.substr(i, kmer::k + i); // the k-mer sequence
+                string kmer_sequence = sequence.substr(i, kmer::k); // the k-mer sequence
                 color_t color = 0;
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
                     color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
-                }
+		}
                 min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
-            }
+	   }
         }
+
         if (verbose) {
             cout << "\33[2K\r" << "Processed " << max << " unitigs (100%)" << endl;
         }
