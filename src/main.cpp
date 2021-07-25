@@ -439,7 +439,7 @@ int main(int argc, char* argv[]) {
 	        }
             else
             {
-                cout << "Warning: " << cdbg_names[it] << "exists in input and graph. It is treated as one sequence" << endl;
+                cout << "Warning: " << cdbg_names[it] << " exists in input and graph. It is treated as one sequence" << endl;
             }
         }
 
