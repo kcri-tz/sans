@@ -180,10 +180,7 @@ public:
      * @param min_value the minimal weight currently represented in the top list
      * @return The minimal weight currently represented in the top list
      */
-     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value); 
-     
-     // BIFROST CONVERGENCE TEST
-     static void bfct();     
+     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value);       
 
     /**
      * This function filters a greedy maximum weight tree compatible subset.

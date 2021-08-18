@@ -614,11 +614,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
                 min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
 	   }
         }
-	// BIFROST CONVERGENCE TEST
-	graph::bfct();
-        if (verbose) {
-            cout << "\33[2K\r" << "Processed " << max << " unitigs (100%)" << endl;
-        }
     }
 #endif
 
