@@ -182,6 +182,8 @@ public:
      */
      static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value); 
      
+     // BIFROST CONVERGENCE TEST
+     static void bfct();     
 
     /**
      * This function filters a greedy maximum weight tree compatible subset.

@@ -29,6 +29,8 @@ multimap<double, color_t, greater<>> graph::split_list;
 */
 vector<char> graph::allowedChars;
 
+// BIFROST CONVERGENCE TEST
+uint64_t removed_kmers = 0;
 
 /**
  * This is a comparison function extending std::bitset.
@@ -746,6 +748,8 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
                	}
            }
            kmer_table.erase(kmer); // remove the kmer from the table
+           // BIFROST CONVERGENCE TEST
+	   removed_kmers += 1;
 	}
     }
     bool pos = color::complement(kmer_color, true);    // invert the color set, if necessary
@@ -775,6 +779,13 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
     }
     return min_value;
 }
+
+// BFCT
+void graph::bfct()
+{
+    cout << "@BFCT," << removed_kmers <<","<< kmer_table.size() << endl; 
+}
+
 
 /**
  * This function filters a greedy maximum weight tree compatible subset.
