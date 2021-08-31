@@ -81,6 +81,9 @@ int main(int argc, char* argv[]) {
         cout << "                 \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
         cout << "                 \t (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)" << endl;
         cout << endl;
+        cout << "    -M, --maxN \t Compare number of input genomes to compile paramter DmaxN" << endl;
+        cout << "               \t Add path/to/makefile (default is makefile in current working directory)." << endl;
+        cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
@@ -112,6 +115,8 @@ int main(int argc, char* argv[]) {
     bool amino = false;      // input files are amino acid sequences
     bool shouldTranslate = false;   // translate input files
     bool userKmer = false; // is k-mer default or custom
+    bool check_n = false; // compare num (number of input genomes) to maxN (compile parameter DmaxN)
+    string path = "./makefile"; // path to makefile
     uint64_t code = 1;
 
     // parse the command line arguments and update the variables above
@@ -213,6 +218,12 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--amino") == 0) {
             amino = true;   // Input provides amino acid sequences
         }
+        else if (strcmp(argv[i], "-M") == 0 || strcmp(argv[i], "--maxN") == 0) {
+            check_n = true; // compare num (number of input genomes) to maxN (compile parameter DmaxN)
+            if (i+1 < argc && argv[i+1][0] != '-'){
+				path = argv[++i]; // path to makefile
+			}
+		}
         else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--code") == 0) {
             if (i+1 < argc) {
                 string param = argv[++i];
@@ -389,7 +400,6 @@ int main(int argc, char* argv[]) {
                 if (has_files) {num++;}
             }
 
-            if (num > maxN) {cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl; return 1;} // check if the number of genomes exceeded maxN
 
             // check files
             for(string file_name: target_files){
@@ -443,24 +453,15 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        if (num > maxN) {
-            cerr << "Error: number of colors exceeds -DmaxN=" << maxN << endl;
-            return 1;
-        }
         if (verbose) {
             cout << endl;
 	}
     }
 
 #endif
-    // Set dynamic top by filenum
-    if (dyn_top){
-        top = top * num;
-    }
 
-    chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    graph::init(top, amino); // initialize the toplist size and the allowed characters
-    if (!splits.empty()) {
+
+	if (!splits.empty()) {
         ifstream file(splits);
         if (!file.good()) {
             cerr << "Error: could not read splits file: " << splits << endl;
@@ -480,10 +481,6 @@ int main(int argc, char* argv[]) {
                     vector<string> file_vec;
                     name_table[name] = num++;
                     denom_names.push_back(name);
-                    if (num > maxN) {
-                        cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl;
-                        return 1;
-                    }
                 }
                 color::set(color, name_table[name]);
                 next = curr + 1;
@@ -493,6 +490,26 @@ int main(int argc, char* argv[]) {
         }
         file.close();
     }
+
+
+    if (check_n) {
+       util::check_n(num,path);
+	}
+
+    if (num > maxN) {
+        cerr << "Error: number of input genomes ("<<num<<") exceeds -DmaxN=" << maxN << endl;
+        return 1;
+    }
+
+
+    // Set dynamic top by filenum
+    if (dyn_top){
+        top = top * num;
+    }
+
+    chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
+    graph::init(top, amino); // initialize the toplist size and the allowed characters
+
     
     kmer::init(kmer);      // initialize the k-mer length
     kmerAmino::init(kmer); // initialize the k-mer length
