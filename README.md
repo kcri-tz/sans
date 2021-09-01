@@ -55,8 +55,8 @@ Optional: If Bifrost should be used, change the SANS makefile accordingly (easy 
 
 In the *makefile*, two parameters are specified:
 
-| -DmaxK | Maximum k-mer length that can be chosen when running SANS. | Default: 32 |
-| -DmaxN | Maximum number of input files for SANS. | Default: 64 |
+* *-DmaxK*: Maximum k-mer length that can be chosen when running SANS.  Default: 32
+* *-DmaxN*: Maximum number of input files for SANS. Default: 64
 
 These values can simply be increased if necessary. To keep memory requirements small, do not choose these values unnecessarily large.
 
