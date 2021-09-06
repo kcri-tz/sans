@@ -392,17 +392,17 @@ int main(int argc, char* argv[]) {
             if (num > maxN) {cerr << "Error: number of files exceeds -DmaxN=" << maxN << endl; return 1;} // check if the number of genomes exceeded maxN
 
             // check files
-            for(string file_name: target_files){
-                ifstream file_stream = ifstream(folder+file_name);
-                if (!file_stream.good()) { // catch unreadable file
-                    cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
-                    file_stream.close();
-                    return 1;
-                }
-                else{
-                    file_stream.close();
-                }
-            }
+	    if (!splits.empty()){
+            	for(string file_name: target_files){
+                    ifstream file_stream = ifstream(folder+file_name);
+                    if (!file_stream.good()) { // catch unreadable file
+                        cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
+                    	file_stream.close();
+                    	return 1;
+                    }
+                    else{ file_stream.close();}	
+            	}
+	    }
             gen_files.push_back(target_files); // add the files of the current genome to the genome collection
             if (!getline(file, line)) {break;}
         }
