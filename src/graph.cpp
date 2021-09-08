@@ -29,6 +29,7 @@ multimap<double, color_t, greater<>> graph::split_list;
 */
 vector<char> graph::allowedChars;
 
+
 /**
  * This is a comparison function extending std::bitset.
  */ 
@@ -644,7 +645,39 @@ void graph::iupac_shift_amino(hash_set<kmerAmino_t>& prev, hash_set<kmerAmino_t>
 }
 
 /**
- * Theos function iterates over the hash table and calculates the split weights.
+ * This function calculates the weight of a single hash table entry
+ * @param mean weight function
+ * @param verbose print progress
+ * @param min_value the minimal weight represented in the top list
+ * @return the new minimal weight represented in the top list
+ */
+double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), double min_value, bool pos)
+{
+    array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
+    double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
+    if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
+        auto range = split_list.equal_range(old_value);    // get all color sets with the given weight
+        for (auto it = range.first; it != range.second; ++it) {
+            if (it->second == color) {    // iterate over the color sets to find the correct one
+                split_list.erase(it);    // erase the entry with the old weight
+                break;
+            }
+        }
+    }
+    weight[pos]++; // update the weight or the inverse weight of the current color set
+    double new_value = mean(weight[0], weight[1]);    // calculate the new mean value
+    if (new_value >= min_value) {    // if it is greater than the min. value, add it to the top list
+        split_list.emplace(new_value, color);    // insert it at the correct position ordered by weight
+        if (split_list.size() > t) {
+            split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
+            min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
+        }
+    }
+    return min_value;
+}
+
+/**
+ * This function iterates over the hash table and calculates the split weights.
  * 
  * @param mean weight function
  * @param verbose print progess
@@ -671,7 +704,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
             if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-        // update iterator
+        // update the iterator
         color_t* color_ref; // reference of the current color
         if (isAmino) { // if the amino table is used, update the amino iterator
             if (amino_it == kmer_tableAmino.end()){break;} // stop iterating if done
@@ -685,28 +718,8 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
         color_t& color = *color_ref;
         bool pos = color::complement(color, true);    // invert the color set, if necessary
         if (color == 0) continue;    // ignore empty splits
-        array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
 
-        double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
-        if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
-            auto range = split_list.equal_range(old_value);    // get all color sets with the given weight
-            for (auto it = range.first; it != range.second; ++it) {
-                if (it->second == color) {    // iterate over the color sets to find the correct one
-                    split_list.erase(it);    // erase the entry with the old weight
-                    break;
-                }
-            }
-        }
-        weight[pos]++;    // update the weight or the inverse weight of the current color set
-
-        double new_value = mean(weight[0], weight[1]);    // calculate the new mean value
-        if (new_value >= min_value) {    // if it is greater than the min. value, add it to the top list
-            split_list.emplace(new_value, color);    // insert it at the correct position ordered by weight
-            if (split_list.size() > t) {
-                split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
-                min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
-            }
-        }
+        add_weight(color, mean, min_value, pos);
     }
 }
 
@@ -739,7 +752,7 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
 
         if (kmer_table.contains(kmer)){ // Check if additional colors are stored for this kmer
            color_t hashed_color = kmer_table[kmer]; // the currently stored colores of the kmer
-	   for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
+	    for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
               	if(color::test(hashed_color, pos) && !color::test(kmer_color, pos)){ // test if the color is set in the stored color set
               		color::set(kmer_color, pos);
                	}
@@ -747,34 +760,11 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
            kmer_table.erase(kmer); // remove the kmer from the table
 	}
     }
-    bool pos = color::complement(kmer_color, true);    // invert the color set, if necessary
-    if (kmer_color == 0) return min_value;
-
-    array<uint32_t,2>& weight = color_table[kmer_color];    // get the weight and inverse weight of the color set
-    double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
-
-    if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
-        auto range = split_list.equal_range(old_value);    // get all color sets with the given weight
-        for (auto it = range.first; it != range.second; ++it) {
-            if (it->second == kmer_color) {    // iterate over the color sets to find the correct one
-                split_list.erase(it);    // erase the entry with the old weight
-                break;
-            }
-        }
-    }
-    weight[pos]++;    // update the weight or the inverse weight of the current color set
-
-    double new_value = mean(weight[0], weight[1]);    // calculate the new mean value
-    if (new_value >= min_value) {    // if it is greater than the min. value, add it to the top list
-        split_list.emplace(new_value, kmer_color);    // insert it at the correct position ordered by weight
-        if (split_list.size() > t) {
-            split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
-            min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
-        }
-    }
-    return min_value;
+    bool pos = color::complement(kmer_color, true);  // invert the color set, if necessary
+    if (kmer_color == 0) return min_value; // ignore empty splits
+    min_value = add_weight(kmer_color, mean, min_value, pos); // compute weight
+    return min_value; // return new minimal weight
 }
-
 
 /**
  * This function filters a greedy maximum weight tree compatible subset.
