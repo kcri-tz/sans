@@ -453,7 +453,7 @@ int main(int argc, char* argv[]) {
     }
 
 #endif
-    // Set dynamic top by filenum
+    // set dynamic top by filenum
     if (dyn_top){
         top = top * num;
     }
