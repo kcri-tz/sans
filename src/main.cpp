@@ -457,7 +457,7 @@ int main(int argc, char* argv[]) {
 
     /**
      * --- Indexing CDBG input --- 
-     * - Collect all target sequence names and locations from the Bifrost CDBG
+     * - Collect all target sequence names from the Bifrost CDBG
      */ 
 
 #ifdef useBF
