@@ -75,7 +75,7 @@ else:
 def readtaxa(filename):
     taxa=dict()
     i=1
-    for line in (s.strip() for s in open(filename)):
+    for line in (s.strip().split()[0] for s in open(filename)):
         taxa[line]=i
         i+=1
     return(taxa)
