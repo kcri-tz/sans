@@ -1,6 +1,4 @@
-Both the assemblies as well as the reference tree can be found in the following git repository:
-
-https://gitlab.ub.uni-bielefeld.de/gi/parac
+Both the assemblies as well as the reference tree can be found in a [separate git repository](https://gitlab.ub.uni-bielefeld.de/gi/parac).
 
 When using this data, cite the original publication:
 
