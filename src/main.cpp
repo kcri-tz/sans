@@ -10,7 +10,7 @@
  */
 int main(int argc, char* argv[]) {
     
-
+    cout << TSL_REHASH_PRIMES << endl;
     /**
     * [Info]
     * --- Help page ---
