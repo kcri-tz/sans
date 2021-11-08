@@ -130,7 +130,15 @@ void graph::init(uint64_t& top_size, bool amino) {
 *  @param color The color to store 
 */
 void graph::hash_kmer(const kmer_t& kmer, uint64_t& color){
+    #if maxK > 32
+    size_t mask = 0;
+    mask &= kmer[0];
+    mask &= kmer[1];
+    color::set(kmer_table[mask][kmer], color);
+    #else
     color::set(kmer_table[kmer & 3][kmer], color);
+    #endif
+    
 }
 
 
@@ -141,11 +149,11 @@ void graph::hash_kmer(const kmer_t& kmer, uint64_t& color){
 */
 void graph::hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color)
 {
-    // cout << kmer << endl;
-    int mask = 0;
+    size_t mask = 0;
     mask &= kmer[0];
     mask &= kmer[1];
     color::set(kmer_tableAmino[mask][kmer], color);
+
 }
 
 /**
@@ -153,8 +161,15 @@ void graph::hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color)
  * @param kmer The kmer to search
  */
 bool graph::search_kmer(const kmer_t& kmer)
-{
+{    
+    #if maxK > 32
+    size_t mask = 0;
+    mask &= kmer[0];
+    mask &= kmer[1];
+    return kmer_table[mask].contains(kmer);
+    #else
     return kmer_table[kmer & 3].contains(kmer);
+    #endif
 }
 
 /**
@@ -163,7 +178,14 @@ bool graph::search_kmer(const kmer_t& kmer)
 * @return color_t The stored colores
 */
 color_t graph::get_color(const kmer_t& kmer){
-    return kmer_table[kmer & 3][kmer];
+    #if maxK > 32
+    size_t mask = 0;
+    mask &= kmer[0];
+    mask &= kmer[1];
+    return kmer_table[mask][kmer];
+    #else
+    return kmer_table[kmer&3][kmer];
+    #endif
 }
 
 /**
@@ -171,7 +193,14 @@ color_t graph::get_color(const kmer_t& kmer){
  * @param kmer The kmer to remove
  */
 void graph::remove_kmer(const kmer_t& kmer){
-    kmer_table[kmer & 3].erase(kmer);
+    #if maxK > 32
+    size_t mask = 0;
+    mask &= kmer[0];
+    mask &= kmer[1];
+    kmer_table[mask].erase(kmer);
+    #else
+    kmer_table[kmer & 3][kmer];
+    #endif
 }
 
 /**
