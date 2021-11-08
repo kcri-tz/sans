@@ -10,9 +10,11 @@ bool graph::isAmino;
 /**
  * This is a hash table mapping k-mers to colors [O(1)].
  */
-hash_map<kmer_t, color_t> graph::kmer_table;
-
-hash_map<kmerAmino_t, color_t> graph::kmer_tableAmino;
+vector<hash_map<kmer_t, color_t>> graph::kmer_table;
+/**
+ * This is the amino equivalent.
+ */ 
+vector<hash_map<kmerAmino_t, color_t>> graph::kmer_tableAmino;
 
 /**
  * This is a hash table mapping colors to weights [O(1)].
@@ -71,11 +73,17 @@ void graph::init(uint64_t& top_size, bool amino) {
     isAmino = amino;
 
     if(!isAmino){
+        // Initielise base tables
+        kmer_table.resize(4);
+
         graph::allowedChars.push_back('A');
         graph::allowedChars.push_back('C');
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
     }else{
+        // Initielise amino tables
+        kmer_tableAmino.resize(4);
+
         graph::allowedChars.push_back('A');
         //graph::allowedChars.push_back('B');
         graph::allowedChars.push_back('C');
@@ -109,6 +117,64 @@ void graph::init(uint64_t& top_size, bool amino) {
 }
 
 /**
+* --- [Hash map access] ---
+* The following mathods
+* hash_kmer, hash_kmer_amino, search_kmer, get_color and remove_kmer
+* are used to access the entries of the multi_table hash maps
+*/ 
+
+/**
+* This function hashes a k-mer and stores it in the correstponding hash table.
+* The corresponding table is chosen by the last 4 bits of the encoded k-mer.
+*  @param kmer The kmer to store
+*  @param color The color to store 
+*/
+void graph::hash_kmer(const kmer_t& kmer, uint64_t& color){
+    color::set(kmer_table[kmer & 3][kmer], color);
+}
+
+
+/**
+* This function hashes an amino k-mer and stores it in the correstponding hash table
+*  @param kmer The kmer to store
+*  @param color The color to store 
+*/
+void graph::hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color)
+{
+    // cout << kmer << endl;
+    int mask = 0;
+    mask &= kmer[0];
+    mask &= kmer[1];
+    color::set(kmer_tableAmino[mask][kmer], color);
+}
+
+/**
+ * Thise function searches the bit-wise corresponding hash table  for the given kmer
+ * @param kmer The kmer to search
+ */
+bool graph::search_kmer(const kmer_t& kmer)
+{
+    return kmer_table[kmer & 3].contains(kmer);
+}
+
+/**
+* This function returns the stored colores of the given kmer
+* @param kmer The target kmer
+* @return color_t The stored colores
+*/
+color_t graph::get_color(const kmer_t& kmer){
+    return kmer_table[kmer & 3][kmer];
+}
+
+/**
+ * This function erases a stored kmer from its corresponding hash table
+ * @param kmer The kmer to remove
+ */
+void graph::remove_kmer(const kmer_t& kmer){
+    kmer_table[kmer & 3].erase(kmer);
+}
+
+/**
  * This function extracts k-mers from a sequence and adds them to the hash table.
  *
  * @param str dna sequence
@@ -139,17 +205,18 @@ next_kmer:
             if (pos+1 - begin >= kmer::k) {
                 rcmer = kmer;
                 if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-                color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+
+                // Insert the k-mer into its table
+                hash_kmer(rcmer, color);
             }
         } else {
             kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
 
             if (pos+1 - begin >= kmerAmino::k) {
-                color::set(kmer_tableAmino[kmerAmino], color);    // update the k-mer with the current color
+                // Insert the k-mer into its table
+                hash_kmer_amino(kmerAmino, color);  // update the k-mer with the current color
             }
         }
-
-
     }
 }
 
@@ -204,7 +271,8 @@ next_kmer:
                 sequence_order.emplace_back(rcmer);
 
                 if (sequence_order.size() == m) {
-                    color::set(kmer_table[*value_order.begin()], color);    // update the k-mer with the current color
+                    // Update the minimizer in the corresponding table
+                    hash_kmer(*value_order.begin(), color);    // update the k-mer with the current color
                 }
             }
         } else {
@@ -219,12 +287,11 @@ next_kmer:
                 sequence_order_Amino.emplace_back(kmerAmino);
 
                 if (sequence_order_Amino.size() == m) {
-
-                    color::set(kmer_tableAmino[*value_order_Amino.begin()], color);    // update the k-mer with the current color
+                    // Update the minimizer in the corresponding table
+                    hash_kmer_amino(*value_order_Amino.begin(), color);    // update the k-mer with the current color
                 }
             }
         }
-
     }
 }
 /**
@@ -240,7 +307,6 @@ bool graph::isAllowedChar(uint64_t pos, string &str) {
     for (int i = 0; i < graph::allowedChars.size() && !allowed; i++){
         allowed =  graph::allowedChars.at(i) == currentChar;
     }
-
     return allowed;
 }
 
@@ -295,11 +361,12 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse, uint64_t& max
                 for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                     rcmer = kmer;
                     if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-                    color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+                    hash_kmer(rcmer, color); // Update the k-mer with the current color
                 }
             }
         }
-    } else {
+    } 
+    else {
         hash_set<kmerAmino_t> ping;    // create a new empty set for the k-mers
         hash_set<kmerAmino_t> pong;    // create another new set for the k-mers
         bool ball; bool wait;    // indicates which of the two sets should be used
@@ -336,13 +403,11 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse, uint64_t& max
 
             if (pos+1 - begin >= kmerAmino::k) {
                 for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
-                    color::set(kmer_tableAmino[kmer], color);    // update the k-mer with the current color
+                    hash_kmer_amino(kmer, color);  // update the k-mer with the current color
                 }
             }
         }
     }
-
-
 }
 
 /**
@@ -415,11 +480,13 @@ void graph::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t
                inner_value_order.clear();
 
                if (sequence_order.size() == m) {
-                   color::set(kmer_table[*value_order.begin()], color);    // update the k-mer with the current color
+                   // Todo: Get the target hash map index from the kmer bits
+                   hash_kmer(*value_order.begin(), color);    // update the k-mer with the current color
                }
            }
        }
-   } else {
+   } 
+   else {
        vector<kmerAmino_t> sequence_order;    // k-mers ordered by their position in sequence
        multiset<kmerAmino_t> value_order;    // k-mers ordered by their lexicographical value
        multiset<kmerAmino_t> inner_value_order;
@@ -474,7 +541,8 @@ void graph::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t
                inner_value_order.clear();
 
                if (sequence_order.size() == m) {
-                   color::set(kmer_tableAmino[*value_order.begin()], color);    // update the k-mer with the current color
+                   // Todo: Get the target hash map index from the kmer bits
+                   hash_kmer_amino(*value_order.begin(), color);    // update the k-mer with the current color
                }
            }
        }
@@ -688,38 +756,51 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
 
     // check table (Amino or base)
     uint64_t max; // table size
-    if (isAmino){max=kmer_tableAmino.size();} // use amino table size
-    else {max=kmer_table.size();} // use base table size
+    // Todo: Get the target hash map index from the kmer bits
+    if (isAmino){max=kmer_tableAmino[0].size();} // use amino table size
+    // Todo: Get the target hash map index from the kmer bits
+    else {max=kmer_table[0].size();} // use base table size
+
 
     if (max==0){
         return;
     }
-    auto amino_it = kmer_tableAmino.begin(); // amino table iterator
-    auto base_it = kmer_table.begin(); // base table iterator
+    // Todo: Get the target hash map index from the kmer bits
+    hash_map<kmer_t, color_t>::iterator base_it;
+    hash_map<kmerAmino_t, color_t>::iterator amino_it;
 
-    while (true) { // process splits
-        // show progress
-        if (verbose) { 
-            next = 100*cur/max;
-            if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
-            prog = next; cur++;
+    // Iterate the tables
+    for (int i = 0; i < 4; i++)
+    {
+        if (!isAmino){base_it = kmer_table[i].begin();} // base table iterator
+        else {amino_it = kmer_tableAmino[i].begin();} // amino table iterator
+
+        while (true) { // process splits
+            // show progress
+            if (verbose) { 
+                next = 100*cur/max;
+                if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
+                prog = next; cur++;
+            }
+            // update the iterator
+            color_t* color_ref; // reference of the current color
+            if (isAmino) { // if the amino table is used, update the amino iterator
+                // Todo: Get the target hash map index from the kmer bits
+                if (amino_it == kmer_tableAmino[i].end()){break;} // stop iterating if done
+                else{color_ref = &amino_it.value(); ++amino_it;} // iterate the amino table
+                }
+            else { // if the base tables is used update the base iterator
+                // Todo: Get the target hash map index from the kmer bits
+                if (base_it == kmer_table[i].end()){break;} // stop itearating if done
+                else {color_ref = &base_it.value(); ++base_it;} // iterate the base table
+                }
+            // process
+            color_t& color = *color_ref;
+            bool pos = color::complement(color, true);    // invert the color set, if necessary
+            if (color == 0) continue;    // ignore empty splits
+
+            add_weight(color, mean, min_value, pos);
         }
-        // update the iterator
-        color_t* color_ref; // reference of the current color
-        if (isAmino) { // if the amino table is used, update the amino iterator
-            if (amino_it == kmer_tableAmino.end()){break;} // stop iterating if done
-            else{color_ref = &amino_it.value(); ++amino_it;} // iterate the amino table
-            }
-        else { // if the base tables is used update the base iterator
-            if (base_it == kmer_table.end()){break;} // stop itearating if done
-            else {color_ref = &base_it.value(); ++base_it;} // iterate the base table
-            }
-        // process
-        color_t& color = *color_ref;
-        bool pos = color::complement(color, true);    // invert the color set, if necessary
-        if (color == 0) continue;    // ignore empty splits
-
-        add_weight(color, mean, min_value, pos);
     }
 }
 
@@ -748,17 +829,19 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
 
         for (int pos=0; pos < kmer_seq.length(); ++pos) {kmer::shift_right(kmer, kmer_seq[pos]);} // collect the bases from the k-mer sequence.
 
-	kmer::reverse_complement(kmer,true);
+	    kmer::reverse_complement(kmer,true);
 
-        if (kmer_table.contains(kmer)){ // Check if additional colors are stored for this kmer
-           color_t hashed_color = kmer_table[kmer]; // the currently stored colores of the kmer
+        if (search_kmer(kmer)){ // Check if additional colors are stored for this kmer
+            // Get the colors stored for this kmer
+            color_t hashed_color = kmer_table[0][kmer]; // the currently stored colores of the kmer
 	    for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
               	if(color::test(hashed_color, pos) && !color::test(kmer_color, pos)){ // test if the color is set in the stored color set
               		color::set(kmer_color, pos);
                	}
            }
-           kmer_table.erase(kmer); // remove the kmer from the table
-	}
+           // Remove the kmer from the hash table
+           remove_kmer(kmer); // remove the kmer from the table
+	    }
     }
     bool pos = color::complement(kmer_color, true);  // invert the color set, if necessary
     if (kmer_color == 0) return min_value; // ignore empty splits

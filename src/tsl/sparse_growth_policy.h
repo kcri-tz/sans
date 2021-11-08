@@ -242,7 +242,6 @@ public:
     }
 
     std::size_t next_bucket_count() const {
-	std::cout << "Bucket index" << m_iprime << std::endl; 
         if(m_iprime + 1 >= primes().size()) {
             throw std::length_error("The hash table exceeds its maximum size.");
         }
@@ -258,15 +257,7 @@ public:
         m_iprime = 0;
     }
 
-#if MAX_SIZE >= ULONG_MAX
-#define TSL_REHASH_PRIMES 73
-#elif MAX_SIZE >= 3298534883309ull
-#define TSL_REHASH_PRIMES 50
-#elif MAX_SIZE >= 103079215111ull
-#define TSL_REHASH_PRIMES 45
-#else
 #define TSL_REHASH_PRIMES 40
-#endif
 
 private:
     static const std::array<std::size_t, TSL_REHASH_PRIMES>& primes() {
@@ -274,21 +265,8 @@ private:
 
             1u, 5u, 17u, 29u, 37u, 53u, 67u, 79u, 97u, 131u,
             193u, 257u, 389u, 521u, 769u, 1031u, 1543u, 2053u, 3079u, 6151u,
-            12289u, 24593u, 49157u, 98317ul, 196613ul, 393241ul, 786433ul, 1572869ul, 3145739ul, 6291469ul,
-            12582917ul, 25165843ul, 50331653ul, 100663319ul, 201326611ul, 402653189ul, 805306457ul, 1610612741ul, 3221225473ul, 4294967291ul
-            #if MAX_SIZE >= 103079215111ull
-            , 6442450939ull, 12884901893ull, 25769803751ull, 51539607551ull, 103079215111ull
-            #endif
-            #if MAX_SIZE >= 3298534883309ull
-            , 206158430209ull, 412316860441ull, 824633720831ull, 1649267441651ull, 3298534883309ull,
-            #endif
-            #if MAX_SIZE >= ULONG_MAX
-            , 6597069766657ull , 13194139533349ull, 26388279066697ull, 52776558133483ull, 105553116266977ull
-	        , 211106232533957ull, 422212465067927ull, 844424930135981ull, 1688849860272049ull, 3377699720544103ull
-	        , 6755399441088209ull, 13510798882176437ull, 27021597764353043ull, 54043195528706113ull, 108086391057412231ull
-	        , 216172782114824569ull, 432345564229649167ull, 864691128459298381ull, 1729382256918596773ull, 3458764513837193557ull
-	        , 6917529027674387207ull, 13835058055348774529ull, 36893488147419103183ull
-            #endif
+            12289u, 24593u, 49157u, 98317u, 196613u, 393241u, 786433u, 1572869u, 3145739u, 6291469u,
+            12582917u, 25165843u, 50331653u, 100663319u, 201326611u, 402653189u, 805306457u, 1610612741u, 3221225473u, 4294967291u
         }};
 
         static_assert(std::numeric_limits<decltype(m_iprime)>::max() >= PRIMES.size(),
@@ -297,18 +275,14 @@ private:
         return PRIMES;
     }
 
-    static const std::array<std::size_t(*)(std::size_t), 73>& mod_prime() {
+    static const std::array<std::size_t(*)(std::size_t), 40>& mod_prime() {
         // MOD_PRIME[iprime](hash) returns hash % PRIMES[iprime]. This table allows for faster modulo as the
         // compiler can optimize the modulo code better with a constant known at the compilation.
-        static const std::array<std::size_t(*)(std::size_t), 73> MOD_PRIME = {{
+        static const std::array<std::size_t(*)(std::size_t), 40> MOD_PRIME = {{
             &mod<0>, &mod<1>, &mod<2>, &mod<3>, &mod<4>, &mod<5>, &mod<6>, &mod<7>, &mod<8>, &mod<9>, &mod<10>,
             &mod<11>, &mod<12>, &mod<13>, &mod<14>, &mod<15>, &mod<16>, &mod<17>, &mod<18>, &mod<19>, &mod<20>,
             &mod<21>, &mod<22>, &mod<23>, &mod<24>, &mod<25>, &mod<26>, &mod<27>, &mod<28>, &mod<29>, &mod<30>,
-            &mod<31>, &mod<32>, &mod<33>, &mod<34>, &mod<35>, &mod<36>, &mod<37>, &mod<38>, &mod<39>, &mod<40>,
-            &mod<41>, &mod<42>, &mod<43>, &mod<44>, &mod<45>, &mod<46>, &mod<47>, &mod<48>, &mod<49>, &mod<50>,
-	    &mod<51>, &mod<52>, &mod<53>, &mod<54>, &mod<55>, &mod<56>, &mod<57>, &mod<58>, &mod<59>, &mod<60>,
-	    &mod<61>, &mod<62>, &mod<63>, &mod<64>, &mod<65>, &mod<66>, &mod<67>, &mod<68>, &mod<69>, &mod<70>,
-	    &mod<71>, &mod<72>
+            &mod<31>, &mod<32>, &mod<33>, &mod<34>, &mod<35>, &mod<36>, &mod<37>, &mod<38>, &mod<39>
 	    }};
 
         return MOD_PRIME;

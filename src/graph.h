@@ -76,11 +76,11 @@ private:
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
-    static hash_map<kmer_t, color_t> kmer_table;
+    static vector<hash_map<kmer_t, color_t>> kmer_table;
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
-    static hash_map<kmerAmino_t, color_t> kmer_tableAmino;
+    static vector<hash_map<kmerAmino_t, color_t>> kmer_tableAmino;
 
 
     /**
@@ -112,6 +112,40 @@ public:
      * @param t top list size
      */
     static void init(uint64_t& top_size, bool isAmino);
+
+    /**
+     * This function hashes a base k-mer and stores it in the correstponding hash table
+     *  @param kmer The kmer to store
+     *  @param color The color to store 
+     */
+    static void hash_kmer(const kmer_t& kmer, uint64_t& color);
+
+    /**
+     * This function hashes an amino k-mer and stores it in the correstponding hash table
+     *  @param kmer The kmer to store
+     *  @param color The color to store 
+     */
+    static void hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color);
+
+
+    /**
+     * This function searches the bit-wise corresponding hash table for the given kmer
+     * @param kmer The kmer to search
+     * @return True if the kmer is stored.
+     */
+    static bool search_kmer(const kmer_t& kmer);
+
+    /**
+     * This function returns the stored colores of the given kmer
+     * @param kmer The target kmer
+     * @return color_t The stored colores
+     */
+    static color_t get_color(const kmer_t& kmer);
+
+    /**
+     * This function removes the kmer entry from the hash map
+     */
+    static void remove_kmer(const kmer_t& kmer);
 
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
