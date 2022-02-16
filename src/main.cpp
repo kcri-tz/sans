@@ -1,5 +1,7 @@
 #include "main.h"
 #include <regex>
+#include "gz/gzstream.h"
+
 
 /**
  * This is the entry point of the program.
@@ -587,8 +589,7 @@ int main(int argc, char* argv[]) {
 
 
         for (uint64_t i = 0; i < gen_files.size(); ++i) {
-            vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
-
+            vector<string> target_files = gen_files[i]; // the filenames corresponding to the target	    
             for (string file_name: target_files){
                 ifstream file(folder+file_name);    // input file stream
                 if (verbose) {
