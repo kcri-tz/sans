@@ -1,5 +1,6 @@
 #include "main.h"
 #include <regex>
+#include <cstring>
 #include "gz/gzstream.h"
 
 
@@ -591,7 +592,11 @@ int main(int argc, char* argv[]) {
         for (uint64_t i = 0; i < gen_files.size(); ++i) {
             vector<string> target_files = gen_files[i]; // the filenames corresponding to the target	    
             for (string file_name: target_files){
-                ifstream file(folder+file_name);    // input file stream
+		
+	 	char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
+		strcpy(c_name, (folder + file_name).c_str()); // Transcire to char array 
+
+                igzstream file(c_name, ios::in);    // input file stream
                 if (verbose) {
                     cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
                 }
