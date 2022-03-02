@@ -27,6 +27,7 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 * [Details on filter option](#details-on-filter-option)
 * [Examples](#examples)
 * [Performance evaluation on predicted open reading frames](#performance-evaluation-on-predicted-open-reading-frames)
+* [Clustering / dereplication of metagenome assembled genomes (MAGs)](#clustering-dereplication-of-metagenome-assembled-genomes-mags)
 * [Contact](#contact)
 * [License](#license)
 
@@ -262,6 +263,77 @@ Further information on the datasets can be found in the initial publication of S
 | Getorf (-find 1) | 48min | 165min | 213min <br> (168min) | 0.620 <br> (0.799) |
 | ORFfinder | 1621min | 78min | 1698min <br> (179min) | 0.594 <br> (0.766) |
 | Prodigal | 1322min | 50min | 1372min <br> (133min) |0.587 <br> (0.792)  |
+
+
+
+
+
+
+## Clustering / dereplication of metagenome assembled genomes (MAGs)
+
+For clustering of highly similar sequences, a tree can be constructed which is then chopped into many small subtrees such that the taxa in each subtree correspond to one cluster.
+This procedure has been successfully applied for dereplication of metagenome assembled genomes (MAGs). Here, the input are MAGs, and the goal is to cluster these such that the MAGs in each cluster belong to the same strain. 
+
+
+The general procedure is:
+
+```
+# reconstruct a tree
+SANS --input <list_of_files> --newick <tree_to_cluster.new> --filter strict --kmer 15 (--verbose) --window W --top T (see below)
+
+# determine clusters from tree
+scripts/newick2clusters.py <tree_to_cluster.new> > <clusters.tsv>
+```
+
+
+Due to the usually very high number of input sequences, we recommend the usage of parameters `--window` (`-w`) and `--top` (`-t`) in order to save time and memory. (The experimental parameter `--window` is not mentioned in the usage, because it can lower the accuracy of reconstructed phylogenies considerably. But in this case, the reconstructed tree does not need to be an accurate phylogeny and the parameter has only reasonable effect on the clustering.)
+
+| Setting | Parameters |
+|:--|:--|
+| quick | --window 25 --top 50n |
+| thoroughly | --window 10 --top 100n |
+
+
+The tree is chopped into clusters as follows:
+- Re-root tree to maximum degree node
+- In post order traversal:
+  - ignore non-branching node (merge edges)
+  - get clusters from sub-trees (recursively)
+  - if edge longer than parent edge:
+    - remove found clusters from current leaf set
+    - remaining leaf set =: new cluster
+    
+
+### Dereplication efficiency and accuracy
+
+This dereplication approach has been evaluated on a data set from the CAMI challenge [Meyer et al. Critical Assessment of Metagenome Interpretation - the second round of challenges, bioRxiv, 2021, doi: https://doi.org/10.1101/2021.07.12.451567], a simulated mouse gut metagenome representing 64 metagenome samples. Alexander Sczyrba and Peter Belmann filtered the MAGs, provided them for our clustering and compared the clustering to the gold standard.
+
+| Filter | \# MAGs | \# Strains |
+|:--|--:|--:|
+| MIMAG medium |  5,786 | 686 |
+| MIMAG high   |  2,510 | 349 |
+| no filter    | 11,602 | 791 |
+
+For the comparison, each called cluster is mapped to a gold standard cluster with maximum intersection, i.e., maximum agreement of contained MAGs. Then, the purity and completeness of the clusters are determined by investigating the number of correct (TP), false (FP) and missing (FN) MAGs in each cluster:
+
+purity := TP / (TP + FP)
+
+completeness := TP / (TP +  FN)
+
+These per-cluster measures were then averaged (weighted and unweighted). The following table shows the results for the different input and clustering settings.
+
+| Input | Setting | Running time | Memory | average purity<br>(weighted) | average completeness<br>(weighted) |
+|:--|:--|--:|--:|--:|--:|
+| MIMAG medium | quick        | 11h  |  56G | 0.973 <br> (0.956) | 0.884 <br> (0.998)  |
+|              | thoroughly   | 50h  | 130G | 0.972 <br> (0.952) | 0.881 <br> (0.998)  |
+| MIMAG high   | quick        | 2h   |  16G | 0.983 <br> (0.978) | 0.890 <br> (0.991)  |
+|              | thoroughly   | 6h   |  36G | 0.983 <br> (0.979) | 0.912 <br> (0.993)  |
+| no filter    | quick        | 59h  | 127G | 0.996 <br> (0.983) | 0.173 <br> (0.668)  |
+|              | thoroughly   | 185h | 290G | 0.995 <br> (0.979) | 0.190 <br> (0.700)  |
+
+
+
+
 
 ## Contact
 
