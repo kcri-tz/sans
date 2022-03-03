@@ -89,6 +89,9 @@ private:
     static hash_map<color_t, array<uint32_t,2>> color_table;
 
 public:
+     
+    // [Temporary: Test]
+    static void showTableSizes();
 
     /**
      * This is an ordered tree collecting the splits [O(log n)].
@@ -114,11 +117,19 @@ public:
     static void init(uint64_t& top_size, bool isAmino);
 
     /**
-     * This function hashes a base k-mer and stores it in the correstponding hash table
-     *  @param kmer The kmer to store
-     *  @param color The color to store 
+     * This function computes the target hash table index for a given k-mer
+     * @param k-mer The k-mer to compute the index for
+     * @param reversed The bool implying if the k-mer was reversed of not 
      */
-    static void hash_kmer(const kmer_t& kmer, uint64_t& color);
+    static uint64_t get_table_index(const kmer_t& kmer);
+
+    /**
+     * This function hashes a base k-mer and stores it in the correstponding hash table
+     *  @param kmer The k-mer to store
+     *  @param color The color to store 
+     *  @param reversed The bool implying if the k-mer was reversed or not
+     */
+    static void hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed);
 
     /**
      * This function hashes an amino k-mer and stores it in the correstponding hash table

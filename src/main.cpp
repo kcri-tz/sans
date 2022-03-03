@@ -470,25 +470,25 @@ int main(int argc, char* argv[]) {
         }
 
         if (kmer != cdbg.getK()) {
-            kmer = cdbg.getK();
-            if (kmer > maxK) {
+		kmer = cdbg.getK();
+	 	if (kmer > maxK) {
                 cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
                 return 1;
             }
-            cerr << "Warning: setting k-mer length to " << kmer << endl;
-        }
+            cerr << "Warning: setting k-mer length to match the given Bifrost graph. New lenght: " << kmer << endl;
+	}
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
-        for (auto it=0; it != cdbg_names.size(); ++it){ // iterate the cdbg names and transcribe them to the name table
-            if (name_table.find(cdbg_names[it]) == name_table.end()){
-                            name_table[cdbg_names[it]] = num++;
-                            denom_names.push_back(cdbg_names[it]);
+        for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
+            if (name_table.find(col_name) == name_table.end()){
+                            name_table[col_name] = num++;
+                            denom_names.push_back(col_name);
 			    vector<string> dummy;	
 			    gen_files.push_back(dummy);
 	        }
             else
             {
-                cout << "Warning: " << cdbg_names[it] << " exists in input and graph. It is treated as one sequence" << endl;
+                cout << "Warning: " << col_name << " exists in input and graph. It is treated as one sequence" << endl;
             }
         }
 
@@ -656,8 +656,7 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-
-
+    graph::showTableSizes();
     /**
      * --- Bifrost CDBG processing ---
      * - Iterate all colored k-mers from a CDBG
@@ -684,18 +683,19 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
             auto unitig_map = UnitigMapBase(0, 1, kmer::k, true);
 
             auto sequence = unitig.mappedSequenceToString(); // the mapped unitig sequence
-            auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color iterator of this unitig
+            
+	    auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color of this unitig
             auto it = colors->begin(unitig);
             auto end = colors->end();
 
-            for (; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
+            for (it ; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
                 uc_kmers[it.getKmerPosition()].add(unitig_map, it.getColorID());
             }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
                 string kmer_sequence = sequence.substr(i, kmer::k); // the k-mer sequence
                 color_t color = 0;
-                for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
+                for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){ // iterate the unitig colors
                     color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
 		}
                 min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
