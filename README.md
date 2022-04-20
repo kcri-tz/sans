@@ -61,7 +61,7 @@ In the *makefile*, two parameters are specified:
 
 These values can simply be increased if necessary. To keep memory requirements small, do not choose these values unnecessarily large.
 
-**New:** Compile parameter *DmaxN* can be set automatically by using the *SANS-autoN.sh* (Unix) or *SANS-autoN.BAT* (Windows) scripts. The scripts can be used exactly as the main binary *SANS*. They run *SANS* with all provided parameters and add option *-M* to compare *DmaxN* and the actual number of input files.
+**New:** *SANS* now supports gzipped sequence files. Compile parameter *DmaxN* can be set automatically by using the *SANS-autoN.sh* (Unix) or *SANS-autoN.BAT* (Windows) scripts. The scripts can be used exactly as the main binary *SANS*. They run *SANS* with all provided parameters and add option *-M* to compare *DmaxN* and the actual number of input files.
 If SANS has been compiled with a value for *DmaxN* that is neither too small nor much too large, SANS is executed as usual.
 If *DmaxN* has been chosen too small or much too large, the scripts generate a new makefile (*makefile_auton*), re-compile *SANS* and re-run *SANS*.
 The comparison of *DmaxN* and the actual number of input files comes without extra computational cost.
