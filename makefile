@@ -6,8 +6,10 @@ CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 
 ## IF BIFROST LIBRARY SHOULD BE USED
 # CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
-# BF = -lbifrost -lpthread -lz
+# BF = -lbifrost -lpthread
 
+# GZ STREAM LIB
+CFLAGS = gcc -O3 -march=native
 
 # Wrap Windows / Unix commands
 ifeq ($(OS), Windows_NT)
@@ -28,12 +30,12 @@ ifeq ("$(wildcard $(TD))", "")
 endif
 
 SANS: main.o
-	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o ./src/gz/libgzstream.a $(BF)
+	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o gzstream.o -lz $(BF)
 	$(RM)
 	$(MK)
 	$(MV)
 
-main.o: src/main.cpp src/main.h translator.o graph.o util.o cleanliness.o
+main.o: src/main.cpp src/main.h translator.o graph.o util.o cleanliness.o gzstream.o
 	$(CC) -c src/main.cpp
 
 graph.o: src/graph.cpp src/graph.h kmer32.o kmerXX.o kmerAmino12.o kmerAminoXX.o color64.o colorXX.o
@@ -65,6 +67,10 @@ translator.o: src/translator.cpp src/translator.h src/gc.h
 
 cleanliness.o: src/cleanliness.cpp src/cleanliness.h
 	$(CC) -c src/cleanliness.cpp
+
+gzstream.o: src/gz/gzstream.C src/gz/gzstream.h	
+	$(CFLAGS) -c src/gz/gzstream.C
+
 
 .PHONY: clean
 clean:

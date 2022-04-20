@@ -33,6 +33,9 @@
 # ----------------------------------------------------------------------------
 
 # CXX      = CC -n32 -LANG:std   # for SGI Irix 6.5, MIPSpro CC version 7.30
+
+#	Edited 03,30,2022 by Fabian Kolesch
+
 CXX      = g++   # for Linux RedHat 6.1, g++ version 2.95.2
 
 CPPFLAGS = -I. -O

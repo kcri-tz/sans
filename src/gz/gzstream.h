@@ -26,6 +26,8 @@
 // Standard C++ Library".
 // ============================================================================
 
+// Edited february, 24, 2022 
+
 #ifndef GZSTREAM_H
 #define GZSTREAM_H 1
 
