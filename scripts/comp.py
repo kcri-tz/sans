@@ -152,13 +152,13 @@ def split_comp(donor,reference,weighted):
                 w_dist=((w_all-w_corr)/(w_all)) + ((w_all_ref-w_corr_ref)/(w_all_ref))
 
         if not weighted:
-            print("\t".join([str(precision),str(recall),str(2*precision*recall/(precision+recall)),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr))]))
+            print("\t".join([str(precision),str(recall),"-" if (precision*recall==0) else str(2*precision*recall/(precision+recall)),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr))]))
         else: # weighted
-            print("\t".join([str(w_precision),str(w_recall),str(2*w_precision*w_recall/(w_precision+w_recall)),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref)]))
+            print("\t".join([str(w_precision),str(w_recall),"-" if (precision*recall==0) else str(2*w_precision*w_recall/(w_precision+w_recall)),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref)]))
 
 
-    eprint("\t".join([str(precision),str(recall),str(2*precision*recall/(precision+recall)),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr)),"unweighted"]))
-    eprint("\t".join([str(w_precision),str(w_recall),str(2*w_precision*w_recall/(w_precision+w_recall)),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref),"weighted"]))
+    eprint("\t".join([str(precision),str(recall),"-" if (precision*recall==0) else str(2*precision*recall/(precision+recall)),str(dist),str((num_all-num_corr)+(num_all_ref-num_corr)),"unweighted"]))
+    eprint("\t".join([str(w_precision),str(w_recall),"-" if (precision*recall==0) else str(2*w_precision*w_recall/(w_precision+w_recall)),str(w_dist),str(branch_score+sum([reference[s] for s in ref_list])/max_ref),"weighted"]))
                      
 
                         
