@@ -1,5 +1,8 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+#CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+# Zwets: replace -march=native by -mtune=native (compatible with CPU)
+# Zwets: we set maxN=128 for up to 128 sequences
+CC = g++ -O3 -mtune=native -DmaxK=32 -DmaxN=128 -std=c++14
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
@@ -9,7 +12,9 @@ CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 # BF = -lbifrost -lpthread
 
 # GZ STREAM LIB
-CFLAGS = gcc -O3 -march=native
+# Zwets: native tune but not arch
+# CFLAGS = gcc -O3 -march=native
+CFLAGS = gcc -O3 -mtune=native
 
 # Wrap Windows / Unix commands
 ifeq ($(OS), Windows_NT)
