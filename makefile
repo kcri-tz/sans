@@ -1,8 +1,8 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
 #CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 # Zwets: replace -march=native by -mtune=native (compatible with CPU)
-# Zwets: we set maxN=128 for up to 128 sequences
-CC = g++ -O3 -mtune=native -DmaxK=32 -DmaxN=128 -std=c++14
+# Zwets: we set maxN for up to 180 sequences
+CC = g++ -O3 -mtune=native -DmaxK=32 -DmaxN=180 -std=c++14
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
