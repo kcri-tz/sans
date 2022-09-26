@@ -2,6 +2,8 @@
 #include <fstream>
 #include <cstring>
 #include <algorithm>
+#include <thread>
+#include <regex>
 
 #include "util.h"
 #include "translator.h"

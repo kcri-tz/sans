@@ -137,3 +137,18 @@ char kmerXX::bits_to_char(uint64_t& b) {
             return -1;
     }
 }
+
+uint64_t kmerXX::bit_mod(const bitset<2*maxK>& kmer, uint64_t& module) {
+	bitset<2*maxK> bits = kmer;
+	if (module <= 1){return 0;}
+	uint64_t carry = 1;
+	uint64_t rest = 0;
+	if (bits[0]){rest++;} // Test the last bit
+
+	for (uint64_t it=1; it < 2 * k; it++){
+	    carry = (2*carry) % module;
+	    if (bits[it]){rest += carry;}
+	}
+	return rest % module;
+}
+

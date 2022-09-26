@@ -106,6 +106,8 @@ int main(int argc, char* argv[]) {
     * - Initialise meta variables and set defaults
     */
 
+    int threads = 8; // The number of threads to run on
+
     string input;    // name of input file
     string graph;    // name of graph file
     string splits;    // name of splits file
@@ -581,12 +583,14 @@ int main(int argc, char* argv[]) {
         if (verbose) {
             cout << "SANS::main(): Reading input files..." << flush;
         }
+
+
+	auto lambda = [&] (uint64_t lower_bound, uint64_t upper_bound){ // This lambda expression wraps the sequence-kmer hashing
+
         string sequence;    // read in the sequence files and extract the k-mers
-
-
-        for (uint64_t i = 0; i < gen_files.size(); ++i) {
-            vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
-
+	for (uint64_t i = lower_bound; i < upper_bound; ++i) {
+		vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
+		
             for (string file_name: target_files){
                 ifstream file(folder+file_name);    // input file stream
                 if (verbose) {
@@ -653,9 +657,36 @@ int main(int argc, char* argv[]) {
                     cout << "\33[2K\r" << flush;
                 }
                 file.close();
-            }
-        }
+    	        }
+	    }
+        }; // End of lambda expression
+
+	// Driver code for multithreaded kmer hashing
+	const uint64_t MAX = gen_files.size(); // The number of genomes to distribute 
+	const uint64_t SIZE = MAX / threads; // The average number of genomes per thread
+	const uint64_t CARRY = MAX % threads; // The rest to distribute
+
+	vector<uint64_t> size(threads); // The thread load table
+	for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){ // Distribute the SIZE
+		size[thread_id] = SIZE;
+	}
+	for (uint64_t thread_id = 0; thread_id < CARRY; ++thread_id){ // Shift distribution to cover the missing genomes
+		size[thread_id]  += 1;
+	}
+
+	// Initialize the threads
+	uint64_t curr_size = 0;
+	vector<thread> thr(threads);
+	for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
+		thr[thread_id] = thread(lambda, curr_size, curr_size + size[thread_id]);
+		curr_size += size[thread_id];
+	}
+	for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
+		thr[thread_id].join();
+	}
     }
+
+    // [Temporary Test]
     graph::showTableSizes();
     /**
      * --- Bifrost CDBG processing ---
@@ -704,7 +735,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     }
 #endif
 
-
+     cout << "BFG load completed" << endl;
     /**
      * [Output]
      * - Compute the weighted splits of the k-mers that are left in the graph

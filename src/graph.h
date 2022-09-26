@@ -72,7 +72,8 @@ class graph {
 private:
 
     static bool isAmino;
-
+    
+    static uint64_t tableCount;
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
@@ -124,12 +125,20 @@ public:
     static uint64_t get_table_index(const kmer_t& kmer);
 
     /**
-     * This function hashes a base k-mer and stores it in the correstponding hash table
+     * This function computes the target hash table index for a given amino k-mer
+     * @param kme The k-mer to compute the index for
+     *
+     */
+    static uint64_t get_amino_table_index(const kmerAmino_t& kmer);
+
+    /**
+     * This function hashes a base k-mer and stores it in the corresponding hash table
      *  @param kmer The k-mer to store
      *  @param color The color to store 
      *  @param reversed The bool implying if the k-mer was reversed or not
      */
     static void hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed);
+
 
     /**
      * This function hashes an amino k-mer and stores it in the correstponding hash table
@@ -147,6 +156,14 @@ public:
     static bool search_kmer(const kmer_t& kmer);
 
     /**
+     * This function searches the bit-wise corresponding hash table for the given amnio kmer
+     * @param kmer The kmer to search
+     * @return Ture if the kmer is stored
+     */
+    static bool search_kmer_amino(const kmerAmino_t& kmer);
+
+
+    /**
      * This function returns the stored colores of the given kmer
      * @param kmer The target kmer
      * @return color_t The stored colores
@@ -154,9 +171,22 @@ public:
     static color_t get_color(const kmer_t& kmer);
 
     /**
+     * This function returns the stored color of the given kmer
+     * @param kmer The target kmer
+     * @return color_t The stored color
+     */
+    static color_t get_color_amino(const kmerAmino_t& kmer);
+
+
+    /**
      * This function removes the kmer entry from the hash map
      */
     static void remove_kmer(const kmer_t& kmer);
+
+    /**
+     * This function removes the amino kmer entry from the corresponding hash table
+     */
+    static void remove_kmer_amino(const kmerAmino_t& kmer);
 
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
