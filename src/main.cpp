@@ -441,7 +441,7 @@ int main(int argc, char* argv[]) {
 
 
             // check files
-	    if (!splits.empty()){
+	    if (splits.empty()){
             	for(string file_name: target_files){
                     ifstream file_stream = ifstream(folder+file_name);
                     if (!file_stream.good()) { // catch unreadable file
