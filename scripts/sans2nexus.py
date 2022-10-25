@@ -46,7 +46,7 @@ def readfile(filename,taxa):
         for f in split_orig:
             # remove file extensions
             if os.path.splitext(f)[1] in fileext:
-                f=os.path.splitext(f)[0]
+                f=os.path.basename(os.path.splitext(f)[0])
             if f not in taxa.keys():
                 eprint("WARNING: taxa from split not in taxa file and thus discarded: "+f)
 #                exit(1)
@@ -86,7 +86,7 @@ def readtaxa(filename):
         # remove file extensions
         if os.path.splitext(line)[1] in fileext:
             line=os.path.splitext(line)[0]
-        taxa[line]=i
+        taxa[os.path.basename(line)]=i
         i+=1
     return(taxa)
 
@@ -145,7 +145,9 @@ print(splitstring)
 print(";\nEND; [Splits]")
 
 
-print("BEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle;\nSplitsPostProcess filter=none;\nexclude  no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]")
+print("BEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = false DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=none;\n exclude  no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]\n")
+
+
 
 eprint("output:")
 eprint(nsplits)
