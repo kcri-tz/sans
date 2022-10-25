@@ -955,7 +955,8 @@ bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
     if (partiallycoveredsubset != nullptr) {
         if (fullycoveredsubsets.size() == subsets->size()-1) {
             // recurse into this subset with inverse split
-            color_t inversesplit = color::complement(split, false);
+			color_t inversesplit = split;
+			color::complement(inversesplit, false);
             // if inversesplit.issubset(partiallycoveredsubset[1]):
             if ((inversesplit & partiallycoveredsubset->taxa) == inversesplit) {
                 return refine_tree(partiallycoveredsubset, inversesplit, allTaxa);
