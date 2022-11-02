@@ -122,7 +122,7 @@ public:
      * @param k-mer The k-mer to compute the index for
      * @param reversed The bool implying if the k-mer was reversed of not 
      */
-    static uint64_t get_table_index(const kmer_t& kmer);
+    static uint64_t get_table_index(const kmer_t& kmer, bool reversed);
 
     /**
      * This function computes the target hash table index for a given amino k-mer
@@ -153,7 +153,7 @@ public:
      * @param kmer The kmer to search
      * @return True if the kmer is stored.
      */
-    static bool search_kmer(const kmer_t& kmer);
+    static bool search_kmer(const kmer_t& kmer, bool reversed);
 
     /**
      * This function searches the bit-wise corresponding hash table for the given amnio kmer
@@ -168,7 +168,7 @@ public:
      * @param kmer The target kmer
      * @return color_t The stored colores
      */
-    static color_t get_color(const kmer_t& kmer);
+    static color_t get_color(const kmer_t& kmer, bool reversed);
 
     /**
      * This function returns the stored color of the given kmer
@@ -181,7 +181,7 @@ public:
     /**
      * This function removes the kmer entry from the hash map
      */
-    static void remove_kmer(const kmer_t& kmer);
+    static void remove_kmer(const kmer_t& kmer, bool reversed);
 
     /**
      * This function removes the amino kmer entry from the corresponding hash table

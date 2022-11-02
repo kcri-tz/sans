@@ -5,6 +5,15 @@
  */
 uint64_t kmerXX::k;
 
+// The current binning carry
+uint64_t kmerXX::bin;
+uint64_t kmerXX::rbin;
+
+// The binning mod
+uint64_t kmerXX::mod;
+// The mod_period;
+vector<uint64_t> period;
+
 /**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
@@ -20,6 +29,18 @@ void kmerXX::init(uint64_t& kmer_length) {
     for (uint64_t i = 0; i < 2*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
+    }
+}
+
+void kmerXX::init_binning(uint64_t& table_count) {
+    mod = table_count;
+    bin = 0;
+    rbin = 0;
+    uint64_t last = 1 % mod;
+    for (int i = 1; i <= 2*(k + 1); i++)
+    {
+	    period.push_back(last);
+	    last = (2 * last) % mod;
     }
 }
 
@@ -52,12 +73,22 @@ char kmerXX::shift_left(bitset<2*maxK>& kmer, char& c) {
 char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
     uint64_t left = 2*kmer[2*k-1]+kmer[2*k-2];    // old leftmost character
     uint64_t right = char_to_bits(c);    // new rightmost character
+    
+    // The binning update function
+    bin = ( 8 * mod // bias
+		    + 4 * bin // Old bin  
+		    - 4 * period[2*k-1] * kmer[2*k-1] - 4 * kmer[2*k-2] * period[2*k - 2] // Old base
+		    + period[1] * (right & 0b10) + period[0] * (right & 0b01)) // New base
+	    % mod; // Mod
+
+    // The binning update function for the reverse complement
+    rbin >> 02u; 
+    rbin = (rbin + period[2*k-1] * (!(right / 2)) + period[2*k-2] * (!(right % 2))) % mod;
 
     kmer <<= 02u;    // shift all current bits to the left by two positions
     kmer[1] = right / 2;    // encode the new character within the rightmost two bits
     kmer[0] = right % 2;
-    kmer &= mask;    // set all bits to zero that exceed the k-mer length
-
+    kmer &= mask;    // set all bits to zero that exceed the k-mer length 
     return bits_to_char(left);    // return the dropped leftmost character
 }
 

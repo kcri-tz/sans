@@ -8,7 +8,7 @@ uint64_t graph::t;
 
 bool graph::isAmino;
 
-uint64_t graph::tableCount = 9;
+uint64_t graph::tableCount = 3;
 
 /**
  * This is a hash table mapping k-mers to colors [O(1)].
@@ -86,7 +86,9 @@ void graph::init(uint64_t& top_size, bool amino) {
     if(!isAmino){
         // Initielise base tables
         kmer_table.resize(graph::tableCount);
-
+#if maxK > 32
+        kmer::init_binning(tableCount); // Precompute the binning carries	
+#endif
         graph::allowedChars.push_back('A');
         graph::allowedChars.push_back('C');
         graph::allowedChars.push_back('G');
@@ -138,10 +140,14 @@ void graph::init(uint64_t& top_size, bool amino) {
 * This method computes the hash table index for a given k-mer
 * based on its reverse status
 */
-uint64_t graph::get_table_index(const kmer_t& kmer)
+uint64_t graph::get_table_index(const kmer_t& kmer, bool reversed)
 {
 #if maxK > 32
-    return kmer::bit_mod(kmer, graph::tableCount);
+    if (!reversed) 
+    {return kmer::bin;}
+    else 
+    {return kmer::rbin;} 
+
 #else
     return kmer % graph::tableCount;
 #endif
@@ -171,7 +177,7 @@ uint64_t graph::get_amino_table_index(const kmerAmino_t& kmer)
 */
 void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
 {
-    uint64_t table_id = get_table_index(kmer);
+    uint64_t table_id = get_table_index(kmer, reversed);
     if (table_id == 0)      {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[0][kmer], color); }
     else if (table_id == 1) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[1][kmer], color); }
     else if (table_id == 2) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[2][kmer], color); }
@@ -209,9 +215,9 @@ void graph::hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color)
  * This function searches the corresponding hash table for the given kmer
  * @param kmer The kmer to search
  */
-bool graph::search_kmer(const kmer_t& kmer)
+bool graph::search_kmer(const kmer_t& kmer, bool reversed)
 {    
-    return kmer_table[get_table_index(kmer)].contains(kmer);
+    return kmer_table[get_table_index(kmer, reversed)].contains(kmer);
 }
 
 /** 
@@ -230,8 +236,8 @@ bool graph::search_kmer_amino(const kmerAmino_t& kmer)
 * @param kmer The target kmer
 * @return color_t The stored colores
 */
-color_t graph::get_color(const kmer_t& kmer){
-    return kmer_table[get_table_index(kmer)][kmer];
+color_t graph::get_color(const kmer_t& kmer, bool reversed){
+    return kmer_table[get_table_index(kmer, reversed)][kmer];
 }
 
 
@@ -249,8 +255,8 @@ color_t graph::get_color_amino(const kmerAmino_t& kmer){
  * This function erases a stored kmer from its corresponding hash table
  * @param kmer The kmer to remove
  */
-void graph::remove_kmer(const kmer_t& kmer){
-    kmer_table[get_table_index(kmer)].erase(kmer);
+void graph::remove_kmer(const kmer_t& kmer, bool reversed){
+    kmer_table[get_table_index(kmer, reversed)].erase(kmer);
 }
 
 
@@ -924,18 +930,19 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
 
         for (int pos=0; pos < kmer_seq.length(); ++pos) {kmer::shift_right(kmer, kmer_seq[pos]);} // collect the bases from the k-mer sequence.
 
-	    kmer::reverse_complement(kmer, true);
+	    bool reversed = kmer::reverse_complement(kmer, true);
 
-        if (search_kmer(kmer)){ // Check if additional colors are stored for this kmer
+
+        if (search_kmer(kmer, reversed)){ // Check if additional colors are stored for this kmer
             // Get the colors stored for this kmer
-            color_t hashed_color = get_color(kmer); // the currently stored colores of the kmer
+            color_t hashed_color = get_color(kmer, reversed); // the currently stored colores of the kmer
 	    for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
               	if(color::test(hashed_color, pos) && !color::test(kmer_color, pos)){ // test if the color is set in the stored color set
               		color::set(kmer_color, pos);
                	}
            }
            // Remove the kmer from the hash table
-           remove_kmer(kmer); // remove the kmer from the table
+           remove_kmer(kmer, reversed); // remove the kmer from the table
 	   }
     }
     bool pos = color::complement(kmer_color, true);  // invert the color set, if necessary
