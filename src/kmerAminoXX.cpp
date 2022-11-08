@@ -6,6 +6,16 @@
 uint64_t kmerAminoXX::k;
 
 /**
+* The mod to use for binning
+*/
+uint64_t kmerAminoXX::bin;
+
+/**
+ * This vector stores the precomputed carries of 2^i % bin
+ */
+vector<uint64_t> period;
+
+/**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
 bitset<5*maxK> kmerAminoXX::mask = mask.set();
@@ -14,13 +24,17 @@ bitset<5*maxK> kmerAminoXX::mask = mask.set();
  * This function initializes the k-mer length and bit-mask.
  *
  * @param kmer_length k-mer length
+ * @param bins the number of hash tables
  */
-void kmerAminoXX::init(uint64_t& kmer_length) {
+void kmerAminoXX::init(uint64_t& kmer_length, uint64_t& bins) {
     k = kmer_length; mask.reset();
     for (uint64_t i = 0; i < 5*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
+
+    bin = 0; // init the carry for the empty kmer
+    table_count = bins; // the number of hash tables to use
 }
 
 /**
@@ -63,6 +77,18 @@ char kmerAminoXX::shift_right(bitset<5 * maxK>& kmer, char& c) {
     }
 
     kmer &= mask;    // set all bits to zero that exceed the k-mer length
+
+    // update the binning carry (solution of the shift-update-carry equation)
+    // the binning update function
+    bin = 32 * table_count // bias
+		+ 16 * bin // Old bin  
+		- 16 * period[2*k-1] * kmer[2*k-1] - 8 * kmer[2*k-2] * period[2*k - 2] - 4 * kmer[2*k-3] * period[2*k - 3] // Old bin
+        - 2 * kmer[2*k-4] * period[2*k - 4] - kmer[2*k-4] * period[2*k - 4]; 
+    // new base
+    for(int i = 0; i<=4; i++){// encode the new character within the rightmost five bits
+        bin += period[i] & ((right >> i) & 0x1);
+    }
+    bin %= table_count;
 
     return util::amino_bits_to_char(left);    // return the dropped leftmost character
 }

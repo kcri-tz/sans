@@ -92,8 +92,9 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins) {
     table_count = bins; // The number of tables to use for hashing 
 
     if(!isAmino){
-        // Initielise base tables
+        // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
+        // Init the mutex lock vector
 	    lock = vector<spinlockMutex> (table_count);
 
         graph::allowedChars.push_back('A');
@@ -101,8 +102,10 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins) {
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
     }else{
-        // Initielise amino tables
-        kmer_tableAmino.resize(graph::table_count);
+        // Init amino tables
+        kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
+        // Init the mutex lock vector
+        lock = vector<spinlockMutex> (table_count);
 
         graph::allowedChars.push_back('A');
         //graph::allowedChars.push_back('B');
@@ -149,15 +152,8 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins) {
 */
 uint64_t graph::get_table_index(const kmer_t& kmer, bool reversed)
 {
-#if maxK > 32
-    if (!reversed) 
-    {return kmer::rbin;}
-    else 
-    {return kmer::bin;} 
-
-#else
-    return kmer % graph::table_count;
-#endif
+    if (!reversed) {return kmer::rbin;}
+    else {return kmer::bin;} 
 }
 
 
@@ -199,15 +195,8 @@ void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
 void graph::hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color)
 {
     uint64_t table_id = get_amino_table_index(kmer);
-    if (table_id == 0)      {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[0][kmer], color); }
-    else if (table_id == 1) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[1][kmer], color); }
-    else if (table_id == 2) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[2][kmer], color); }
-    else if (table_id == 3) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[3][kmer], color); }
-    else if (table_id == 4) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[4][kmer], color); }
-    else if (table_id == 5) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[5][kmer], color); }
-    else if (table_id == 6) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[6][kmer], color); }
-    else if (table_id == 7) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[7][kmer], color); }
-    else if (table_id == 8) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_tableAmino[8][kmer], color); }
+    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    color::set(kmer_tableAmino[table_id][kmer], color);
 }
 
 

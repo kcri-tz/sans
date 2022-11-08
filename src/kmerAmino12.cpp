@@ -5,6 +5,12 @@
  */
 uint64_t kmerAmino12::k;
 
+// The current binning carry
+uint64_t kmerAmino12::bin;
+
+// The binning mod
+uint64_t kmerAmino12::table_count;
+
 /**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
@@ -15,12 +21,15 @@ uint64_t kmerAmino12::mask = -1;
  *
  * @param kmer_length k-mer length
  */
-void kmerAmino12::init(uint64_t& kmer_length) {
+void kmerAmino12::init(uint64_t& kmer_length, uint64_t& bins) {
     k = kmer_length; mask = 0;
     for (uint64_t i = 0; i < 5*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
+
+    table_count = bins; // Set the number of hash tables
+    bin = 0; // Init the bin of the empty kmer
 }
 
 /**
@@ -55,6 +64,8 @@ char kmerAmino12::shift_right(uint64_t& kmer, char& c) {
     kmer <<= 05u;    // shift all current bits to the left by five positions
     kmer |= right;    // encode the new character within the rightmost five bits
     kmer &= mask;    // set all bits to zero that exceed the k-mer length
+
+    bin = kmer % table_count;
 
     return util::amino_bits_to_char(left);    // return the dropped leftmost character
 }

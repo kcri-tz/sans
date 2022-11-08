@@ -31,11 +31,22 @@ public:
     static uint64_t k;
 
     /**
+    * The mod to use for binning
+    */
+    static uint64_t table_count;
+
+    /**
+    * The current binning carry
+    */
+    static uint64_t bin;
+
+    /**
      * This function initializes the k-mer length and bit-mask.
      *
      * @param kmer_length k-mer length
+     * @param bins the number of hash tables
      */
-    static void init(uint64_t& kmer_length);
+    static void init(uint64_t& kmer_length, uint64_t& bins);
 
     /**
      * This function shifts a k-mer adding a new character to the left.

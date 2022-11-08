@@ -591,7 +591,7 @@ int main(int argc, char* argv[]) {
      */ 
     
     kmer::init(kmer, bins);      // initialize the k-mer length
-    kmerAmino::init(kmer); // initialize the k-mer length
+    kmerAmino::init(kmer, bins); // initialize the k-mer length
     color::init(num);    // initialize the color number
 
     if (!input.empty() && splits.empty()) {

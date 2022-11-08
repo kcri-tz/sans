@@ -27,7 +27,7 @@ public:
     static uint64_t table_count;
 
     /**
-     * The hash table index of the kmer
+     * The hash table index of the kmer and its reverse compliment
      */
     static uint64_t bin;
     static uint64_t rbin;
