@@ -36,12 +36,18 @@ multimap<double, color_t, greater<>> graph::split_list;
 vector<char> graph::allowedChars;
 
 
-// [Temporary: Test]
+// [DEBUG:]
 void graph::showTableSizes(){
-    cout << "[Test::Table_Sizes]" << endl;	 
-    for (auto table: kmer_table){cout << table.size() << " , ";}
-    cout << endl;
-    cout << "[Test]" << endl;
+    cout << "[DEBUG::Table_Sizes]" << endl;
+    if(!isAmino){    
+        for (auto table: kmer_table){cout << table.size() << " , ";}
+        cout << endl;
+    }
+    else
+    {
+        for (auto table: kmer_tableAmino){cout << table.size() << " , ";}
+	cout << endl;
+    }	    
 }
 
 /**

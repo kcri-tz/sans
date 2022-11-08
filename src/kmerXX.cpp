@@ -31,7 +31,7 @@ void kmerXX::init(uint64_t& kmer_length, uint64_t& bins) {
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
 
-    bins = bins; // The module to use for binning is the number of hash tables
+    table_count = bins; // The module to use for binning is the number of hash tables
     bin = 0;    // The forward carry
     rbin = 0;   // The reverse carry
     uint64_t last = 1 % bins;

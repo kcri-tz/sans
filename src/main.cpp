@@ -267,7 +267,7 @@ int main(int argc, char* argv[]) {
         }
 
         else if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--bins") == 0){
-            threads = stoi(argv[++i]);    // The number of hash tables to use
+            bins = stoi(argv[++i]);    // The number of hash tables to use
         }
 
         else {
@@ -702,7 +702,7 @@ int main(int argc, char* argv[]) {
     }
 
     // [Temporary Test]
-    // graph::showTableSizes();
+    graph::showTableSizes();
     /**
      * --- Bifrost CDBG processing ---
      * - Iterate all colored k-mers from a CDBG
