@@ -1,12 +1,12 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+# CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -std=c++14
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
 
 ## IF BIFROST LIBRARY SHOULD BE USED
-# CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=32 -DuseBF -std=c++14
-# BF = -lbifrost -lpthread -lz
+CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
+BF = -lbifrost -lpthread -lz
 
 # Wrap Windows / Unix commands
 ifeq ($(OS), Windows_NT)
@@ -27,7 +27,7 @@ ifeq ("$(wildcard $(TD))", "")
 endif
 
 SANS: main.o
-	$(CC) -o SANS main.o graph.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o $(BF)
+	$(CC) -o SANS main.o graph.o spinlockMutex.o kmer32.o kmerXX.o kmerAminoXX.o kmerAmino12.o color64.o colorXX.o util.o translator.o cleanliness.o $(BF) -lpthread
 	$(RM)
 	$(MK)
 	$(MV)
@@ -35,8 +35,11 @@ SANS: main.o
 main.o: src/main.cpp src/main.h translator.o graph.o util.o cleanliness.o
 	$(CC) -c src/main.cpp
 
-graph.o: src/graph.cpp src/graph.h kmer32.o kmerXX.o kmerAmino12.o kmerAminoXX.o color64.o colorXX.o
+graph.o: src/graph.cpp src/graph.h kmer32.o kmerXX.o kmerAmino12.o kmerAminoXX.o color64.o colorXX.o spinlockMutex.o
 	$(CC) -c src/graph.cpp
+
+spinlockMutex.o: src/spinlockMutex.cpp src/spinlockMutex.h
+	$(CC) -c src/spinlockMutex.cpp
 
 kmer32.o: src/kmer32.cpp src/kmer32.h
 	$(CC) -c src/kmer32.cpp

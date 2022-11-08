@@ -687,7 +687,7 @@ int main(int argc, char* argv[]) {
     }
 
     // [Temporary Test]
-    graph::showTableSizes();
+    // graph::showTableSizes();
     /**
      * --- Bifrost CDBG processing ---
      * - Iterate all colored k-mers from a CDBG

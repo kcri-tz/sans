@@ -8,12 +8,13 @@ uint64_t graph::t;
 
 bool graph::isAmino;
 
-uint64_t graph::tableCount = 3;
+uint64_t graph::tableCount = 19683;
 
 /**
- * This is a hash table mapping k-mers to colors [O(1)].
+ * This is vector of hash tables mapping k-mers to colors [O(1)].
  */
-vector<hash_map<kmer_t, color_t>> graph::kmer_table;
+vector<hash_map<kmer_t, color_t>> graph::kmer_table (graph::tableCount);
+vector<spinlockMutex> graph::lock (graph::tableCount);
 /**
  * This is the amino equivalent.
  */ 
@@ -85,7 +86,7 @@ void graph::init(uint64_t& top_size, bool amino) {
 
     if(!isAmino){
         // Initielise base tables
-        kmer_table.resize(graph::tableCount);
+	tableCount = 19683;
 #if maxK > 32
         kmer::init_binning(tableCount); // Precompute the binning carries	
 #endif
@@ -94,6 +95,7 @@ void graph::init(uint64_t& top_size, bool amino) {
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
     }else{
+	tableCount = 29791;
         // Initielise amino tables
         kmer_tableAmino.resize(graph::tableCount);
 
@@ -178,6 +180,8 @@ uint64_t graph::get_amino_table_index(const kmerAmino_t& kmer)
 void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
 {
     uint64_t table_id = get_table_index(kmer, reversed);
+
+    /*
     if (table_id == 0)      {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[0][kmer], color); }
     else if (table_id == 1) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[1][kmer], color); }
     else if (table_id == 2) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[2][kmer], color); }
@@ -185,9 +189,10 @@ void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
     else if (table_id == 4) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[4][kmer], color); }
     else if (table_id == 5) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[5][kmer], color); }
     else if (table_id == 6) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[6][kmer], color); }
-    else if (table_id == 7) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[7][kmer], color); }
-    else if (table_id == 8) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[8][kmer], color); }
-}
+    */
+    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    color::set(kmer_table[table_id][kmer], color);
+    }
 
 
 /**

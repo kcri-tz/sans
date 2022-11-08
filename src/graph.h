@@ -55,6 +55,9 @@ template <typename T>
     typedef uint64_t color_t;
 #endif
 
+#include "spinlockMutex.h"
+
+
 /**
  * A tree structure that is needed for generating a NEWICK string.
  */
@@ -63,6 +66,7 @@ struct node {
     double weight;
     vector<node*> subsets;
 };
+
 
 /**
  * This class manages the k-mer/color hash tables and split list.
@@ -75,9 +79,10 @@ private:
     
     static uint64_t tableCount;
     /**
-     * This is a hash table mapping k-mers to colors [O(1)].
+     * This is a vector of hash tables mapping k-mers to colors [O(1)].
      */
     static vector<hash_map<kmer_t, color_t>> kmer_table;
+    static vector<spinlockMutex> lock;
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
