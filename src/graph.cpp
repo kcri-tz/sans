@@ -13,8 +13,8 @@ uint64_t graph::tableCount;
 /**
  * This is vector of hash tables mapping k-mers to colors [O(1)].
  */
-vector<hash_map<kmer_t, color_t>> graph::kmer_table (graph::tableCount);
-vector<spinlockMutex> graph::lock (graph::tableCount);
+vector<hash_map<kmer_t, color_t>> graph::kmer_table;
+vector<spinlockMutex> graph::lock;
 /**
  * This is the amino equivalent.
  */ 
@@ -86,8 +86,10 @@ void graph::init(uint64_t& top_size, bool amino) {
 
     if(!isAmino){
         // Initielise base tables
-	    tableCount = 19683; // The number of tables to use for hashing (powers of 3) 
-        
+	tableCount = 19683; // The number of tables to use for hashing (powers of 3) 
+	kmer_table = vector<hash_map<kmer_t, color_t>> (tableCount);
+	lock = vector<spinlockMutex> (tableCount);
+
         graph::allowedChars.push_back('A');
         graph::allowedChars.push_back('C');
         graph::allowedChars.push_back('G');
