@@ -24,18 +24,16 @@ bitset<2*maxK> kmerXX::mask = mask.set();
  *
  * @param kmer_length k-mer length
  */
-void kmerXX::init(uint64_t& kmer_length) {
+void kmerXX::init(uint64_t& kmer_length, uint64_t& bins) {
     k = kmer_length; mask.reset();
     for (uint64_t i = 0; i < 2*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
-}
 
-void kmerXX::init_binning(uint64_t& table_count) {
-    mod = table_count;
-    bin = 0;
-    rbin = 0;
+    mod = bins; // The module to use for binning is the number of hash tables
+    bin = 0;    // The forward carry
+    rbin = 0;   // The reverse carry
     uint64_t last = 1 % mod;
     for (int i = 1; i <= 2*(k + 1); i++)
     {

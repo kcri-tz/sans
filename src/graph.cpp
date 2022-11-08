@@ -8,7 +8,7 @@ uint64_t graph::t;
 
 bool graph::isAmino;
 
-uint64_t graph::tableCount = 19683;
+uint64_t graph::tableCount;
 
 /**
  * This is vector of hash tables mapping k-mers to colors [O(1)].
@@ -86,16 +86,14 @@ void graph::init(uint64_t& top_size, bool amino) {
 
     if(!isAmino){
         // Initielise base tables
-	tableCount = 19683;
-#if maxK > 32
-        kmer::init_binning(tableCount); // Precompute the binning carries	
-#endif
+	    tableCount = 19683; // The number of tables to use for hashing (powers of 3) 
+        
         graph::allowedChars.push_back('A');
         graph::allowedChars.push_back('C');
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
     }else{
-	tableCount = 29791;
+	tableCount = 29791; // The number of tables to use for amino hashing (powers of 31)
         // Initielise amino tables
         kmer_tableAmino.resize(graph::tableCount);
 

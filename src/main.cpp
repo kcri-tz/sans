@@ -91,6 +91,10 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
+        cout << "    -T, --threads \t The number of threads to run" << endl;
+        cout << endl;
+        cout << "    -B, --bins \t The number of hash tables to use" << endl;
+        cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
         cout << endl;
         cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
@@ -106,8 +110,6 @@ int main(int argc, char* argv[]) {
     * - Initialise meta variables and set defaults
     */
 
-    int threads = 8; // The number of threads to run on
-
     string input;    // name of input file
     string graph;    // name of graph file
     string splits;    // name of splits file
@@ -120,6 +122,9 @@ int main(int argc, char* argv[]) {
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
     bool dyn_top = false; // bind number of splits to num
+
+    uint64_t threads = 1; // The number of threads to run on
+    uint64_t bins = 1; // The number of hash tables to use
 
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
@@ -255,6 +260,16 @@ int main(int argc, char* argv[]) {
             }
             shouldTranslate = true;
         }
+
+        // Parallelization 
+        else if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--threads") == 0){ 
+            threads = stoi(argv[++i]);  // The number of threads to run
+        }
+
+        else if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--bins") == 0){
+            threads = stoi(argv[++i]);    // The number of hash tables to use
+        }
+
         else {
             cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
             return 1;
@@ -575,7 +590,7 @@ int main(int argc, char* argv[]) {
      * - Transcribe all given sequence k-mers to the graph
      */ 
     
-    kmer::init(kmer);      // initialize the k-mer length
+    kmer::init(kmer, bins);      // initialize the k-mer length
     kmerAmino::init(kmer); // initialize the k-mer length
     color::init(num);    // initialize the color number
 

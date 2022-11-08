@@ -44,15 +44,9 @@ public:
      * This function initializes the k-mer length and bit-mask.
      *
      * @param kmer_length k-mer length
+     * @param bins the number of hash tables to use for parallel hashing 
      */
-    static void init(uint64_t& kmer_length);
-
-    /**
-     * This function intializes the table binning process by computing the modulus period
-     *
-     *
-     */
-    static void init_binning(uint64_t& table_count);
+    static void init(uint64_t& kmer_length, uint64_t& bins);
 
 
     /**
