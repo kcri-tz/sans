@@ -545,7 +545,7 @@ int main(int argc, char* argv[]) {
      */ 
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    graph::init(top, amino); // initialize the toplist size and the allowed characters
+    graph::init(top, amino, bins); // initialize the toplist size and the allowed characters
 
 
     /**

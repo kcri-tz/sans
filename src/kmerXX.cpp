@@ -10,8 +10,8 @@ uint64_t kmerXX::bin;
 uint64_t kmerXX::rbin;
 
 // The binning mod
-uint64_t kmerXX::mod;
-// The mod_period;
+uint64_t kmerXX::table_count;
+// The mod period
 vector<uint64_t> period;
 
 /**
@@ -31,14 +31,14 @@ void kmerXX::init(uint64_t& kmer_length, uint64_t& bins) {
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
 
-    mod = bins; // The module to use for binning is the number of hash tables
+    bins = bins; // The module to use for binning is the number of hash tables
     bin = 0;    // The forward carry
     rbin = 0;   // The reverse carry
-    uint64_t last = 1 % mod;
+    uint64_t last = 1 % bins;
     for (int i = 1; i <= 2*(k + 1); i++)
     {
 	    period.push_back(last);
-	    last = (2 * last) % mod;
+	    last = (2 * last) % bins;
     }
 }
 
@@ -73,15 +73,15 @@ char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
     uint64_t right = char_to_bits(c);    // new rightmost character
     
     // The binning update function
-    bin = ( 8 * mod // bias
+    bin = ( 8 * table_count // bias
 		    + 4 * bin // Old bin  
 		    - 4 * period[2*k-1] * kmer[2*k-1] - 4 * kmer[2*k-2] * period[2*k - 2] // Old base
 		    + period[1] * (right & 0b10) + period[0] * (right & 0b01)) // New base
-	    % mod; // Mod
+	    % table_count; // Mod
 
     // The binning update function for the reverse complement
     rbin >> 02u; 
-    rbin = (rbin + period[2*k-1] * (!(right / 2)) + period[2*k-2] * (!(right % 2))) % mod;
+    rbin = (rbin + period[2*k-1] * (!(right / 2)) + period[2*k-2] * (!(right % 2))) % table_count;
 
     kmer <<= 02u;    // shift all current bits to the left by two positions
     kmer[1] = right / 2;    // encode the new character within the rightmost two bits

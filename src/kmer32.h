@@ -24,7 +24,7 @@ public:
     /**
     * The mod to use for binning
     */
-    static uint64_t mod;
+    static uint64_t table_count;
 
     /**
      * The hash table index of the kmer

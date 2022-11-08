@@ -8,7 +8,7 @@ uint64_t graph::t;
 
 bool graph::isAmino;
 
-uint64_t graph::tableCount;
+uint64_t graph::table_count;
 
 /**
  * This is vector of hash tables mapping k-mers to colors [O(1)].
@@ -80,24 +80,23 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  *
  * @param t top list size
  */
-void graph::init(uint64_t& top_size, bool amino) {
+void graph::init(uint64_t& top_size, bool amino, uint64_t& bins) {
     t = top_size;
     isAmino = amino;
+    table_count = bins; // The number of tables to use for hashing 
 
     if(!isAmino){
         // Initielise base tables
-	tableCount = 19683; // The number of tables to use for hashing (powers of 3) 
-	kmer_table = vector<hash_map<kmer_t, color_t>> (tableCount);
-	lock = vector<spinlockMutex> (tableCount);
+	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
+	    lock = vector<spinlockMutex> (table_count);
 
         graph::allowedChars.push_back('A');
         graph::allowedChars.push_back('C');
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
     }else{
-	tableCount = 29791; // The number of tables to use for amino hashing (powers of 31)
         // Initielise amino tables
-        kmer_tableAmino.resize(graph::tableCount);
+        kmer_tableAmino.resize(graph::table_count);
 
         graph::allowedChars.push_back('A');
         //graph::allowedChars.push_back('B');
@@ -146,12 +145,12 @@ uint64_t graph::get_table_index(const kmer_t& kmer, bool reversed)
 {
 #if maxK > 32
     if (!reversed) 
-    {return kmer::bin;}
+    {return kmer::rbin;}
     else 
-    {return kmer::rbin;} 
+    {return kmer::bin;} 
 
 #else
-    return kmer % graph::tableCount;
+    return kmer % graph::table_count;
 #endif
 }
 
@@ -164,7 +163,7 @@ uint64_t graph::get_table_index(const kmer_t& kmer, bool reversed)
 uint64_t graph::get_amino_table_index(const kmerAmino_t& kmer)
 {
 #if maxK > 12
-    return kmerAmino::bit_mod(kmer, graph::tableCount);
+    return kmerAmino::bit_mod(kmer, graph::table_count);
 #else
     return kmer % graph::tableCount; 
 #endif
@@ -180,19 +179,9 @@ uint64_t graph::get_amino_table_index(const kmerAmino_t& kmer)
 void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
 {
     uint64_t table_id = get_table_index(kmer, reversed);
-
-    /*
-    if (table_id == 0)      {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[0][kmer], color); }
-    else if (table_id == 1) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[1][kmer], color); }
-    else if (table_id == 2) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[2][kmer], color); }
-    else if (table_id == 3) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[3][kmer], color); }
-    else if (table_id == 4) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[4][kmer], color); }
-    else if (table_id == 5) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[5][kmer], color); }
-    else if (table_id == 6) {static mutex mtx; lock_guard<mutex> lock(mtx); color::set(kmer_table[6][kmer], color); }
-    */
     std::lock_guard<spinlockMutex> lg(lock[table_id]); 
     color::set(kmer_table[table_id][kmer], color);
-    }
+}
 
 
 /**
@@ -873,7 +862,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
     hash_map<kmerAmino_t, color_t>::iterator amino_it;
 
     // Iterate the tables
-    for (int i = 0; i < graph::tableCount; i++) // Iterate all tables
+    for (int i = 0; i < graph::table_count; i++) // Iterate all tables
     {
         if (!isAmino){base_it = kmer_table[i].begin();} // base table iterator
         else {amino_it = kmer_tableAmino[i].begin();} // amino table iterator

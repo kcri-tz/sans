@@ -77,17 +77,19 @@ private:
 
     static bool isAmino;
     
-    static uint64_t tableCount;
+    static uint64_t table_count;
     /**
      * This is a vector of hash tables mapping k-mers to colors [O(1)].
      */
     static vector<hash_map<kmer_t, color_t>> kmer_table;
+    /**
+     * This is a vector of spinlocks protecting the hash tables.
+     */
     static vector<spinlockMutex> lock;
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
     static vector<hash_map<kmerAmino_t, color_t>> kmer_tableAmino;
-
 
     /**
      * This is a hash table mapping colors to weights [O(1)].
@@ -120,7 +122,7 @@ public:
      *
      * @param t top list size
      */
-    static void init(uint64_t& top_size, bool isAmino);
+    static void init(uint64_t& top_size, bool isAmino, uint64_t& bins);
 
     /**
      * This function computes the target hash table index for a given k-mer
