@@ -36,6 +36,11 @@ public:
     static uint64_t table_count;
 
     /**
+     * The carries of 2^i % table count (Computed in init)
+     */
+    static vector<uint64_t> period;
+
+    /**
     * The current binning carry
     */
     static uint64_t bin;

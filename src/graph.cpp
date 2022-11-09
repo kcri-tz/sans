@@ -164,11 +164,7 @@ uint64_t graph::get_table_index(const kmer_t& kmer, bool reversed)
 */
 uint64_t graph::get_amino_table_index(const kmerAmino_t& kmer)
 {
-#if maxK > 12
-    return kmerAmino::bit_mod(kmer, graph::table_count);
-#else
-    return kmer % graph::tableCount; 
-#endif
+    return kmerAmino::bin;
 }
 
 
