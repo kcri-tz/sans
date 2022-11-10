@@ -820,7 +820,7 @@ void graph::filter_weakly(bool& verbose) {
 loop:
     while (it != split_list.end()) {
         if (verbose) {
-            next = 100*(cur*cur)/(max*max);
+            next = 100 * (cur * sqrt(cur)) / (max * sqrt(max));
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
             prog = next; cur++;
         }
@@ -904,10 +904,10 @@ bool graph::test_strict(color_t& color, vector<color_t>& color_set) {
  */
 bool graph::test_weakly(color_t& color, vector<color_t>& color_set) {
     for (auto& elem1 : color_set) {
-        for (auto& elem2 : color_set) {
-            if (elem1 != elem2) {
+        if (!color::is_compatible(elem1, color)) {
+            for (auto& elem2 : color_set) {
                 if (!color::is_weakly_compatible(elem1, elem2, color)) {
-                    return false;    // compare to each split in the set
+                    return false;    // compare to each pair of splits in the set
                 }
             }
         }
