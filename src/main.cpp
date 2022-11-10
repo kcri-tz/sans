@@ -97,6 +97,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
         cout << endl;
+        cout << "    -d, --debug \t Show debug information" << endl;
+        cout << endl;
         cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
         cout << "  Evaluation: https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans" << endl;
         cout << endl;
@@ -124,7 +126,9 @@ int main(int argc, char* argv[]) {
     bool dyn_top = false; // bind number of splits to num
 
     uint64_t threads = 1; // The number of threads to run on
-    uint64_t bins = 1; // The number of hash tables to use
+    uint64_t bins = 0; // The number of hash tables to use
+
+    bool debug = false;
 
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
@@ -270,6 +274,10 @@ int main(int argc, char* argv[]) {
             bins = stoi(argv[++i]);    // The number of hash tables to use
         }
 
+        else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0){
+            debug = true;    // Debug mode shows internal information
+        }
+
         else {
             cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
             return 1;
@@ -354,12 +362,22 @@ int main(int argc, char* argv[]) {
         cerr << "      --input can be used to provide the original list of taxa" << endl;
     }
 
+
+    // [Post parse]
+
     // check if we need to init translation
     if (shouldTranslate) {
         amino = true;
         if (!translator::init(code)) {
             cerr << "Error: No translation data found" << translate << endl;
         }
+    }
+
+    // Check hash table setup for parallelization:
+    if (bins == 0)
+    {
+        if (threads != 1){amino ? bins = 1983 : bins =  29791;} // default binning strategies for multithreading
+        else {bins = 1;} // default binning strategy for sequential hashing
     }
 
     /**
@@ -701,8 +719,10 @@ int main(int argc, char* argv[]) {
 	}
     }
 
-    // [Temporary Test]
-    graph::showTableSizes();
+    // debug: show the number of kmers hashed per table
+    if (debug) {graph::showTableSizes();}
+
+
     /**
      * --- Bifrost CDBG processing ---
      * - Iterate all colored k-mers from a CDBG
@@ -749,8 +769,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         }
     }
 #endif
-
-     cout << "BFG load completed" << endl;
     /**
      * [Output]
      * - Compute the weighted splits of the k-mers that are left in the graph
