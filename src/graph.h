@@ -71,22 +71,42 @@ class graph {
 
 private:
 
+    /**
+     * This is the size of the top list.
+     */
+    static uint64_t t;
+
+    /**
+     * This is the min. coverage threshold for k-mers.
+     */
+    static uint64_t quality;
+
     static bool isAmino;
 
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
     static hash_map<kmer_t, color_t> kmer_table;
+
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
     static hash_map<kmerAmino_t, color_t> kmer_tableAmino;
 
-
     /**
      * This is a hash table mapping colors to weights [O(1)].
      */
     static hash_map<color_t, array<uint32_t,2>> color_table;
+
+    /**
+     * This is a hash set used to filter k-mers for coverage (q > 1).
+     */
+    static hash_set<kmer_t> quality_set;
+
+    /**
+     * This is a hash map used to filter k-mers for coverage (q > 2).
+     */
+    static hash_map<kmer_t, uint64_t> quality_map;
 
 public:
 
@@ -96,22 +116,17 @@ public:
     static multimap<double, color_t, greater<>> split_list;
 
     /**
-     * This is the size of the top list.
-     */
-    static uint64_t t;
-
-    /**
     * These are the allowed chars.
     */
     static vector<char> allowedChars;
 
-
     /**
-     * This function initializes the top list size and the allowed chars.
+     * This function initializes the top list size, coverage threshold, and allowed characters.
      *
      * @param t top list size
+     * @param quality coverage threshold
      */
-    static void init(uint64_t& top_size, bool isAmino);
+    static void init(uint64_t& top_size, uint64_t& quality, bool isAmino);
 
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
@@ -192,6 +207,11 @@ public:
      static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value);       
 
     /**
+     * This function clears color-related temporary files.
+     */
+    static void clear_thread();
+
+    /**
      * This function filters a greedy maximum weight tree compatible subset.
      *
      * @param verbose print progress
@@ -232,6 +252,14 @@ public:
     static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose);
 
 protected:
+
+    /**
+     * This function qualifies a k-mer and places it into the hash table.
+     *
+     * @param kmer bit sequence
+     * @param color color flag
+     */
+    static function<void(const kmer_t&, uint64_t&)> emplace_kmer;
 
     /**
      * This function tests if a split is compatible with an existing set of splits.

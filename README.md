@@ -125,6 +125,8 @@ Usage: SANS [PARAMETERS]
                   	 1 (no ambiguity) and 4^k respectively 22^k (allows NNN...N)
                   	 Without --iupac respective k-mers are ignored
 
+    -q, --qualify 	 Discard k-mers with lower coverage than a threshold
+
     -n, --norev   	 Do not consider reverse complement k-mers
 
     -a, --amino   	 Consider amino acids: --input provides amino acid sequences

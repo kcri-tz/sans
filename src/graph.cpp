@@ -5,6 +5,11 @@
  */
 uint64_t graph::t;
 
+/**
+ * This is the min. coverage threshold for k-mers.
+ */
+uint64_t graph::quality;
+
 bool graph::isAmino;
 
 /**
@@ -20,6 +25,16 @@ hash_map<kmerAmino_t, color_t> graph::kmer_tableAmino;
 hash_map<color_t, array<uint32_t,2>> graph::color_table;
 
 /**
+ * This is a hash set used to filter k-mers for coverage (q > 1).
+ */
+hash_set<kmer_t> graph::quality_set;
+
+/**
+ * This is a hash map used to filter k-mers for coverage (q > 2).
+ */
+hash_map<kmer_t, uint64_t> graph::quality_map;
+
+/**
  * This is an ordered tree collecting the splits [O(log n)].
  */
 multimap<double, color_t, greater<>> graph::split_list;
@@ -29,6 +44,10 @@ multimap<double, color_t, greater<>> graph::split_list;
 */
 vector<char> graph::allowedChars;
 
+/**
+ * This function qualifies a k-mer and places it into the hash table.
+ */
+function<void(const kmer_t&, uint64_t&)> graph::emplace_kmer;
 
 /**
  * This is a comparison function extending std::bitset.
@@ -62,11 +81,12 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
 }
 
 /**
- * This function initializes the top list size and the allowed chars.
+ * This function initializes the top list size, coverage threshold, and allowed characters.
  *
  * @param t top list size
+ * @param quality coverage threshold
  */
-void graph::init(uint64_t& top_size, bool amino) {
+void graph::init(uint64_t& top_size, uint64_t& quality, bool amino) {
     t = top_size;
     isAmino = amino;
 
@@ -105,7 +125,26 @@ void graph::init(uint64_t& top_size, bool amino) {
         graph::allowedChars.push_back('*');
     }
 
-
+    graph::quality = quality;
+    switch (quality) {
+        case 1:
+            case 0: /* no quality check */
+            emplace_kmer = [&] (const kmer_t& kmer, uint64_t& color) {
+                color::set(kmer_table[kmer], color);
+        };  break;
+        case 2:
+            emplace_kmer = [&] (const kmer_t& kmer, uint64_t& color) {
+                if  (quality_set.find(kmer) == quality_set.end())
+                     quality_set.emplace(kmer);
+                else color::set(kmer_table[kmer], color);
+        };  break;
+        default:
+            emplace_kmer = [&] (const kmer_t& kmer, uint64_t& color) {
+                if  (quality_map[kmer] < quality-1)
+                     quality_map[kmer]++;
+                else color::set(kmer_table[kmer], color);
+        };  break;
+    }
 }
 
 /**
@@ -139,7 +178,7 @@ next_kmer:
             if (pos+1 - begin >= kmer::k) {
                 rcmer = kmer;
                 if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-                color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+                emplace_kmer(rcmer, color);    // update the k-mer with the current color
             }
         } else {
             kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
@@ -204,7 +243,7 @@ next_kmer:
                 sequence_order.emplace_back(rcmer);
 
                 if (sequence_order.size() == m) {
-                    color::set(kmer_table[*value_order.begin()], color);    // update the k-mer with the current color
+                    emplace_kmer(*value_order.begin(), color);    // update the k-mer with the current color
                 }
             }
         } else {
@@ -295,7 +334,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse, uint64_t& max
                 for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                     rcmer = kmer;
                     if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
-                    color::set(kmer_table[rcmer], color);    // update the k-mer with the current color
+                    emplace_kmer(rcmer, color);    // update the k-mer with the current color
                 }
             }
         }
@@ -415,7 +454,7 @@ void graph::add_minimizers(string& str, uint64_t& color, bool& reverse, uint64_t
                inner_value_order.clear();
 
                if (sequence_order.size() == m) {
-                   color::set(kmer_table[*value_order.begin()], color);    // update the k-mer with the current color
+                   emplace_kmer(*value_order.begin(), color);    // update the k-mer with the current color
                }
            }
        }
@@ -764,6 +803,17 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
     if (kmer_color == 0) return min_value; // ignore empty splits
     min_value = add_weight(kmer_color, mean, min_value, pos); // compute weight
     return min_value; // return new minimal weight
+}
+
+/**
+ * This function clears color-related temporary files.
+ */
+void graph::clear_thread() {
+    switch (quality) {
+        case 1:  case 0: break;
+        case 2:  quality_set.clear(); break;
+        default: quality_map.clear(); break;
+    }
 }
 
 /**
