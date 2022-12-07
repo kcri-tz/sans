@@ -75,8 +75,10 @@ char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
     // The binning update function
     bin = ( 8 * table_count // bias
 		    + 4 * bin // Old bin  
-		    - 4 * period[2*k-1] * kmer[2*k-1] - 4 * kmer[2*k-2] * period[2*k - 2] // Old base
-		    + period[1] * (right & 0b10) + period[0] * (right & 0b01)) // New base
+		    - 4 * period[2*k-1] * kmer[2*k-1] 
+		    - 4 * kmer[2*k-2] * period[2*k - 2] // Old base
+		    + period[1] * (right & 0b10) 
+		    + period[0] * (right & 0b01)) // New base
 	    % table_count; // Mod
 
     // The binning update function for the reverse complement

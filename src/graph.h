@@ -4,6 +4,7 @@
 #include <functional>
 #include <utility>
 #include <vector>
+#include <thread>
 
 #include <map>
 #include <set>
@@ -77,15 +78,31 @@ private:
 
     static bool isAmino;
     
+    /**
+     * This int indicates the number of tables to use for hashing
+     */
     static uint64_t table_count;
+    
     /**
      * This is a vector of hash tables mapping k-mers to colors [O(1)].
      */
     static vector<hash_map<kmer_t, color_t>> kmer_table;
+
     /**
      * This is a vector of spinlocks protecting the hash tables.
      */
     static vector<spinlockMutex> lock;
+	
+    /**
+     * This is a vector holding binning values for parallel shift update distribution of kmers 
+     */
+    static hash_map<thread::id, uint64_t> thread_bin;
+
+    /**
+     * This is a vector holding binning values for parallel shift update distribution of rc kmers
+     */
+    static vector<uint64_t> rc_thread_bin;
+
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
      */
@@ -120,9 +137,12 @@ public:
     /**
      * This function initializes the top list size and the allowed chars.
      *
-     * @param t top list size
+     * @param top list size
+     * @param isAmino use amino processing
+     * @param bins hash_tables to use for parallel processing
+     * @param thread_count the number of threads used for processing
      */
-    static void init(uint64_t& top_size, bool isAmino, uint64_t& bins);
+    static void init(uint64_t& top_size, bool isAmino, uint64_t& bins, uint64_t& thread_count);
 
     /**
      * This function computes the target hash table index for a given k-mer

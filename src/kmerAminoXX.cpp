@@ -41,10 +41,10 @@ void kmerAminoXX::init(uint64_t& kmer_length, uint64_t& bins) {
     bin = 0; // init the carry for the empty kmer
     table_count = bins; // the number of hash tables to use
     uint64_t last = 1 % table_count;
-    for (int i = 1; i <= 2*(k + 1); i++)
+    for (int i = 1; i <= 5*k; i++)
     {
 	    period.push_back(last);
-	    last = (2 * last) % bins;
+	    last = (2 * last) % table_count;
     }
 }
 
@@ -82,18 +82,14 @@ char kmerAminoXX::shift_right(bitset<5 * maxK>& kmer, char& c) {
     uint64_t left = 16*kmer[5*k-1]+8*kmer[5*k-2]+4*kmer[5*k-3]+2*kmer[5*k-4]+1*kmer[5*k-5];    // old leftmost character
     uint64_t right = util::amino_char_to_bits(c);    // new rightmost character
 
-    kmer <<= 05u;    // shift all current bits to the left by five positions
-    for(int i = 4; i>=0; i--){// encode the new character within the rightmost five bits
-        kmer[i] = (right >> i) & 0x1;
-    }
-
-    kmer &= mask;    // set all bits to zero that exceed the k-mer length
-
     // update the binning carry (solution of the shift-update-carry equation)
-    bin = 32 * table_count // bias
-		+ 16 * bin // Shift
-		- 16 * period[2*k-1] * kmer[2*k-1] - 8 * kmer[2*k-2] * period[2*k - 2] - 4 * kmer[2*k-3] * period[2*k - 3]
-        - 2 * kmer[2*k-4] * period[2*k - 4] - kmer[2*k-4] * period[2*k - 4];
+    bin = 160 * table_count // bias
+		+ 32 * bin // Shift
+		- 32 * kmer[5*k-1] * period[5*k - 1] 
+		- 32 * kmer[5*k-2] * period[5*k - 2] 
+		- 32 * kmer[5*k-3] * period[5*k - 3]
+                - 32 * kmer[5*k-4] * period[5*k - 4] 
+		- 32 * kmer[5*k-5] * period[5*k - 5];
 
     // Update
     for(int i = 0; i<=4; i++){
@@ -101,6 +97,13 @@ char kmerAminoXX::shift_right(bitset<5 * maxK>& kmer, char& c) {
     }
 
     bin %= table_count;
+
+    kmer <<= 05u;    // shift all current bits to the left by five positions
+    for(int i = 4; i>=0; i--){// encode the new character within the rightmost five bits
+        kmer[i] = (right >> i) & 0x1;
+    }
+
+    kmer &= mask;    // set all bits to zero that exceed the k-mer length
 
     return util::amino_bits_to_char(left);    // return the dropped leftmost character
 }

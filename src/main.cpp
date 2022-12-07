@@ -363,7 +363,7 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // [Post parse]
+    // --- Post parse ---
 
     // check if we need to init translation
     if (shouldTranslate) {
@@ -376,9 +376,10 @@ int main(int argc, char* argv[]) {
     // Check hash table setup for parallelization:
     if (bins == 0)
     {
-        if (threads != 1){amino ? bins = 1983 : bins =  29791;} // default binning strategies for multithreading
+        if (threads != 1){!amino ? bins = 3 : bins =  31;} // default binning strategies for multithreading
         else {bins = 1;} // default binning strategy for sequential hashing
     }
+    cout << "BINS: " << bins << endl;
 
     /**
      * [Indexing]
@@ -563,7 +564,7 @@ int main(int argc, char* argv[]) {
      */ 
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    graph::init(top, amino, bins); // initialize the toplist size and the allowed characters
+    graph::init(top, amino, bins, threads); // initialize the toplist size and the allowed characters
 
 
     /**

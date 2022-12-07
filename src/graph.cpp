@@ -1,5 +1,6 @@
 #include "graph.h"
 #include <mutex>
+#include <thread>
 
 /**
  * This is the size of the top list.
@@ -14,7 +15,22 @@ uint64_t graph::table_count;
  * This is vector of hash tables mapping k-mers to colors [O(1)].
  */
 vector<hash_map<kmer_t, color_t>> graph::kmer_table;
+
+/**
+ * This is a vecotr of spinlocks protecting the hash maps 
+ */
 vector<spinlockMutex> graph::lock;
+
+/**
+ * This is a hash_map holding the shift update bins for parallel kmer distribution for each thread
+ */
+hash_map<thread::id, uint64_t> graph::thread_bin;
+/**
+ * This is a vecot holding the reverse shift update bins for parralel reverse kmer distribution
+ */
+vector<uint64_t> graph::rc_thread_bin;
+
+
 /**
  * This is the amino equivalent.
  */ 
@@ -86,18 +102,23 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  *
  * @param t top list size
  */
-void graph::init(uint64_t& top_size, bool amino, uint64_t& bins) {
+void graph::init(uint64_t& top_size, bool amino, uint64_t& bins, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
     table_count = bins; // The number of tables to use for hashing 
-
+    
     if(!isAmino){
         // Init base tables
-	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
+	kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
         // Init the mutex lock vector
-	    lock = vector<spinlockMutex> (table_count);
+	lock = vector<spinlockMutex> (table_count);
+	// Init the bin vector
+        //thread_bin = vector<uint64_t> (thread_count);
+	// Init the reverse binning vector
+	// rc_thread_bin = vector<uint64_t> (thread_count);
 
-        graph::allowedChars.push_back('A');
+
+	graph::allowedChars.push_back('A');
         graph::allowedChars.push_back('C');
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
@@ -106,6 +127,8 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins) {
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
         // Init the mutex lock vector
         lock = vector<spinlockMutex> (table_count);
+        // Init the bin vector
+	// thread_bin = vector<uint64_t> (thread_count);
 
         graph::allowedChars.push_back('A');
         //graph::allowedChars.push_back('B');
@@ -164,7 +187,11 @@ uint64_t graph::get_table_index(const kmer_t& kmer, bool reversed)
 */
 uint64_t graph::get_amino_table_index(const kmerAmino_t& kmer)
 {
+    #if maxK > 12
+    return kmerAmino::bit_mod(kmer, table_count);
+    #else
     return kmerAmino::bin;
+    #endif
 }
 
 
