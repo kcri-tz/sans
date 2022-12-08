@@ -222,19 +222,36 @@ public:
 
     /**
      * This function hashes a base k-mer and stores it in the corresponding hash table
+     *  @param t_id The thread_id of the current thread
      *  @param kmer The k-mer to store
      *  @param color The color to store 
      *  @param reversed The bool implying if the k-mer was reversed or not
      */
     static void hash_kmer(thread::id t_id, kmer_t& kmer, uint64_t& color, bool reversed);
 
+    /**
+     * This function hashes a base k-mer and stores it in the corresponding hash table (sequential version)
+     *  @param kmer The k-mer to store
+     *  @param color The color to store 
+     *  @param reversed The bool implying if the k-mer was reversed or not
+     */
+    static void hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed);
+
 
     /**
      * This function hashes an amino k-mer and stores it in the correstponding hash table
+     *  @param t_id The id of the current thread
      *  @param kmer The kmer to store
      *  @param color The color to store 
      */
     static void hash_kmer_amino(thread::id t_id, kmerAmino_t& kmer, uint64_t& color);
+
+    /**
+     * This function hashes an amino k-mer and stores it in the correstponding hash table (sequential version)
+     *  @param kmer The kmer to store
+     *  @param color The color to store 
+     */
+    static void hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color);
 
 
     /**

@@ -350,6 +350,19 @@ void graph::hash_kmer(thread::id t_id, kmer_t& kmer, uint64_t& color, bool rever
     color::set(kmer_table[table_id][kmer], color);
 }
 
+/**
+* This function hashes a k-mer and stores it in the correstponding hash table.
+* The corresponding table is chosen by the carry of the encoded k-mer given the number of tables as module.
+*  @param kmer The kmer to store
+*  @param color The color to store 
+*/
+void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
+{
+    uint64_t table_id = 0;
+    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    color::set(kmer_table[table_id][kmer], color);
+}
+
 
 /**
  * This function hashes an amino k-mer and stores it in the corresponding hash table.
@@ -360,6 +373,19 @@ void graph::hash_kmer(thread::id t_id, kmer_t& kmer, uint64_t& color, bool rever
 void graph::hash_kmer_amino(thread::id t_id, kmerAmino_t& kmer, uint64_t& color)
 {
     uint64_t table_id = thread_bin[t_id];
+    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    color::set(kmer_tableAmino[table_id][kmer], color);
+}
+
+/**
+ * This function hashes an amino k-mer and stores it in the corresponding hash table.
+ * The correspontind table is chosen by the carry of the encoded k-mer bitset by the bit-module function.
+ * @param kmer The kmer to store
+ * @param color The color to store
+ */
+void graph::hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color)
+{
+    uint64_t table_id = 0;
     std::lock_guard<spinlockMutex> lg(lock[table_id]); 
     color::set(kmer_tableAmino[table_id][kmer], color);
 }
@@ -464,7 +490,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
                 // Shift update the bin with regard of the complementary direction
                 shift_update_bin(thread_id, rcmer, left, right, reversed);
                 // Insert the k-mer into its table
-                hash_kmer(rcmer, color, reversed);
+                hash_kmer(thread_id, rcmer, color, reversed);
             }
 
             else // The current word is smaller than a kmer
@@ -483,7 +509,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
                 // shift update the bin
                 shift_update_amino_bin(thread_id, kmerAmino, right);
                 // Insert the k-mer into its table
-                hash_kmer_amino(kmerAmino, color);  // update the k-mer with the current color
+                hash_kmer_amino(thread_id, kmerAmino, color);  // update the k-mer with the current color
             }
 
             // The current word is smaller than a kmer
