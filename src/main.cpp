@@ -620,8 +620,8 @@ int main(int argc, char* argv[]) {
 
 
 	auto lambda = [&] (uint64_t lower_bound, uint64_t upper_bound){ // This lambda expression wraps the sequence-kmer hashing
-
-        string sequence;    // read in the sequence files and extract the k-mers
+    graph::register_thread();
+    string sequence;    // read in the sequence files and extract the k-mers
 	for (uint64_t i = lower_bound; i < upper_bound; ++i) {
 		vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
 		
@@ -693,6 +693,7 @@ int main(int argc, char* argv[]) {
                 file.close();
     	        }
 	    }
+        graph::deregister_thread();
         }; // End of lambda expression
 
 	// Driver code for multithreaded kmer hashing

@@ -112,6 +112,54 @@ string util::format_time(chrono::high_resolution_clock::duration time) {
 }
 
 /**
+* Char to bit and bit to char transcoding functions  
+*/
+/**
+ * This function encodes a single character to two bits.
+ *
+ * @param c character
+ * @return bit sequence
+ */
+uint64_t util::char_to_bits(char& c) {
+    switch (c) {
+        case 'A':
+            return 0b00u;
+        case 'C':
+            return 0b01u;
+        case 'G':
+            return 0b10u;
+        case 'T':
+            return 0b11u;
+        default:
+            cerr << "Error: Invalid character " << c << "." << endl;
+            return -1;
+    }
+}
+
+/**
+ * This function decodes two bits to a single character.
+ *
+ * @param b bit sequence
+ * @return character
+ */
+char util::bits_to_char(uint64_t& b) {
+    switch (b) {
+        case 0b00u:
+            return 'A';
+        case 0b01u:
+            return 'C';
+        case 0b10u:
+            return 'G';
+        case 0b11u:
+            return 'T';
+        default:
+            cerr << "Error: Invalid bit sequence " << b << "." << endl;
+            return -1;
+    }
+}
+
+
+/**
  * This function encodes a single character to five bits.
  *
  * @param c character

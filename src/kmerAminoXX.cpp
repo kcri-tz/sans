@@ -88,7 +88,7 @@ char kmerAminoXX::shift_right(bitset<5 * maxK>& kmer, char& c) {
 		- 32 * kmer[5*k-1] * period[5*k - 1] 
 		- 32 * kmer[5*k-2] * period[5*k - 2] 
 		- 32 * kmer[5*k-3] * period[5*k - 3]
-                - 32 * kmer[5*k-4] * period[5*k - 4] 
+        - 32 * kmer[5*k-4] * period[5*k - 4] 
 		- 32 * kmer[5*k-5] * period[5*k - 5];
 
     // Update
