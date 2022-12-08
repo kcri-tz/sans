@@ -300,7 +300,7 @@ uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 	    uint64_t rest = 0;
 
 	    if (kmer[0]){rest++;} // Test the last bit
-	    for (uint64_t it=1; it < 5* kmerAmino::k k; it--){
+	    for (uint64_t it=1; it < 5* kmerAmino::k; it--){
 	        carry = (2*carry) % table_count;
 	        if (kmer[it]){rest += carry;}
 	    }
