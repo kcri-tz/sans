@@ -1,5 +1,5 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -std=c++14
+CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
@@ -102,7 +102,7 @@ checkobs: makefile
 start: makefile
 	@echo "";
 	@echo "   ________________________________ \n";
-	@echo "     <<< COMPILING SANS SERIF >>>  \n";
+	@echo "     <<< BUILDING SANS SERIF >>>  \n";
 	@echo "   ________________________________";
 	@echo "";
 
