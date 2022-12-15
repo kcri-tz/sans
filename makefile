@@ -1,5 +1,5 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -std=c++14
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
@@ -17,19 +17,23 @@ ifeq ($(OS), Windows_NT)
 	MK = rmdir /s /q obj && mkdir obj
 	RM = rmdir /s /q obj
 	MV = cmd /C move *.o obj
+	CP = cp makefile obj
 
 else
 	TD = obj/
 	MK = mkdir -p obj/
 	RM = rm -rf obj/
 	MV = mv *.o obj/
+	CP = cp makefile obj/makefile
+	
+
 endif
 
 ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-SANS: obj/ obj/main.o
+SANS:  start obj/ checkobs obj/main.o done
 	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
 
 obj/main.o: src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
@@ -80,9 +84,38 @@ obj/gzstream.o: src/gz/gzstream.C src/gz/gzstream.h
 	$(CFLAGS) -c src/gz/gzstream.C
 	$(MV)
 
+# [Internal rules]
 obj/: makefile
-	$(MK)
+	@$(MK)
+
+# This rule checks if the makefile has changed
+checkobs: makefile 
+	@touch obj/makefile;
+	@cmp -s "makefile" "obj/makefile"; \
+	CONTINUE=$$?; \
+	if [ $$CONTINUE -eq 0 ]; \
+	then echo "\n   >>> NO CHANGES DETECTED: CONTINUING BUILD \n\n"; \
+	else echo "\n   >>> MAKEFILE CHANGES DETECTED: REBUILDING \n\n" && $(RM) && $(MK) && $(CP); \
+	fi
+
+
+start: makefile
+	@echo "";
+	@echo "   ________________________________ \n";
+	@echo "     <<< COMPILING SANS SERIF >>>  \n";
+	@echo "   ________________________________";
+	@echo "";
+
+done: makefile
+	@echo "";
+	@echo "   _______________ \n";
+	@echo "    <<< Done! >>> \n";
+	@echo "   _______________";
+	@echo "";
 
 .PHONY: clean
 clean:
 	$(RM)
+
+
+
