@@ -30,7 +30,6 @@ ifeq ("$(wildcard $(TD))", "")
 endif
 
 SANS: obj/ obj/main.o
-	$(MK)
 	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
 
 obj/main.o: src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
