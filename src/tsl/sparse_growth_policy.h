@@ -264,6 +264,7 @@ public:
 #define TSL_REHASH_PRIMES 40
 #endif
 
+// Edit: Fabian Kolesch Dec 15, 202 15, 20222
 
      private:
       #if SIZE_MAX <= UINT32_MAX
