@@ -1,5 +1,5 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=32 -std=c++14
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
@@ -38,75 +38,68 @@ SANS:  start obj/ makefile obj/main.o done
 
 obj/main.o: makefile src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
 	$(CC) -c src/main.cpp
-	$(MV)
+	@$(MV)
 
 obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer32.o obj/kmerXX.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color64.o obj/colorXX.o
 	$(CC) -c src/graph.cpp
-	$(MV)
+	@$(MV)
 
-obj/kmer32.o: makefile src/kmer32.cpp src/kmer32.h
+obj/kmer32.o: src/kmer32.cpp src/kmer32.h
 	$(CC) -c src/kmer32.cpp
-	$(MV)
+	@$(MV)
 
-obj/kmerXX.o: makefile src/kmerXX.cpp src/kmerXX.h
+obj/kmerXX.o:  makefile src/kmerXX.cpp src/kmerXX.h
 	$(CC) -c src/kmerXX.cpp
-	$(MV)
+	@$(MV)
 
-obj/kmerAmino12.o: makefile src/kmerAmino12.cpp src/kmerAmino12.h obj/util.o
+obj/kmerAmino12.o: src/kmerAmino12.cpp src/kmerAmino12.h obj/util.o
 	$(CC) -c src/kmerAmino12.cpp
-	$(MV)
+	@$(MV)
 
 obj/kmerAminoXX.o: makefile src/kmerAminoXX.cpp src/kmerAminoXX.h obj/util.o
 	$(CC) -c src/kmerAminoXX.cpp
-	$(MV)
+	@$(MV)
 
-obj/color64.o: makefile src/color64.cpp src/color64.h
+obj/color64.o: src/color64.cpp src/color64.h
 	$(CC) -c src/color64.cpp
-	$(MV)
+	@$(MV)
 
 obj/colorXX.o: makefile src/colorXX.cpp src/colorXX.h
 	$(CC) -c src/colorXX.cpp
-	$(MV)
+	@$(MV)
 
-obj/util.o: makefile src/util.cpp src/util.h
+obj/util.o: src/util.cpp src/util.h
 	$(CC) -c src/util.cpp
-	$(MV)
+	@$(MV)
 
-obj/translator.o: makefile src/translator.cpp src/translator.h src/gc.h
+obj/translator.o: src/translator.cpp src/translator.h src/gc.h
 	$(CC) -c src/translator.cpp
-	$(MV)
+	@$(MV)
 
-obj/cleanliness.o: makefile src/cleanliness.cpp src/cleanliness.h
+obj/cleanliness.o: src/cleanliness.cpp src/cleanliness.h
 	$(CC) -c src/cleanliness.cpp
-	$(MV)
+	@$(MV)
 
-obj/gzstream.o: makefile src/gz/gzstream.C src/gz/gzstream.h	
+obj/gzstream.o: src/gz/gzstream.C src/gz/gzstream.h	
 	$(CFLAGS) -c src/gz/gzstream.C
-	$(MV)
+	@$(MV)
 
 # [Internal rules]
-obj/: makefile
+
+# Creating the object folder
+obj/:
 	@$(MK)
 
-# This rule checks if the makefile has changed
-#checkobs: obj/ makefile 
-#	@touch obj/makefile;
-#	@cmp -s "makefile" "obj/makefile"; \
-#	CONTINUE=$$?; \
-#	if [ $$CONTINUE -eq 0 ]; \
-#	then echo "\n   >>> NO CHANGES DETECTED: CONTINUING BUILD \n\n"; \
-#	else echo "\n   >>> MAKEFILE CHANGES DETECTED: REBUILDING \n\n" && $(RM) && $(MK) && $(CP); \
-#	fi
-
-
-start: makefile
+# Print info at compile start
+start:
 	@echo "";
 	@echo "   ________________________________ \n";
 	@echo "     <<< BUILDING SANS SERIF >>>  \n";
 	@echo "   ________________________________";
 	@echo "";
 
-done: makefile
+# Print info when done
+done:
 	@echo "";
 	@echo "   _______________ \n";
 	@echo "    <<< Done! >>> \n";
