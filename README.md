@@ -5,9 +5,10 @@
 
 * Reference-free
 * Alignment-free
-* Assembled genomes or reads as input
-* Phylogenetic splits or tree as output
-* **NEW:** Coding sequences / amino acid sequences as input (see --code and --amino), implemented by Marco Sohn
+* Input: assembled genomes / reads, or coding sequences / amino acid sequences
+* Output: phylogenetic splits or tree
+* **NEW:** Low coverage k-mers can be discarded
+
 
 ### Publications
 
@@ -35,10 +36,12 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 
 For the main program, there are no strict dependencies other than C++ version 14.
 
-However, there are some _optional_ features:
+However, there are some **optional** features:
 * To read in a **colored de Bruijn graph**, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost).
 * To convert the output into NEXUS format, the provided script requires Python 3.
 * To visualize the splits, we recommend the tool [SplitsTree](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree).
+
+**Windows** is currently supported with full basic functionaly but limited features only. Confer to branch "windows".
 
 ## Compilation
 
@@ -61,7 +64,7 @@ In the *makefile*, two parameters are specified:
 
 These values can simply be increased if necessary. To keep memory requirements small, do not choose these values unnecessarily large.
 
-**New:** *SANS* now supports gzipped sequence files. Compile parameter *DmaxN* can be set automatically by using the *SANS-autoN.sh* (Unix) or *SANS-autoN.BAT* (Windows) scripts. The scripts can be used exactly as the main binary *SANS*. They run *SANS* with all provided parameters and add option *-M* to compare *DmaxN* and the actual number of input files.
+**New:** Compile parameter *DmaxN* can be set automatically by using the *SANS-autoN.sh* (Unix) or *SANS-autoN.BAT* (Windows) scripts. The scripts can be used exactly as the main binary *SANS*. They run *SANS* with all provided parameters and add option *-M* to compare *DmaxN* and the actual number of input files.
 If SANS has been compiled with a value for *DmaxN* that is neither too small nor much too large, SANS is executed as usual.
 If *DmaxN* has been chosen too small or much too large, the scripts generate a new makefile (*makefile_auton*), re-compile *SANS* and re-run *SANS*.
 The comparison of *DmaxN* and the actual number of input files comes without extra computational cost.
@@ -183,18 +186,18 @@ The sorted list of splits is greedily filtered, i.e., splits are iterated from s
    cd <SANS directory>
    cd example_data/drosophila
 
-   # download data: whole genome and coding sequences
+   # download data: whole genome (or coding sequences)
    ./download_WG.sh
-   ./download_CDS.sh
+   (./download_CDS.sh)
 
    # run SANS greedy tree
    ../../SANS -i WG/list.txt -o sans_greedytree_WG.splits -f strict -N sans_greedytree_WG.new -v
-   ../../SANS -i CDS/list.txt -o sans_greedytree_CDS.splits -f strict -N sans_greedytree_CDS.new -v -c
+   (../../SANS -i CDS/list.txt -o sans_greedytree_CDS.splits -f strict -N sans_greedytree_CDS.new -v -c)
    
    # compare to reference
    ../../scripts/newick2sans.py Reference.new > Reference.splits
    ../../scripts/comp.py sans_greedytree_WG.splits Reference.splits WG/list.txt > sans_greedytree_WG.comp
-   ../../scripts/comp.py sans_greedytree_CDS.splits Reference.splits CDS/list.txt > sans_greedytree_CDS.comp
+   (../../scripts/comp.py sans_greedytree_CDS.splits Reference.splits CDS/list.txt > sans_greedytree_CDS.comp)
    ```
 
 3. **Virus example data**
