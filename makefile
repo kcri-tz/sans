@@ -1,12 +1,12 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+# CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
 
 ## IF BIFROST LIBRARY SHOULD BE USED
-# CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
-# BF = -lbifrost -lpthread
+CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
+BF = -lbifrost -lpthread
 
 # GZ STREAM LIB
 CFLAGS = gcc -O3 -march=native
@@ -33,7 +33,7 @@ ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-SANS:  start obj/ checkobs obj/main.o done
+SANS:  start obj/ obj/main.o done
 	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
 
 obj/main.o: src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
@@ -89,14 +89,14 @@ obj/: makefile
 	@$(MK)
 
 # This rule checks if the makefile has changed
-checkobs: makefile 
-	@touch obj/makefile;
-	@cmp -s "makefile" "obj/makefile"; \
-	CONTINUE=$$?; \
-	if [ $$CONTINUE -eq 0 ]; \
-	then echo "\n   >>> NO CHANGES DETECTED: CONTINUING BUILD \n\n"; \
-	else echo "\n   >>> MAKEFILE CHANGES DETECTED: REBUILDING \n\n" && $(RM) && $(MK) && $(CP); \
-	fi
+#checkobs: obj/ makefile 
+#	@touch obj/makefile;
+#	@cmp -s "makefile" "obj/makefile"; \
+#	CONTINUE=$$?; \
+#	if [ $$CONTINUE -eq 0 ]; \
+#	then echo "\n   >>> NO CHANGES DETECTED: CONTINUING BUILD \n\n"; \
+#	else echo "\n   >>> MAKEFILE CHANGES DETECTED: REBUILDING \n\n" && $(RM) && $(MK) && $(CP); \
+#	fi
 
 
 start: makefile
