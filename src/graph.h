@@ -97,16 +97,6 @@ private:
      * This is a vector of spinlocks protecting the hash tables.
      */
     static vector<spinlockMutex> lock;
-	
-    /**
-     * This is a vector holding binning values for parallel shift update distribution of kmers 
-     */
-    static hash_map<thread::id, uint64_t> thread_bin;
-
-    /**
-     * This is a vector holding binning values for parallel shift update distribution of rc kmers
-     */
-    static hash_map<thread::id, uint64_t> rc_thread_bin;
 
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
@@ -150,24 +140,19 @@ public:
     static void init(uint64_t& top_size, bool isAmino, uint64_t& bins, uint64_t& thread_count);
 
     /**
-     *  This function creates a binning entry for a new thread
-     */
-    static void register_thread();
-
-    /**
-     * This function removes a binning entry for a thread 
+     * This function shift updates the bin of a kmer
     */
-    static void deregister_thread();
-
+    static uint64_t shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed);
+    
     /**
-     * This function shift updates the bin for a kmer with k <= 32
+     * This method shift updates the reverse complement bin for a kmer
     */
-    static void shift_update_bin(thread::id t_id, kmer_t& kmer, char& c_left, char& c_right, bool reversed);
+   static uint64_t shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed);
 
     /**
     * This function shift updates a bin for an amino kmer
     */
-    static void shift_update_amino_bin(thread::id t_id, kmerAmino_t& kmer, char& c_right);
+    static uint64_t shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_right);
 
     /**
      *  This method computes the bin of a given kmer(slower than shift update)
@@ -200,13 +185,6 @@ public:
     static uint64_t compute_bin(kmer_t& kmer);
 
     /**
-     *  This function computes the bin of a given amino kmer (slower than shift update)
-     * @param kmer The target kmer
-     * @return uint64_t The bin
-     */
-    static uint64_t compute_amino_bin(kmerAmino_t& kmer);
-
-    /**
      * This function computes the target hash table index for a given k-mer
      * @param k-mer The k-mer to compute the index for
      * @param reversed The bool implying if the k-mer was reversed of not 
@@ -227,7 +205,8 @@ public:
      *  @param color The color to store 
      *  @param reversed The bool implying if the k-mer was reversed or not
      */
-    static void hash_kmer(thread::id t_id, kmer_t& kmer, uint64_t& color, bool reversed);
+    static void hash_kmer(uint64_t bin, kmer_t& kmer, uint64_t& color, bool reversed);
+
 
     /**
      * This function hashes a base k-mer and stores it in the corresponding hash table (sequential version)
@@ -238,13 +217,14 @@ public:
     static void hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed);
 
 
+
     /**
      * This function hashes an amino k-mer and stores it in the correstponding hash table
      *  @param t_id The id of the current thread
      *  @param kmer The kmer to store
      *  @param color The color to store 
      */
-    static void hash_kmer_amino(thread::id t_id, kmerAmino_t& kmer, uint64_t& color);
+    static void hash_kmer_amino(uint64_t bin, kmerAmino_t& kmer, uint64_t& color);
 
     /**
      * This function hashes an amino k-mer and stores it in the correstponding hash table (sequential version)

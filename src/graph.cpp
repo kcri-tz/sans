@@ -28,16 +28,6 @@ vector<spinlockMutex> graph::lock;
 vector<uint64_t> graph::period;
 
 /**
- * This is a hash_map holding the shift update bins for parallel kmer distribution for each thread
- */
-hash_map<thread::id, uint64_t> graph::thread_bin;
-/**
- * This is a vecot holding the reverse shift update bins for parralel reverse kmer distribution
- */
-hash_map<thread::id, uint64_t> graph::rc_thread_bin;
-
-
-/**
  * This is the amino equivalent.
  */ 
 vector<hash_map<kmerAmino_t, color_t>> graph::kmer_tableAmino;
@@ -191,41 +181,36 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins, uint64_t& threa
 */ 
 
 /**
- * This method creates a binning entry for a new thread
- */
-void graph::register_thread()
-{
-    thread_bin.emplace(this_thread::get_id(), 0);
-}
-
-/**
- * This methid removes a binning entry for a thread
- */
-void graph::deregister_thread()
-{
-    thread_bin.erase(this_thread::get_id());
-}
-
-/**
  * This method shift-updates the bin of a kmer
  */
-void graph::shift_update_bin(thread::id t_id, kmer_t& kmer, char& c_left, char& c_right, bool reversed)
+uint64_t graph::shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed)
 {
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
 
-    #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod 
-        reversed ? thread_bin[t_id] = kmer % table_count : rc_thread_bin[t_id] = kmer % table_count;
+    #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod method
+        return kmer % table_count;
     #else
-        thread_bin[t_id] = (8 * table_count // Bias
-            + 4 * (thread_bin[t_id] - period[2*kmer::k-1] * (left / 2)- (left % 2) * period[2*kmer::k - 2]) // Shift
+        return (8 * table_count // Bias
+            + 4 * (bin - period[2*kmer::k-1] * (left / 2) - (left % 2) * period[2*kmer::k - 2]) // Shift
             + period[1] * (right & 0b10) + period[1] * (right & 0b01)) // Update   
             % table_count; // Mod
+    #endif
+}
 
+/**
+ * This method shift updates the reverse complement bin of a kmer
+ */
+uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed)
+{
+    #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod 
+        return kmer % table_count;
+    #else
         // The binning update function for the reverse complement
-        thread_bin[t_id] >> 02u;  // Shift
-        thread_bin[t_id] = (thread_bin[t_id] + period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))) // Update
+        rc_bin >>= 02u;  // Shift
+        rc_bin = (rc_bin + period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))) // Update
         % table_count; // Mod
+        return rc_bin;
     #endif
 }
 
@@ -233,31 +218,32 @@ void graph::shift_update_bin(thread::id t_id, kmer_t& kmer, char& c_left, char& 
 /**
  * This method shift-updates the bin of an amino kmer
  */
-void graph::shift_update_amino_bin(thread::id t_id, kmerAmino_t& kmer, char& c_right)
+uint64_t graph::shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_right)
 {
     #if (maxK <= 12) // This is not a real shift update due to performance of the build in mod
-        thread_bin[t_id] = kmer % table_count; 
+        return  kmer % table_count; 
     #else
         // update the binning carry (solution of the shift-update-carry equation)
         uint8_t right = util::amino_char_to_bits(c_right); // Transcode the new character to bits
 
         // bias
-        thread_bin[t_id] += 160 * table_count;
+        bin += 160 * table_count;
         
         // shift
-        thread_bin[t_id] += 32 * (thread_bin[t_id]
+        bin += 32 * (bin
             -(right & 0b10000) * period[5 * kmerAmino::k-1]
             -(right & 0b01000) * period[5 * kmerAmino::k-2] 
             -(right & 0b00100) * period[5 * kmerAmino::k-3]
             -(right & 0b00010) * period[5 * kmerAmino::k-4]
-            -(right & 0b00001) * period[5 * kmerAmino::k - 5]);
+            -(right & 0b00001) * period[5 * kmerAmino::k-5]);
 
         // update
         for(int i = 0; i<=4; i++){
-            thread_bin[t_id] += period[i] & ((right >> i) & 0x1);
+            bin += period[i] & ((right >> i) & 0x1);
         }
         // mod
-        thread_bin[t_id] %= table_count;
+        bin %= table_count;
+        return bin;
     #endif
 }
 
@@ -310,44 +296,15 @@ uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 
 
 /**
-* This method computes the hash table index for a given k-mer
-* based on its reverse status
-*/
-uint64_t graph::get_table_index(const kmer_t& kmer, bool reversed)
-{
-    if (!reversed) {return kmer::rbin;}
-    else {return kmer::bin;} 
-}
-
-
-/**
-* This function computes the hash table corresponding to the amino k-mer using the bit-module function
-*  @param kmer The kmer to store
-*  @param color The color to store 
-*/
-uint64_t graph::get_amino_table_index(const kmerAmino_t& kmer)
-{
-    #if maxK > 12
-    return kmerAmino::bit_mod(kmer, table_count);
-    #else
-    return kmerAmino::bin;
-    #endif
-}
-
-
-/**
 * This function hashes a k-mer and stores it in the correstponding hash table.
 * The corresponding table is chosen by the carry of the encoded k-mer given the number of tables as module.
 *  @param kmer The kmer to store
 *  @param color The color to store 
 */
-void graph::hash_kmer(thread::id t_id, kmer_t& kmer, uint64_t& color, bool reversed)
+void graph::hash_kmer(uint64_t bin, kmer_t& kmer, uint64_t& color, bool reversed)
 {
-    uint64_t table_id;
-    if(reversed) {table_id = rc_thread_bin[t_id];}
-    else {table_id = thread_bin[t_id];}
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
-    color::set(kmer_table[table_id][kmer], color);
+    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    color::set(kmer_table[bin][kmer], color);
 }
 
 /**
@@ -364,17 +321,17 @@ void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
 }
 
 
+
 /**
  * This function hashes an amino k-mer and stores it in the corresponding hash table.
  * The correspontind table is chosen by the carry of the encoded k-mer bitset by the bit-module function.
  * @param kmer The kmer to store
  * @param color The color to store
  */
-void graph::hash_kmer_amino(thread::id t_id, kmerAmino_t& kmer, uint64_t& color)
+void graph::hash_kmer_amino(uint64_t bin, kmerAmino_t& kmer, uint64_t& color)
 {
-    uint64_t table_id = thread_bin[t_id];
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
-    color::set(kmer_tableAmino[table_id][kmer], color);
+    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    color::set(kmer_tableAmino[bin][kmer], color);
 }
 
 /**
@@ -458,13 +415,15 @@ void graph::remove_kmer_amino(const kmerAmino_t& kmer){
 void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
     if (str.length() < kmer::k) return;    // not enough characters
 
-    auto thread_id = this_thread::get_id(); // Get the current threads id
+    uint64_t bin = 0; // current hash_map vector index
+    uint64_t rc_bin = 0; // current reverse hash_map vector index
 
     uint64_t pos;    // current position in the string, from 0 to length
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer; // create a bit sequence for the reverse complement
 
     kmerAmino_t kmerAmino=0;    // create a new empty bit sequence for the k-mer
+    uint64_t amino_bin=0;       // current amino hash_map vector index
 
     uint64_t begin = 0;
     
@@ -488,15 +447,18 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
 		        rcmer = kmer;
                 if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
                 // Shift update the bin with regard of the complementary direction
-                shift_update_bin(thread_id, rcmer, left, right, reversed);
+                shift_update_bin(bin, kmer, left, right, reversed);
+                shift_update_rc_bin(rc_bin, kmer, left, right, reversed);
+
                 // Insert the k-mer into its table
-                hash_kmer(thread_id, rcmer, color, reversed);
+                reversed ? hash_kmer(rc_bin, rcmer, color, reversed) : hash_kmer(bin, rcmer, color, reversed);
             }
 
             else // The current word is smaller than a kmer
             {
                 // Shift update the bin without regard of the complementary direction
-                shift_update_bin(thread_id, kmer, left, right, false);
+                shift_update_bin(bin, kmer, left, right, false);
+                shift_update_rc_bin(rc_bin, kmer, left, right, false);
             }
         
         // Amino processing
@@ -507,15 +469,15 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {
                 // shift update the bin
-                shift_update_amino_bin(thread_id, kmerAmino, right);
+                shift_update_amino_bin(amino_bin, kmerAmino, right);
                 // Insert the k-mer into its table
-                hash_kmer_amino(thread_id, kmerAmino, color);  // update the k-mer with the current color
+                hash_kmer_amino(amino_bin, kmerAmino, color);  // update the k-mer with the current color
             }
 
             // The current word is smaller than a kmer
             else{
                 // Shift update the bin
-                shift_update_amino_bin(thread_id, kmerAmino, right);
+                shift_update_amino_bin(amino_bin, kmerAmino, right);
             }
         }
     }
