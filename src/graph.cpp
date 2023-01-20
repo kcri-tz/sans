@@ -203,6 +203,8 @@ uint64_t graph::shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char&
  */
 uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed)
 {
+    uint64_t left = util::char_to_bits(c_left);
+    uint64_t right = util::char_to_bits(c_right);
     #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod 
         return kmer % table_count;
     #else
@@ -447,8 +449,8 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
 		        rcmer = kmer;
                 if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
                 // Shift update the bin with regard of the complementary direction
-                shift_update_bin(bin, kmer, left, right, reversed);
-                shift_update_rc_bin(rc_bin, kmer, left, right, reversed);
+                bin = shift_update_bin(bin, kmer, left, right, reversed);
+                rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, reversed);
 
                 // Insert the k-mer into its table
                 reversed ? hash_kmer(rc_bin, rcmer, color, reversed) : hash_kmer(bin, rcmer, color, reversed);
@@ -457,8 +459,8 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
             else // The current word is smaller than a kmer
             {
                 // Shift update the bin without regard of the complementary direction
-                shift_update_bin(bin, kmer, left, right, false);
-                shift_update_rc_bin(rc_bin, kmer, left, right, false);
+                bin = shift_update_bin(bin, kmer, left, right, false);
+                rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, false);
             }
         
         // Amino processing
@@ -469,7 +471,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {
                 // shift update the bin
-                shift_update_amino_bin(amino_bin, kmerAmino, right);
+                amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right);
                 // Insert the k-mer into its table
                 hash_kmer_amino(amino_bin, kmerAmino, color);  // update the k-mer with the current color
             }
@@ -477,7 +479,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
             // The current word is smaller than a kmer
             else{
                 // Shift update the bin
-                shift_update_amino_bin(amino_bin, kmerAmino, right);
+                amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right);
             }
         }
     }

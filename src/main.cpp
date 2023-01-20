@@ -380,7 +380,7 @@ int main(int argc, char* argv[]) {
         else {bins = 1;} // default binning strategy for sequential hashing
     }
     cout << "BINS: " << bins << endl;
-
+    cout << "THREADS: " << threads << endl;
     /**
      * [Indexing]
      * --- Indexing inputs ---
@@ -498,7 +498,7 @@ int main(int argc, char* argv[]) {
     // load an existing Bifrost graph
     ColoredCDBG<> cdbg(kmer);
     if (!graph.empty()) {
-        if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) { // Allow parallel reading with new t parameter.
+        if (cdbg.read(graph + ".gfa", graph + ".color.bfg", 1, verbose)) { // Allow parallel reading with new t parameter.
 
         } else {
             cerr << "Error: could not load Bifrost graph" << endl;
@@ -516,7 +516,9 @@ int main(int argc, char* argv[]) {
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
         for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
-            if (name_table.find(col_name) == name_table.end()){
+            // DEBUG
+	    cout << col_name << num << endl;
+	    if (name_table.find(col_name) == name_table.end()){
                             name_table[col_name] = num++;
                             denom_names.push_back(col_name);
 			    vector<string> dummy;	
@@ -619,8 +621,7 @@ int main(int argc, char* argv[]) {
         }
 
 
-	auto lambda = [&] (uint64_t lower_bound, uint64_t upper_bound){ // This lambda expression wraps the sequence-kmer hashing
-    graph::register_thread();
+    auto lambda = [&] (uint64_t lower_bound, uint64_t upper_bound){ // This lambda expression wraps the sequence-kmer hashing
     string sequence;    // read in the sequence files and extract the k-mers
 	for (uint64_t i = lower_bound; i < upper_bound; ++i) {
 		vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
@@ -693,7 +694,6 @@ int main(int argc, char* argv[]) {
                 file.close();
     	        }
 	    }
-        graph::deregister_thread();
         }; // End of lambda expression
 
 	// Driver code for multithreaded kmer hashing
