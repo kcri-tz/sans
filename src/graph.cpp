@@ -187,9 +187,9 @@ uint64_t graph::shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char&
 {
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
-
+    
     #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod method
-        return kmer % table_count;
+        return = kmer % table_count;
     #else
         return (8 * table_count // Bias
             + 4 * (bin - period[2*kmer::k-1] * (left / 2) - (left % 2) * period[2*kmer::k - 2]) // Shift
@@ -209,7 +209,7 @@ uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left,
         return kmer % table_count;
     #else
         // The binning update function for the reverse complement
-        rc_bin >>= 02u;  // Shift
+        rc_bin >> 02u;  // Shift
         rc_bin = (rc_bin + period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))) // Update
         % table_count; // Mod
         return rc_bin;

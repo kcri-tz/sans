@@ -516,8 +516,11 @@ int main(int argc, char* argv[]) {
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
         for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
+            
             // DEBUG
-	    cout << col_name << num << endl;
+	    // cout << col_name << " SANS ID: " << num << endl;
+	    // cout << col_name << " BIFROST COL: " << cdbg.getColorName(num) << endl;
+
 	    if (name_table.find(col_name) == name_table.end()){
                             name_table[col_name] = num++;
                             denom_names.push_back(col_name);
@@ -741,6 +744,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         uint64_t cur = 0, progress;
         uint64_t max = cdbg.size();
 
+	cout << "CDBG COLORS: " << cdbg.getNbColors() << endl;
         for (auto& unitig : cdbg) {
             if (verbose) {
                 cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
@@ -755,10 +759,13 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 	    auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color of this unitig
             auto it = colors->begin(unitig);
             auto end = colors->end();
-
             for (it ; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
                 uc_kmers[it.getKmerPosition()].add(unitig_map, it.getColorID());
-            }
+            	
+		// DEBUG
+		// cout << it.getColorID() << "->" << cdbg.getColorName(it.getColorID()) << endl;
+	    
+	    }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
                 string kmer_sequence = sequence.substr(i, kmer::k); // the k-mer sequence
