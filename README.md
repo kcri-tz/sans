@@ -10,6 +10,15 @@
 * **NEW:** Low coverage k-mers can be discarded
 
 
+### Dos and Don'ts
+
+* The genomes should not be too diverged. SANS works well on species level.
+* The sequences should not be too short. Provide whole-genome data or as many coding sequences as possible.
+* Be careful with viruses (for the reasons above).
+* Have a look at the network (weakly compatible or 2-tree). It does not make much sense to extract a tree, if the split network is a hairball.
+* In case of problems, contact us (see below).
+
+
 ### Publications
 
 Rempel, A., Wittler, R.: [SANS serif: alignment-free, whole-genome based phylogenetic reconstruction](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btab444/6300510). Bioinformatics. (2021).
