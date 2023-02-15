@@ -113,9 +113,11 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins, uint64_t& threa
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 32)     
+        cout << "PERIOD for K=" << kmer::k <<  endl;
         uint64_t last = 1 % table_count;
-        for (int i = 1; i <= 2*(kmer::k + 1); i++)
+        for (int i = 1; i <= 2*(kmer::k); i++)
         {
+            cout << last << endl;
 	        period.push_back(last);
 	        last = (2 * last) % table_count;
         }
@@ -193,7 +195,7 @@ uint64_t graph::shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char&
     #else
         return (8 * table_count // Bias
             + 4 * (bin - period[2*kmer::k-1] * (left / 2) - (left % 2) * period[2*kmer::k - 2]) // Shift
-            + period[1] * (right & 0b10) + period[1] * (right & 0b01)) // Update   
+            + period[1] * (right / 2) + period[0] * (right % 2)) // Update   
             % table_count; // Mod
     #endif
 }
@@ -449,7 +451,13 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
 		        rcmer = kmer;
                 if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
                 // Shift update the bin with regard of the complementary direction
+                uint64_t old_bin = bin;
+
                 bin = shift_update_bin(bin, kmer, left, right, reversed);
+                // SHIFT DEBUG
+                cout << "old " << old_bin << ": " << left << "<-" << right << " new " << bin << " Truth: " << kmerXX::bit_mod(kmer, graph::table_count) << endl;
+
+
                 rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, reversed);
 
                 // Insert the k-mer into its table

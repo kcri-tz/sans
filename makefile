@@ -1,12 +1,12 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-# CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -std=c++14
-
+CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -std=c++14
+BF = -lpthread
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
 
 ## IF BIFROST LIBRARY SHOULD BE USED
-CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
-BF = -lbifrost -lpthread -lz
+# CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
+# BF = -lbifrost -lpthread -lz
 
 # Wrap Windows / Unix commands
 ifeq ($(OS), Windows_NT)

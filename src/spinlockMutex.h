@@ -1,5 +1,6 @@
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 class spinlockMutex {
 
@@ -10,5 +11,4 @@ public:
 
 private:
 	std::atomic_flag flag = ATOMIC_FLAG_INIT;
-
 };
