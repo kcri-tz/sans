@@ -26,6 +26,8 @@ vector<spinlockMutex> graph::lock;
  * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
  */
 vector<uint64_t> graph::period;
+uint64_t graph::first_mod_correction;
+uint64_t graph::second_mod_correction;
 
 /**
  * This is the amino equivalent.
@@ -117,10 +119,18 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins, uint64_t& threa
         uint64_t last = 1 % table_count;
         for (int i = 1; i <= 2*(kmer::k); i++)
         {
-            cout << last << endl;
+            // cout << last << endl;
 	        period.push_back(last);
 	        last = (2 * last) % table_count;
+            
+            // Set complement mod correction values
+            if (last == 1)
+            {
+                first_mod_correction = period[i-2];
+                second_mod_correction = period[i-1];
+            }
         }
+        cout << "Correction: " << "first: " << first_mod_correction << " second: " << second_mod_correction << endl;
         #endif
 
 	    graph::allowedChars.push_back('A');
@@ -207,15 +217,55 @@ uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left,
 {
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
-    #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod 
-        return kmer % table_count;
-    #else
-        // The binning update function for the reverse complement
-        rc_bin >> 02u;  // Shift
-        rc_bin = (rc_bin + period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))) // Update
-        % table_count; // Mod
-        return rc_bin;
-    #endif
+    // The binning update function for the reverse complement
+    // bias
+    /*
+    // rc_bin += 8 * table_count;
+    // shift
+    rc_bin -= (period[1] * (!(left / 2)) + period[0] * (!(left % 2)));  // Remove inverted left
+    rc_bin >> 02u;
+    // update
+    rc_bin += (period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))); // Update
+    // minimize
+    rc_bin %= table_count;
+    */
+
+    // Remove 
+    // cout << "\n\n RC: UPDATE: " << rc_bin << endl;
+    
+    // Bias
+    rc_bin += 2 * table_count;
+     // cout << "bias: " << rc_bin << endl;
+
+    // Remove
+    rc_bin -= (period[1] * (!(left / 2)) + period[0] * (!(left % 2)));  // Remove inverted left
+     // cout << "remove: " << rc_bin << endl;
+    
+    bool first = rc_bin & 0b01u;
+    bool second = rc_bin & 0b10u;
+
+    // Shift
+    rc_bin >>= 2;
+    
+    // cout << "shift: " << rc_bin << endl;
+
+    // Correct
+    if (first)  {rc_bin += first_mod_correction;}
+    if (second) {rc_bin += second_mod_correction;}
+    
+    // cout << "correct: " << rc_bin << endl;
+
+    // Update
+    rc_bin += (period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))); // Update
+
+    // cout << "update: " << rc_bin << endl;
+
+    // Mod
+    rc_bin %= table_count;
+    
+    //cout << "mod: " << rc_bin << endl;
+
+    return rc_bin;
 }
 
 
@@ -444,31 +494,23 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
         if (!isAmino) {
             char right = str[pos];
             char left = kmer::shift_right(kmer, right);    // shift each base into the bit sequence
-            
+
+            bool reversed = false;    
+            rcmer = kmer;
+            if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
+
+            // Shift update the bin with regard of the complementary direction
+            uint64_t old_bin = bin;
+            uint64_t rc_old = rc_bin;
+
+            bin = shift_update_bin(bin, kmer, left, right, false);
+            rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, false);
+            // SHIFT DEBUG
+            // cout << "RC old " << rc_old << ": " << left << "<-" << right << " new " << rc_bin << " Truth: " << kmerXX::bit_mod(rcmer, graph::table_count) << endl;
+
             // The current word is a k-mer
             if (pos+1 - begin >= kmer::k) {
-		        bool reversed = false;
-		        rcmer = kmer;
-                if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
-                // Shift update the bin with regard of the complementary direction
-                uint64_t old_bin = bin;
-
-                bin = shift_update_bin(bin, kmer, left, right, reversed);
-                // SHIFT DEBUG
-                cout << "old " << old_bin << ": " << left << "<-" << right << " new " << bin << " Truth: " << kmerXX::bit_mod(kmer, graph::table_count) << endl;
-
-
-                rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, reversed);
-
-                // Insert the k-mer into its table
                 reversed ? hash_kmer(rc_bin, rcmer, color, reversed) : hash_kmer(bin, rcmer, color, reversed);
-            }
-
-            else // The current word is smaller than a kmer
-            {
-                // Shift update the bin without regard of the complementary direction
-                bin = shift_update_bin(bin, kmer, left, right, false);
-                rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, false);
             }
         
         // Amino processing

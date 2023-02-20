@@ -87,7 +87,8 @@ private:
      * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
      */
     static vector<uint64_t> period;
-
+    static uint64_t first_mod_correction;
+    static uint64_t second_mod_correction;
     /**
      * This is a vector of hash tables mapping k-mers to colors [O(1)].
      */
