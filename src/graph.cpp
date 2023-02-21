@@ -234,38 +234,10 @@ uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left,
     // cout << "\n\n RC: UPDATE: " << rc_bin << endl;
     
     // Bias
-    rc_bin += 2 * table_count;
-     // cout << "bias: " << rc_bin << endl;
-
-    // Remove
-    rc_bin -= (period[1] * (!(left / 2)) + period[0] * (!(left % 2)));  // Remove inverted left
-     // cout << "remove: " << rc_bin << endl;
-    
-    bool first = rc_bin & 0b01u;
-    bool second = rc_bin & 0b10u;
-
-    // Shift
-    rc_bin >>= 2;
-    
-    // cout << "shift: " << rc_bin << endl;
-
-    // Correct
-    if (first)  {rc_bin += first_mod_correction;}
-    if (second) {rc_bin += second_mod_correction;}
-    
-    // cout << "correct: " << rc_bin << endl;
-
-    // Update
-    rc_bin += (period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))); // Update
-
-    // cout << "update: " << rc_bin << endl;
-
-    // Mod
-    rc_bin %= table_count;
-    
-    //cout << "mod: " << rc_bin << endl;
-
-    return rc_bin;
+    return (8 * table_count // Bias
+    + 4 * (rc_bin - period[1] * (!(left / 2)) - (!(left % 2)) * period[0]) // Shift
+    + period[2*kmer::k - 1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))) // Update   
+    % table_count; // Mod
 }
 
 
@@ -498,13 +470,14 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
             bool reversed = false;    
             rcmer = kmer;
             if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
-
+            if (!reversed){kmer::reverse_complement(rcmer, false);} // invertex the kmer if not inverted
             // Shift update the bin with regard of the complementary direction
             uint64_t old_bin = bin;
             uint64_t rc_old = rc_bin;
 
             bin = shift_update_bin(bin, kmer, left, right, false);
-            rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, false);
+            rc_bin = kmerXX::bit_mod(rcmer, graph::table_count);
+            
             // SHIFT DEBUG
             // cout << "RC old " << rc_old << ": " << left << "<-" << right << " new " << rc_bin << " Truth: " << kmerXX::bit_mod(rcmer, graph::table_count) << endl;
 
