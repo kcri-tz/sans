@@ -130,7 +130,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins, uint64_t& threa
                 second_mod_correction = period[i-1];
             }
         }
-        cout << "Correction: " << "first: " << first_mod_correction << " second: " << second_mod_correction << endl;
+        // cout << "Correction: " << "first: " << first_mod_correction << " second: " << second_mod_correction << endl;
         #endif
 
 	    graph::allowedChars.push_back('A');
@@ -234,10 +234,27 @@ uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left,
     // cout << "\n\n RC: UPDATE: " << rc_bin << endl;
     
     // Bias
-    return (8 * table_count // Bias
-    + 4 * (rc_bin - period[1] * (!(left / 2)) - (!(left % 2)) * period[0]) // Shift
-    + period[2*kmer::k - 1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2))) // Update   
-    % table_count; // Mod
+    rc_bin += 8 * table_count;
+    
+    // First shift 
+    // Remove
+    rc_bin -= period[0] * (!(left % 2 ));
+    // Even representation
+    if (rc_bin % 2){rc_bin += 2 * second_mod_correction - 1;}
+    rc_bin >>= 1;
+
+    // Second shift
+    // Remove
+    rc_bin -= period[0] * (!(left / 2 ));
+    // Even representation
+    if (rc_bin % 2){rc_bin += 2 * second_mod_correction - 1;}
+    rc_bin >>= 1;
+
+    // update
+    rc_bin += (period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2)));
+    // minimize
+    rc_bin %= table_count;
+    return rc_bin;
 }
 
 
@@ -447,6 +464,8 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
     uint64_t pos;    // current position in the string, from 0 to length
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer; // create a bit sequence for the reverse complement
+    for (int i =0; i < 2* kmer::k; i++){rc_bin += period[i];}
+    rc_bin %= table_count;
 
     kmerAmino_t kmerAmino=0;    // create a new empty bit sequence for the k-mer
     uint64_t amino_bin=0;       // current amino hash_map vector index
@@ -476,7 +495,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
             uint64_t rc_old = rc_bin;
 
             bin = shift_update_bin(bin, kmer, left, right, false);
-            rc_bin = kmerXX::bit_mod(rcmer, graph::table_count);
+            rc_bin = shift_update_rc_bin(rc_bin, kmer, left, right, false);
             
             // SHIFT DEBUG
             // cout << "RC old " << rc_old << ": " << left << "<-" << right << " new " << rc_bin << " Truth: " << kmerXX::bit_mod(rcmer, graph::table_count) << endl;
