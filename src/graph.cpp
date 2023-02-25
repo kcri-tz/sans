@@ -478,9 +478,9 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
             // Reverse complement handling
             rcmer = kmer;
             bool reversed = false;
+	    if (reverse){
             # if maxK <= 32
-            if (reverse) {
-                kmer::reverse_complement(rcmer, false);} // invert the k-mer
+                kmer::reverse_complement(rcmer, false); // invert the k-mer
                 rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
                 if(rcmer > kmer){rcmer = kmer;} // Set rcmer to to smaller complement
                 else{reversed=true;} // Set reversed accordingly
@@ -488,7 +488,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
                 reversed = kmer::reverse_complement(rcmer, true); // invert the k-mer
                 rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
             #endif
-
+	    }
             // The current word is a k-mer
             if (pos+1 - begin >= kmer::k) {
                 reversed ? hash_kmer(rc_bin, rcmer, color, reversed) : hash_kmer(bin, rcmer, color, reversed);
