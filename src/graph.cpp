@@ -346,7 +346,7 @@ void graph::hash_kmer(uint64_t bin, kmer_t& kmer, uint64_t& color, bool reversed
 */
 void graph::hash_kmer(const kmer_t& kmer, uint64_t& color, bool reversed)
 {
-    uint64_t table_id = 0;
+    uint64_t table_id = compute_bin(kmer);
     std::lock_guard<spinlockMutex> lg(lock[table_id]); 
     color::set(kmer_table[table_id][kmer], color);
 }
@@ -373,7 +373,7 @@ void graph::hash_kmer_amino(uint64_t bin, kmerAmino_t& kmer, uint64_t& color)
  */
 void graph::hash_kmer_amino(const kmerAmino_t& kmer, uint64_t& color)
 {
-    uint64_t table_id = 0;
+    uint64_t table_id = compute_amino_bin(kmer);
     std::lock_guard<spinlockMutex> lg(lock[table_id]); 
     color::set(kmer_tableAmino[table_id][kmer], color);
 }
@@ -451,6 +451,7 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
 
     uint64_t pos;    // current position in the string, from 0 to length
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
+
     kmer_t rcmer; // create a bit sequence for the reverse complement
     for (int i =0; i < 2* kmer::k; i++){rc_bin += period[i];}
     rc_bin %= table_count;
@@ -557,8 +558,8 @@ next_kmer:
 
             if (pos+1 - begin >= kmer::k) {
                 rcmer = kmer;
-		// Test for multitables
-		bool reversed = false;
+		        // Test for multitables
+		        bool reversed = false;
                 if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
 
                 if (sequence_order.size() == m) {
