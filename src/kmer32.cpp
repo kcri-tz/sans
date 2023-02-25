@@ -5,13 +5,6 @@
  */
 uint64_t kmer32::k;
 
-// The current binning carry
-uint64_t kmer32::bin;
-uint64_t kmer32::rbin;
-
-// The binning mod
-uint64_t kmer32::table_count;
-
 /**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
@@ -22,13 +15,12 @@ uint64_t kmer32::mask = -1;
  *
  * @param kmer_length k-mer length
  */
-void kmer32::init(uint64_t& kmer_length, uint64_t& bins) {
+void kmer32::init(uint64_t& kmer_length) {
     k = kmer_length; mask = 0;
     for (uint64_t i = 0; i < 2*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
-    table_count = bins;
 }
 
 /**
@@ -64,8 +56,6 @@ char kmer32::shift_right(uint64_t& kmer, char& c) {
     kmer |= right;    // encode the new character within the rightmost two bits
     kmer &= mask;    // set all bits to zero that exceed the k-mer length
 
-    bin = kmer % table_count; // Update the bin of the kmer
-
     return bits_to_char(left);    // return the dropped leftmost character
 }
 
@@ -86,8 +76,6 @@ bool kmer32::reverse_complement(uint64_t& kmer, bool minimize) {
         rcmp <<= 02u;    // shift in as the first base
         rcmp |= (~base & 0b11u);    // flip the bits
     }
-
-    rbin = rcmp % table_count; // Update the reverse bin
 
     // if minimize == true, return the lexicographically smaller
     if (minimize && kmer <= rcmp) {

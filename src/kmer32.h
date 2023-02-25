@@ -22,22 +22,11 @@ public:
     static uint64_t k;
 
     /**
-    * The mod to use for binning
-    */
-    static uint64_t table_count;
-
-    /**
-     * The hash table index of the kmer and its reverse compliment
-     */
-    static uint64_t bin;
-    static uint64_t rbin;
-
-    /**
      * This function initializes the k-mer length and bit-mask.
      *
      * @param kmer_length k-mer length
      */
-    static void init(uint64_t& kmer_length, uint64_t& bins);
+    static void init(uint64_t& kmer_length);
 
     /**
      * This function shifts a k-mer adding a new character to the left.

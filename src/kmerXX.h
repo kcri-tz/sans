@@ -31,22 +31,11 @@ public:
     static uint64_t k;
 
     /**
-     * The mod to use for binning
-     */
-    static uint64_t table_count;
-
-    /**
-     * The hash table index of the kmer
-     */
-    static uint64_t bin;
-    static uint64_t rbin;
-    /**
      * This function initializes the k-mer length and bit-mask.
      *
      * @param kmer_length k-mer length
-     * @param bins the number of hash tables to use for parallel hashing 
      */
-    static void init(uint64_t& kmer_length, uint64_t& bins);
+    static void init(uint64_t& kmer_length);
 
 
     /**
@@ -75,11 +64,6 @@ public:
      * @return 1 if inverted, 0 otherwise
      */
     static bool reverse_complement(bitset<2*maxK>& kmer, bool minimize);
-
-    /**
-     * This function computes the modulo function on the bitset
-     */
-    static uint64_t bit_mod(const bitset<2*maxK>& kmer, uint64_t& module);
 
 protected:
 

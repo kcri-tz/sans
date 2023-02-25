@@ -5,15 +5,6 @@
  */
 uint64_t kmerXX::k;
 
-// The current binning carry
-uint64_t kmerXX::bin;
-uint64_t kmerXX::rbin;
-
-// The binning mod
-uint64_t kmerXX::table_count;
-// The mod period
-vector<uint64_t> period;
-
 /**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
@@ -24,22 +15,13 @@ bitset<2*maxK> kmerXX::mask = mask.set();
  *
  * @param kmer_length k-mer length
  */
-void kmerXX::init(uint64_t& kmer_length, uint64_t& bins) {
+void kmerXX::init(uint64_t& kmer_length) {
     k = kmer_length; mask.reset();
     for (uint64_t i = 0; i < 2*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
 
-    table_count = bins; // The module to use for binning is the number of hash tables
-    bin = 0;    // The forward carry
-    rbin = 0;   // The reverse carry
-    uint64_t last = 1 % bins;
-    for (int i = 1; i <= 2*(k + 1); i++)
-    {
-	    period.push_back(last);
-	    last = (2 * last) % bins;
-    }
 }
 
 /**
@@ -71,19 +53,6 @@ char kmerXX::shift_left(bitset<2*maxK>& kmer, char& c) {
 char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
     uint64_t left = 2*kmer[2*k-1]+kmer[2*k-2];    // old leftmost character
     uint64_t right = char_to_bits(c);    // new rightmost character
-    
-    // The binning update function
-    bin = ( 8 * table_count // bias
-		    + 4 * bin // Old bin  
-		    - 4 * period[2*k-1] * kmer[2*k-1] 
-		    - 4 * kmer[2*k-2] * period[2*k - 2] // Old base
-		    + period[1] * (right & 0b10) 
-		    + period[0] * (right & 0b01)) // New base
-	    % table_count; // Mod
-
-    // The binning update function for the reverse complement
-    rbin >> 02u; 
-    rbin = (rbin + period[2*k-1] * (!(right / 2)) + period[2*k-2] * (!(right % 2))) % table_count;
 
     kmer <<= 02u;    // shift all current bits to the left by two positions
     kmer[1] = right / 2;    // encode the new character within the rightmost two bits
@@ -168,18 +137,3 @@ char kmerXX::bits_to_char(uint64_t& b) {
             return -1;
     }
 }
-
-uint64_t kmerXX::bit_mod(const bitset<2*maxK>& kmer, uint64_t& module) {
-	// bitset<2*maxK> bits = kmer;
-	if (module <= 1){return 0;}
-	uint64_t carry = 1;
-	uint64_t rest = 0;
-	if (kmer[0]){rest+=carry;} // Test the last bit
-
-	for (uint64_t it=1; it < 2 * k; it++){
-	    carry = (2*carry) % module;
-	    if (kmer[it]){rest += carry;}
-	}
-	return rest % module;
-}
-

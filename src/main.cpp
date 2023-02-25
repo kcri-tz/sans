@@ -569,7 +569,7 @@ int main(int argc, char* argv[]) {
      */ 
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    kmer::init(kmer, bins);      // initialize the k-mer length
+    kmer::init(kmer);      // initialize the k-mer length
     kmerAmino::init(kmer, bins); // initialize the k-mer length
     color::init(num);    // initialize the color number
     graph::init(top, amino, bins, threads); // initialize the toplist size and the allowed characters
