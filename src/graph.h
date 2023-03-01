@@ -22,18 +22,10 @@ template <typename T>
     // using hash_set = unordered_set<T>;
     using hash_set = tsl::sparse_pg_set<T>;
 
-#include "kmer32.h"
-#include "kmerXX.h"
+#include "kmer.h"
 #include "kmerAmino12.h"
 #include "kmerAminoXX.h"
 
-#if maxK > 32 // store k-mers in a bitset, allows larger k-mers
-    typedef kmerXX kmer;
-    typedef bitset<2*maxK> kmer_t;
-#else // store k-mer bits in an integer, optimizes performance
-    typedef kmer32 kmer;
-    typedef uint64_t kmer_t;
-#endif
 
 #if maxK > 12 // store k-mers in a bitset, allows larger k-mers
     typedef kmerAminoXX kmerAmino;
@@ -168,11 +160,8 @@ public:
      * @param kmer The target kmer
      * @return uint64_t The bin
      */
-    #if (maxK <= 32)
+     
     static uint64_t compute_bin(const kmer_t& kmer);
-    #else
-    static uint64_t compute_bin(const bitset<2*maxK>& kmer);
-    #endif
 
     /**
      *  This function computes the bin of a given amino kmer(slower than shift update)

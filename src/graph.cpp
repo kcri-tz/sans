@@ -369,15 +369,15 @@ uint64_t graph::compute_bin(const kmer_t& kmer)
     return kmer % table_count;
 }
 #else
-uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
+uint64_t graph::compute_bin(const kmer_t& kmer)
 {
 	if (table_count <= 1){return 0;}
 	uint64_t carry = 1;
 	uint64_t rest = 0;
-	if (kmer[0]){rest++;} // Test the last bit
+	if (kmer.test(0)){rest++;} // Test the last bit
 	for (uint64_t it=1; it < 2 * kmer::k; it++){
 	    carry = (2*carry) % table_count;
-	    if (kmer[it]){rest += carry;}
+	    if (kmer.test(it)){rest += carry;}
 	}
 	return rest % table_count;
 }
@@ -556,22 +556,25 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         // DNA processing 
         if (!isAmino) {
             char right = str[pos];
-            char left = kmer::shift_right(kmer, right);    // shift each base into the bit sequence
+            uint64_t left_bits = 2*kmer.test(2*kmer::k-1) + kmer.test(2*kmer::k-2);
+            char left = util::bits_to_char(left_bits);
+            kmer::shift(kmer, right);    // shift each base into the bit sequence
             bin = shift_update_bin(bin, kmer, left, right, false); // Update the forward complement table index
             // Reverse complement handling
             rcmer = kmer;
+
             bool reversed = false;
-	    if (reverse){
-            # if maxK <= 32
-                kmer::reverse_complement(rcmer, false); // invert the k-mer
-                rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
-                if(rcmer > kmer){rcmer = kmer;} // Set rcmer to to smaller complement
-                else{reversed=true;} // Set reversed accordingly
-            #else // rc_mer % m
-                reversed = kmer::reverse_complement(rcmer, true); // invert the k-mer
-                rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
-            #endif
-	    }
+            if (reverse){
+                # if maxK <= 32
+                    kmer::reverse_complement(rcmer); // invert the k-mer
+                    rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
+                    if(rcmer > kmer){rcmer = kmer;} // Set rcmer to to smaller complement
+                    else{reversed=true;} // Set reversed accordingly
+                #else // rc_mer % m
+                    reversed = kmer::reverse_represent(rcmer); // invert the k-mer
+                    rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
+                #endif
+            }
             // The current word is a k-mer
             if (pos+1 - begin >= kmer::k) {
                 reversed ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, rcmer, color);
@@ -632,13 +635,13 @@ next_kmer:
             goto next_kmer;    // unknown base, start a new k-mer from the beginning
         }
         if (!isAmino) {
-            kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
+            kmer::shift(kmer, str[pos]);    // shift each base into the bit sequence
 
             if (pos+1 - begin >= kmer::k) {
                 rcmer = kmer;
 		        // Test for multitables
 		        bool reversed = false;
-                if (reverse) {reversed = kmer::reverse_complement(rcmer, true);}    // invert the k-mer, if necessary
+                if (reverse) {reversed = kmer::reverse_represent(rcmer);}    // invert the k-mer, if necessary
 
                 if (sequence_order.size() == m) {
                     value_order.erase(*sequence_order.begin());    // remove k-mer outside the window
@@ -741,7 +744,7 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse, 
                 for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                     rcmer = kmer;
 
-                    if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+                    if (reverse) kmer::reverse_represent(rcmer);    // invert the k-mer, if necessary
                     bin = compute_bin(rcmer);
                     emplace_kmer(T, bin, rcmer, color);    // update the k-mer with the current color
                 }
@@ -852,7 +855,7 @@ void graph::add_minimizers(uint64_t& T, string& str, uint64_t& color, bool& reve
            if (pos+1 - begin >= kmer::k) {
                for (auto& kmer : (ball ? ping : pong)) {    // iterate over the current set of ambiguous k-mers
                    rcmer = kmer;
-		   if (reverse) kmer::reverse_complement(rcmer, true);    // invert the k-mer, if necessary
+		   if (reverse) kmer::reverse_represent(rcmer);    // invert the k-mer, if necessary
                    inner_value_order.emplace(rcmer);
                }
 
@@ -1012,28 +1015,28 @@ void graph::iupac_shift(hash_set<kmer_t>& prev, hash_set<kmer_t>& next, char& in
             case 'A': case 'R': case 'W': case 'M':
             case 'D': case 'H': case 'V': case 'N':
                 temp = *prev.begin(); base = 'A';
-                kmer::shift_right(temp, base);
+                kmer::shift(temp, base);
                 next.emplace(temp);
         }
         switch (input) {
             case 'C': case 'Y': case 'S': case 'M':
             case 'B': case 'H': case 'V': case 'N':
                 temp = *prev.begin(); base = 'C';
-                kmer::shift_right(temp, base);
+                kmer::shift(temp, base);
                 next.emplace(temp);
         }
         switch (input) {
             case 'G': case 'R': case 'S': case 'K':
             case 'B': case 'D': case 'V': case 'N':
                 temp = *prev.begin(); base = 'G';
-                kmer::shift_right(temp, base);
+                kmer::shift(temp, base);
                 next.emplace(temp);
         }
         switch (input) {
             case 'T': case 'Y': case 'W': case 'K':
             case 'B': case 'D': case 'H': case 'N':
                 temp = *prev.begin(); base = 'T';
-                kmer::shift_right(temp, base);
+                kmer::shift(temp, base);
                 next.emplace(temp);
         }
         prev.erase(prev.begin());
@@ -1075,7 +1078,7 @@ void graph::iupac_shift_amino(hash_set<kmerAmino_t>& prev, hash_set<kmerAmino_t>
                 kmerAmino::shift_right(temp, acid);
                 next.emplace(temp);
             }
-        }
+        } //second: all ambigious acids
 
         if (input == 'Z') {
             for (char i : acidsZ) {
@@ -1216,10 +1219,10 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
 
         for (int pos=0; pos < kmer_seq.length(); ++pos) // collect the bases from the k-mer sequence.
         {
-            kmer::shift_right(kmer, kmer_seq[pos]);
+            kmer::shift(kmer, kmer_seq[pos]);
         }
 
-	    bool reversed = kmer::reverse_complement(kmer, true);
+	    bool reversed = kmer::reverse_represent(kmer);
 
 
         if (search_kmer(kmer)){ // Check if additional colors are stored for this kmer
