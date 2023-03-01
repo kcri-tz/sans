@@ -21,6 +21,7 @@ void kmerXX::init(uint64_t& kmer_length) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
     }
+
 }
 
 /**
@@ -56,8 +57,7 @@ char kmerXX::shift_right(bitset<2*maxK>& kmer, char& c) {
     kmer <<= 02u;    // shift all current bits to the left by two positions
     kmer[1] = right / 2;    // encode the new character within the rightmost two bits
     kmer[0] = right % 2;
-    kmer &= mask;    // set all bits to zero that exceed the k-mer length
-
+    kmer &= mask;    // set all bits to zero that exceed the k-mer length 
     return bits_to_char(left);    // return the dropped leftmost character
 }
 

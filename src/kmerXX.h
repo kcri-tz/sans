@@ -1,5 +1,6 @@
 #include <iostream>
 #include <bitset>
+#include <vector>
 
 using namespace std;
 
@@ -35,6 +36,7 @@ public:
      * @param kmer_length k-mer length
      */
     static void init(uint64_t& kmer_length);
+
 
     /**
      * This function shifts a k-mer adding a new character to the left.

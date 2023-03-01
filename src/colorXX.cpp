@@ -29,7 +29,7 @@ void colorXX::init(uint64_t& color_number) {
  * @param color bit sequence
  * @param pos position
  */
-void colorXX::set(bitset<maxN>& color, uint64_t& pos) {
+void colorXX::set(bitset<maxN>& color, const uint64_t& pos) {
     color.set(pos) &= mask;
 }
 

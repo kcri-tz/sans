@@ -64,6 +64,13 @@ public:
      */
     static bool reverse_complement(bitset<5*maxK>& kmer, bool minimize);
 
+    /**
+     * This function computes the modulo on the Amino bitset
+     *
+     */
+    static uint64_t bit_mod(const bitset<5*maxK>& kmer, uint64_t& module);
+
+
 protected:
 
 };

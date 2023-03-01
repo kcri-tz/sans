@@ -66,6 +66,23 @@ public:
      */
     static string format_time(chrono::high_resolution_clock::duration time);
 
+
+    /**
+     * This function encodes a single character to two bits.
+     *
+     * @param c character
+     * @return bit sequence
+     */
+    static uint64_t char_to_bits(char& c);
+
+    /**
+     * This function decodes two bits to a single character.
+     *
+     * @param b bit sequence
+     * @return character
+     */
+    static char bits_to_char(uint64_t& b);
+
     /**
      * This function encodes a single character to five bits.
      *

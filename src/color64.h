@@ -37,7 +37,7 @@ public:
      * @param color bit sequence
      * @param pos position
      */
-    static void set(uint64_t& color, uint64_t& pos);
+    static void set(uint64_t& color, const uint64_t& pos);
 
     /**
      * This function returns the position of a single color.

@@ -29,7 +29,7 @@ void color64::init(uint64_t& color_number) {
  * @param color bit sequence
  * @param pos position
  */
-void color64::set(uint64_t& color, uint64_t& pos) {
+void color64::set(uint64_t& color, const uint64_t& pos) {
     color |= (0b1ull << pos) & mask;
 }
 

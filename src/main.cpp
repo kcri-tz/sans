@@ -13,8 +13,6 @@
  * @return exit status
  */
 int main(int argc, char* argv[]) {
-    
-
     /**
     * [Info]
     * --- Help page ---
@@ -99,7 +97,13 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
+        cout << "    -T, --threads \t The number of threads to run" << endl;
+        cout << endl;
+        cout << "    -B, --bins \t The number of hash tables to use" << endl;
+        cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
+        cout << endl;
+        cout << "    -d, --debug \t Show debug information" << endl;
         cout << endl;
         cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
         cout << "  Evaluation: https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans" << endl;
@@ -126,6 +130,11 @@ int main(int argc, char* argv[]) {
     uint64_t num = 0;    // number of input files
     uint64_t top = -1;    // number of splits
     bool dyn_top = false; // bind number of splits to num
+
+    uint64_t threads = 1; // The number of threads to run on
+    uint64_t bins = 0; // The number of hash tables to use
+
+    bool debug = false;
 
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
@@ -266,6 +275,20 @@ int main(int argc, char* argv[]) {
             }
             shouldTranslate = true;
         }
+
+        // Parallelization 
+        else if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--threads") == 0){ 
+            threads = stoi(argv[++i]);  // The number of threads to run
+        }
+
+        else if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--bins") == 0){
+            bins = stoi(argv[++i]);    // The number of hash tables to use
+        }
+
+        else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0){
+            debug = true;    // Debug mode shows internal information
+        }
+
         else {
             cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
             return 1;
@@ -366,6 +389,9 @@ int main(int argc, char* argv[]) {
         cerr << "      --input can be used to provide the original list of taxa" << endl;
     }
 
+
+    // --- Post parse ---
+
     // check if we need to init translation
     if (shouldTranslate) {
         amino = true;
@@ -374,6 +400,12 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Check hash table setup for parallelization:
+    if (bins == 0)
+    {
+        if (threads != 1){!amino ? bins = 3 : bins =  31;} // default binning strategies for multithreading
+        else {bins = 1;} // default binning strategy for sequential hashing
+    }
     /**
      * [Indexing]
      * --- Indexing inputs ---
@@ -491,7 +523,7 @@ int main(int argc, char* argv[]) {
     // load an existing Bifrost graph
     ColoredCDBG<> cdbg(kmer);
     if (!graph.empty()) {
-        if (cdbg.read(graph + ".gfa", graph + ".bfg_colors", 1, verbose)) { // Allow parallel reading with new t parameter.
+        if (cdbg.read(graph + ".gfa", graph + ".color.bfg", 1, verbose)) { // Allow parallel reading with new t parameter.
 
         } else {
             cerr << "Error: could not load Bifrost graph" << endl;
@@ -499,25 +531,30 @@ int main(int argc, char* argv[]) {
         }
 
         if (kmer != cdbg.getK()) {
-            kmer = cdbg.getK();
-            if (kmer > maxK) {
+		kmer = cdbg.getK();
+	 	if (kmer > maxK) {
                 cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
                 return 1;
             }
-            cerr << "Warning: setting k-mer length to " << kmer << endl;
-        }
+            cerr << "Warning: setting k-mer length to match the given Bifrost graph. New lenght: " << kmer << endl;
+	}
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
-        for (auto it=0; it != cdbg_names.size(); ++it){ // iterate the cdbg names and transcribe them to the name table
-            if (name_table.find(cdbg_names[it]) == name_table.end()){
-                            name_table[cdbg_names[it]] = num++;
-                            denom_names.push_back(cdbg_names[it]);
+        for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
+            
+            // DEBUG
+	    // cout << col_name << " SANS ID: " << num << endl;
+	    // cout << col_name << " BIFROST COL: " << cdbg.getColorName(num) << endl;
+
+	    if (name_table.find(col_name) == name_table.end()){
+                            name_table[col_name] = num++;
+                            denom_names.push_back(col_name);
 			    vector<string> dummy;	
 			    gen_files.push_back(dummy);
 	        }
             else
             {
-                cout << "Warning: " << cdbg_names[it] << " exists in input and graph. It is treated as one sequence" << endl;
+                cout << "Warning: " << col_name << " exists in input and graph. It is treated as one sequence" << endl;
             }
         }
 
@@ -557,8 +594,11 @@ int main(int argc, char* argv[]) {
      */ 
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    graph::init(top, quality, amino); // initialize the top list size, coverage threshold, and allowed characters
 
+    kmer::init(kmer);      // initialize the k-mer length
+    kmerAmino::init(kmer); // initialize the k-mer length
+    color::init(num);    // initialize the color number
+    graph::init(top, amino, quality, bins, threads); // initialize the toplist size and the allowed characters
 
     /**
      *  --- Split processing ---
@@ -602,93 +642,120 @@ int main(int argc, char* argv[]) {
      * - Transcribe all given sequence k-mers to the graph
      */ 
     
-    kmer::init(kmer);      // initialize the k-mer length
-    kmerAmino::init(kmer); // initialize the k-mer length
-    color::init(num);    // initialize the color number
 
     if (!input.empty() && splits.empty()) {
         if (verbose) {
             cout << "SANS::main(): Reading input files..." << flush;
         }
-        string sequence;    // read in the sequence files and extract the k-mers
 
 
-        for (uint64_t i = 0; i < gen_files.size(); ++i) {
-            vector<string> target_files = gen_files[i]; // the filenames corresponding to the target	    
-            for (string file_name: target_files){
-		
-	 	        char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
-		        strcpy(c_name, (folder + file_name).c_str()); // Transcire to char array
+        auto lambda = [&] (uint64_t T, uint64_t lower_bound, uint64_t upper_bound){ // This lambda expression wraps the sequence-kmer hashing
+            string sequence;    // read in the sequence files and extract the k-mers
+            for (uint64_t i = lower_bound; i < upper_bound; ++i) {
+                vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
+            
+                for (string file_name: target_files){
+            
+                    char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
+                    strcpy(c_name, (folder + file_name).c_str()); // Transcire to char array
 
-                igzstream file(c_name, ios::in);    // input file stream
-                if (verbose) {
-                    cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
-                }
-                count::deleteCount();
+                    igzstream file(c_name, ios::in);    // input file stream
+                    if (verbose) {
+                        cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
+                    }
+                    count::deleteCount();
 
-                string appendixChars; 
-                string line;    // read the file line by line
-                while (getline(file, line)) {
-                    if (line.length() > 0) {
-                        if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
-                            if (window > 1) {
-                                iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
-                                        : graph::add_minimizers(sequence, i, reverse, window);
-                            } else {
-                                iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
-                                        : graph::add_kmers(sequence, i, reverse);
-                            }
-
-                            sequence.clear();
-
-                            if (verbose) {
-                                cout << "\33[2K\r" << line << flush << endl;    // print progress
-                            }
-                        }
-                        else if (line[0] == '+') {    // FASTQ quality values -> ignore
-                            getline(file, line);
-                        }
-                        else {
-                            transform(line.begin(), line.end(), line.begin(), ::toupper);
-                            string newLine = line;
-                            if (shouldTranslate) {
-                                if (appendixChars.length() >0 ) {
-                                    newLine= appendixChars + newLine;
-                                    appendixChars = "";
-                                }
-                                auto toManyChars = line.length() % 3;
-                                if (toManyChars > 0) {
-                                    appendixChars = newLine.substr(line.length() - toManyChars, toManyChars);
-                                    newLine = newLine.substr(0, line.length() - toManyChars);
+                    string appendixChars; 
+                    string line;    // read the file line by line
+                    while (getline(file, line)) {
+                        if (line.length() > 0) {
+                            if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
+                                if (window > 1) {
+                                    iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
+                                            : graph::add_minimizers(T, sequence, i, reverse, window);
+                                } else {
+                                    iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
+                                            : graph::add_kmers(T, sequence, i, reverse);
                                 }
 
-                                newLine = translator::translate(newLine);
+                                sequence.clear();
+
+                                if (verbose) {
+                                    cout << "\33[2K\r" << line << flush << endl;    // print progress
+                                }
                             }
-                            sequence += newLine;    // FASTA & FASTQ sequence -> read
+                            else if (line[0] == '+') {    // FASTQ quality values -> ignore
+                                getline(file, line);
+                            }
+                            else {
+                                transform(line.begin(), line.end(), line.begin(), ::toupper);
+                                string newLine = line;
+                                if (shouldTranslate) {
+                                    if (appendixChars.length() >0 ) {
+                                        newLine= appendixChars + newLine;
+                                        appendixChars = "";
+                                    }
+                                    auto toManyChars = line.length() % 3;
+                                    if (toManyChars > 0) {
+                                        appendixChars = newLine.substr(line.length() - toManyChars, toManyChars);
+                                        newLine = newLine.substr(0, line.length() - toManyChars);
+                                    }
+
+                                    newLine = translator::translate(newLine);
+                                }
+                                sequence += newLine;    // FASTA & FASTQ sequence -> read
+                            }
                         }
                     }
-                }
-                if (verbose && count::getCount() > 0) {
-                    cerr << count::getCount()<< " triplets could not be translated."<< endl;
-                }
-                if (window > 1) {
-                    iupac > 1 ? graph::add_minimizers(sequence, i, reverse, window, iupac)
-                            : graph::add_minimizers(sequence, i, reverse, window);
-                } else {
-                    iupac > 1 ? graph::add_kmers(sequence, i, reverse, iupac)
-                            : graph::add_kmers(sequence, i, reverse);
-                }
-                sequence.clear();
+                    if (verbose && count::getCount() > 0) {
+                        cerr << count::getCount()<< " triplets could not be translated."<< endl;
+                    }
+                    if (window > 1) {
+                        iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
+                                : graph::add_minimizers(T, sequence, i, reverse, window);
+                    } else {
+                        iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
+                                : graph::add_kmers(T, sequence, i, reverse);
+                    }
+                    sequence.clear();
 
-                
-                if (verbose) {
-                    cout << "\33[2K\r" << flush;
+                    
+                    if (verbose) {
+                        cout << "\33[2K\r" << flush;
+                    }
+                    file.close();
                 }
-                file.close();
+                graph::clear_thread(T);
             }
-            graph::clear_thread();
+        }; // End of lambda expression
+
+        // Driver code for multithreaded kmer hashing
+        const uint64_t MAX = gen_files.size(); // The number of genomes to distribute 
+        const uint64_t SIZE = MAX / threads; // The average number of genomes per thread
+        const uint64_t CARRY = MAX % threads; // The rest to distribute
+
+        vector<uint64_t> size(threads); // The thread load table
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){ // Distribute the SIZE
+            size[thread_id] = SIZE;
+        }
+        for (uint64_t thread_id = 0; thread_id < CARRY; ++thread_id){ // Shift distribution to cover the missing genomes
+            size[thread_id]  += 1;
+        }
+
+        // Initialize the threads
+        uint64_t curr_size = 0;
+        vector<thread> thr(threads);
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
+            thr[thread_id] = thread(lambda, thread_id, curr_size, curr_size + size[thread_id]);
+            curr_size += size[thread_id];
+        }
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
+            thr[thread_id].join();
         }
     }
+
+    // debug: show the number of kmers hashed per table
+    if (debug) {graph::showTableSizes();}
 
 
     /**
@@ -707,6 +774,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         uint64_t cur = 0, progress;
         uint64_t max = cdbg.size();
 
+	cout << "CDBG COLORS: " << cdbg.getNbColors() << endl;
         for (auto& unitig : cdbg) {
             if (verbose) {
                 cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
@@ -717,18 +785,22 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
             auto unitig_map = UnitigMapBase(0, 1, kmer::k, true);
 
             auto sequence = unitig.mappedSequenceToString(); // the mapped unitig sequence
-            auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color iterator of this unitig
+            
+	    auto *colors = unitig.getData()->getUnitigColors(unitig); // the k-mer-position-per-color of this unitig
             auto it = colors->begin(unitig);
             auto end = colors->end();
-
-            for (; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
+            for (it ; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
                 uc_kmers[it.getKmerPosition()].add(unitig_map, it.getColorID());
-            }
+            	
+		// DEBUG
+		// cout << it.getColorID() << "->" << cdbg.getColorName(it.getColorID()) << endl;
+	    
+	    }
             
             for (unsigned int i = 0; i != num_kmers; ++i){ // iterate the k-mers
                 string kmer_sequence = sequence.substr(i, kmer::k); // the k-mer sequence
                 color_t color = 0;
-                for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){
+                for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){ // iterate the unitig colors
                     color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
 		}
                 min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
@@ -736,8 +808,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         }
     }
 #endif
-
-
     /**
      * [Output]
      * - Compute the weighted splits of the k-mers that are left in the graph

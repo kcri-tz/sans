@@ -1,6 +1,6 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=32 -std=c++14
-
+CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+BF = -lpthread
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
 
@@ -23,7 +23,7 @@ else
 	TD = obj/
 	MK = mkdir -p obj/
 	RM = rm -rf obj/
-	MV = mv *.o obj/
+	MV = ""mv *.o obj/
 	CP = cp makefile obj/makefile
 	
 
@@ -33,15 +33,21 @@ ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-SANS:  start obj/ makefile obj/main.o done
-	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
+SANS: obj/main.o
+	$(CC) -o SANS obj/main.o obj/graph.o obj/spinlockMutex.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
+	$(RM)
+	$(MK)
 
 obj/main.o: makefile src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
 	$(CC) -c src/main.cpp
 	@$(MV)
 
-obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer32.o obj/kmerXX.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color64.o obj/colorXX.o
+obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer32.o obj/kmerXX.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color64.o obj/colorXX.o obj/spinlockMutex.o
 	$(CC) -c src/graph.cpp
+	@$(MV)
+
+obj/spinlockMutex.o: src/spinlockMutex.cpp src/spinlockMutex.h
+	$(CC) -c src/spinlockMutex.cpp
 	@$(MV)
 
 obj/kmer32.o: src/kmer32.cpp src/kmer32.h
