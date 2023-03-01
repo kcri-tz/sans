@@ -45,16 +45,7 @@ template <typename T>
 
 
 
-#include "color64.h"
-#include "colorXX.h"
-
-#if maxN > 64 // store colors in a bitset, allows more input files
-    typedef colorXX color;
-    typedef bitset<maxN> color_t;
-#else // store color bits in an integer, optimizes performance
-    typedef color64 color;
-    typedef uint64_t color_t;
-#endif
+#include "color.h"
 
 #include "spinlockMutex.h"
 

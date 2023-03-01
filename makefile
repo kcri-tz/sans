@@ -34,7 +34,7 @@ ifeq ("$(wildcard $(TD))", "")
 endif
 
 SANS: obj/main.o
-	$(CC) -o SANS obj/main.o obj/graph.o obj/spinlockMutex.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
+	$(CC) -o SANS obj/main.o obj/graph.o obj/spinlockMutex.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
 	$(RM)
 	$(MK)
 
@@ -42,7 +42,7 @@ obj/main.o: makefile src/main.cpp src/main.h obj/translator.o obj/graph.o obj/ut
 	$(CC) -c src/main.cpp
 	@$(MV)
 
-obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer32.o obj/kmerXX.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color64.o obj/colorXX.o obj/spinlockMutex.o
+obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer32.o obj/kmerXX.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color.o obj/spinlockMutex.o
 	$(CC) -c src/graph.cpp
 	@$(MV)
 
@@ -66,12 +66,8 @@ obj/kmerAminoXX.o: makefile src/kmerAminoXX.cpp src/kmerAminoXX.h obj/util.o
 	$(CC) -c src/kmerAminoXX.cpp
 	@$(MV)
 
-obj/color64.o: src/color64.cpp src/color64.h
-	$(CC) -c src/color64.cpp
-	@$(MV)
-
-obj/colorXX.o: makefile src/colorXX.cpp src/colorXX.h
-	$(CC) -c src/colorXX.cpp
+obj/color.o: src/color.cpp src/color.h
+	$(CC) -c src/color.cpp
 	@$(MV)
 
 obj/util.o: src/util.cpp src/util.h

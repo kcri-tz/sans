@@ -415,7 +415,7 @@ uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 void graph::hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color)
 {
     std::lock_guard<spinlockMutex> lg(lock[bin]); 
-    color::set(kmer_table[bin][kmer], color);
+    kmer_table[bin][kmer].set(color);
 }
 
 /**
@@ -428,7 +428,7 @@ void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_bin(kmer);
     std::lock_guard<spinlockMutex> lg(lock[table_id]); 
-    color::set(kmer_table[table_id][kmer], color);
+    kmer_table[table_id][kmer].set(color);
 }
 
 
@@ -442,7 +442,7 @@ void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
 void graph::hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_t& color)
 {
     std::lock_guard<spinlockMutex> lg(lock[bin]); 
-    color::set(kmer_tableAmino[bin][kmer], color);
+    kmer_tableAmino[bin][kmer].set(color);
 }
 
 /**
@@ -455,7 +455,7 @@ void graph::hash_kmer_amino(const kmerAmino_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_amino_bin(kmer);
     std::lock_guard<spinlockMutex> lg(lock[table_id]); 
-    color::set(kmer_tableAmino[table_id][kmer], color);
+    kmer_tableAmino[table_id][kmer].set(color);
 }
 
 
@@ -1180,7 +1180,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
                 }
             // process
             color_t& color = *color_ref;
-            bool pos = color::complement(color, true);    // invert the color set, if necessary
+            bool pos = color::represent(color);    // invert the color set, if necessary
             if (color == 0) continue;    // ignore empty splits
             add_weight(color, mean, min_value, pos);
         }
@@ -1226,15 +1226,15 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
             // Get the colors stored for this kmer
             color_t hashed_color = get_color(kmer, reversed); // the currently stored colores of the kmer
 	    for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
-              	if(color::test(hashed_color, pos) && !color::test(kmer_color, pos)){ // test if the color is set in the stored color set
-              		color::set(kmer_color, pos);
+              	if(hashed_color.test(pos) && !kmer_color.test(pos)){ // test if the color is set in the stored color set
+              		kmer_color.set(pos);
                	}
            }
            // Remove the kmer from the hash table
            remove_kmer(kmer, reversed); // remove the kmer from the table
 	   }
     }
-    bool pos = color::complement(kmer_color, true);  // invert the color set, if necessary
+    bool pos = color::represent(kmer_color);  // invert the color set, if necessary
     if (kmer_color == 0) return min_value; // ignore empty splits
     min_value = add_weight(kmer_color, mean, min_value, pos); // compute weight
     return min_value; // return new minimal weight
@@ -1414,7 +1414,7 @@ bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
     // split is fully contained in one subset -> recurse
     // inverse split ... (i.e. split covers one subset partially) -> recurse with inverse
     // split covers several subsets completely -> introduce new split
-    if (color::size(split, false) < 2 || color::size(allTaxa, false) - color::size(split, false) < 2) { return true; }
+    if (split.popcnt() < 2 || allTaxa.popcnt() - split.popcnt() < 2) { return true; }
 
     vector<node*> *subsets = &current_set->subsets;
     vector<node*> fullycoveredsubsets = {};
@@ -1441,7 +1441,7 @@ bool graph::refine_tree(node* current_set, color_t& split, color_t& allTaxa) {
         if (fullycoveredsubsets.size() == subsets->size()-1) {
             // recurse into this subset with inverse split
 			color_t inversesplit = split;
-			color::complement(inversesplit, false);
+			color::complement(inversesplit);
             // if inversesplit.issubset(partiallycoveredsubset[1]):
             if ((inversesplit & partiallycoveredsubset->taxa) == inversesplit) {
                 return refine_tree(partiallycoveredsubset, inversesplit, allTaxa);
@@ -1489,8 +1489,8 @@ node* graph::build_tree(vector<color_t>& color_set) {
 
     for (uint64_t i = 0; i < color::n; i++) {
         color_t leaf = 0b0u;
-        color::set(leaf, i);
-        color::set(allTaxa, i);
+        leaf.set(i);
+        allTaxa.set(i);
         vector<node*> emptyset = {};
         // get weight
         double weight = 0;
@@ -1528,11 +1528,11 @@ string graph::print_tree(node* root, std::function<string(const uint64_t&)> map)
     color_t taxa = root->taxa;
 
     if (subsets.empty()){    // leaf set
-        if (color::size(taxa, false) == 0) {
+        if (taxa.popcnt() == 0) {
             std::cerr << "ERROR: child with no taxon!?" << endl;
             exit(EXIT_FAILURE);
-        } else if (color::size(taxa, false) == 1) {
-            return map(color::pos(taxa)) + ":" + to_string(root->weight);
+        } else if (taxa.popcnt() == 1) {
+            return map(taxa.tzcnt()) + ":" + to_string(root->weight);
         } else {
             std::cerr << "ERROR: child with more than one taxon!?" << endl;
             exit(EXIT_FAILURE);

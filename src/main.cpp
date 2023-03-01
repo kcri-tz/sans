@@ -627,7 +627,7 @@ int main(int argc, char* argv[]) {
                 name_table[name] = num++;
                 denom_names.push_back(name);
             }
-            color::set(color, name_table[name]);
+            color.set(name_table[name]);
             next = curr + 1;
         } while (curr != string::npos);
 
@@ -881,7 +881,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
        // cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
-            if (color::test(split.second, pos)) {
+            if (split.second.test(pos)) {
                 if (i < denom_names.size())
                     stream << '\t' << denom_names[i];    // name of the file
             }
