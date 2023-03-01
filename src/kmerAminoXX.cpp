@@ -6,21 +6,6 @@
 uint64_t kmerAminoXX::k;
 
 /**
-* The mod to use for binning
-*/
-uint64_t kmerAminoXX::table_count;
-
-/**
- * The target hash table of the kmer
- */
-uint64_t kmerAminoXX::bin;
-
-/**
- * This vector stores the precomputed carries of 2^i % bin
- */
-vector<uint64_t> kmerAminoXX::period;
-
-/**
  * This is a bit-mask to erase all bits that exceed the k-mer length.
  */
 bitset<5*maxK> kmerAminoXX::mask = mask.set();
@@ -29,22 +14,12 @@ bitset<5*maxK> kmerAminoXX::mask = mask.set();
  * This function initializes the k-mer length and bit-mask.
  *
  * @param kmer_length k-mer length
- * @param bins the number of hash tables
  */
-void kmerAminoXX::init(uint64_t& kmer_length, uint64_t& bins) {
+void kmerAminoXX::init(uint64_t& kmer_length) {
     k = kmer_length; mask.reset();
     for (uint64_t i = 0; i < 5*k; ++i) {
         mask <<= 01u;    // fill all bits within the k-mer length with ones
         mask |= 01u;    // the remaining zero bits can be used to mask bits
-    }
-
-    bin = 0; // init the carry for the empty kmer
-    table_count = bins; // the number of hash tables to use
-    uint64_t last = 1 % table_count;
-    for (int i = 1; i <= 5*k; i++)
-    {
-	    period.push_back(last);
-	    last = (2 * last) % table_count;
     }
 }
 
@@ -81,22 +56,6 @@ char kmerAminoXX::shift_left(bitset<5 * maxK>& kmer, char& c) {
 char kmerAminoXX::shift_right(bitset<5 * maxK>& kmer, char& c) {
     uint64_t left = 16*kmer[5*k-1]+8*kmer[5*k-2]+4*kmer[5*k-3]+2*kmer[5*k-4]+1*kmer[5*k-5];    // old leftmost character
     uint64_t right = util::amino_char_to_bits(c);    // new rightmost character
-
-    // update the binning carry (solution of the shift-update-carry equation)
-    bin = 160 * table_count // bias
-		+ 32 * bin // Shift
-		- 32 * kmer[5*k-1] * period[5*k - 1] 
-		- 32 * kmer[5*k-2] * period[5*k - 2] 
-		- 32 * kmer[5*k-3] * period[5*k - 3]
-        - 32 * kmer[5*k-4] * period[5*k - 4] 
-		- 32 * kmer[5*k-5] * period[5*k - 5];
-
-    // Update
-    for(int i = 0; i<=4; i++){
-        bin += period[i] & ((right >> i) & 0x1);
-    }
-
-    bin %= table_count;
 
     kmer <<= 05u;    // shift all current bits to the left by five positions
     for(int i = 4; i>=0; i--){// encode the new character within the rightmost five bits

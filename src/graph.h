@@ -153,7 +153,7 @@ public:
     /**
     * This function shift updates a bin for an amino kmer
     */
-    static uint64_t shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_right);
+    static uint64_t shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_left, char& c_right);
 
     /**
      *  This method computes the bin of a given kmer(slower than shift update)

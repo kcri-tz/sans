@@ -146,7 +146,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& bins, uint64_t& threa
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 12)     
         uint64_t last = 1 % table_count;
-        for (int i = 1; i <= 2*(kmerAmino::k + 1); i++)
+        for (int i = 1; i <= 5*(kmerAmino::k + 1); i++)
         {
 	        period.push_back(last);
 	        last = (2 * last) % table_count;
@@ -249,28 +249,27 @@ uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& rcmer, char& c_left
 /**
  * This method shift-updates the bin of an amino kmer
  */
-uint64_t graph::shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_right)
+uint64_t graph::shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_left, char& c_right)
 {
     #if (maxK <= 12) // This is not a real shift update due to performance of the build in mod
         return  kmer % table_count; 
     #else
         // update the binning carry (solution of the shift-update-carry equation)
-        uint8_t right = util::amino_char_to_bits(c_right); // Transcode the new character to bits
-
+        uint64_t right = util::amino_char_to_bits(c_right); // Transcode the new character to bits
+        uint64_t left = util::amino_char_to_bits(c_left);
         // bias
-        bin += 160 * table_count;
         
         // shift
-        bin += 32 * (bin
-            -(right & 0b10000) * period[5 * kmerAmino::k-1]
-            -(right & 0b01000) * period[5 * kmerAmino::k-2] 
-            -(right & 0b00100) * period[5 * kmerAmino::k-3]
-            -(right & 0b00010) * period[5 * kmerAmino::k-4]
-            -(right & 0b00001) * period[5 * kmerAmino::k-5]);
-
+        bin = 160 * table_count + // Bias 
+                    32 * bin // Shift
+                    - 32 * kmer[5*kmerAmino::k - 1] * period[5*kmerAmino::k - 1]
+                    - 32 * kmer[5*kmerAmino::k - 2] * period[5*kmerAmino::k - 2]
+                    - 32 * kmer[5*kmerAmino::k - 3] * period[5*kmerAmino::k - 3]
+                    - 32 * kmer[5*kmerAmino::k - 4] * period[5*kmerAmino::k - 4]
+                    - 32 * kmer[5*kmerAmino::k - 5] * period[5*kmerAmino::k - 5];
         // update
-        for(int i = 0; i<=4; i++){
-            bin += period[i] & ((right >> i) & 0x1);
+        for(int i = 4; i>=0; i--){
+            bin += period[i] & ((right >> i) & 0b1u);
         }
         // mod
         bin %= table_count;
@@ -498,20 +497,14 @@ void graph::add_kmers(string& str, uint64_t& color, bool& reverse) {
         // Amino processing
         } else {
             char right = str[pos];
-            kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
-
+            // amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right, right);
+            char left = kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
+            amino_bin = compute_amino_bin(kmerAmino);
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {
                 // shift update the bin
-                amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right);
                 // Insert the k-mer into its table
                 hash_kmer_amino(amino_bin, kmerAmino, color);  // update the k-mer with the current color
-            }
-
-            // The current word is smaller than a kmer
-            else{
-                // Shift update the bin
-                amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right);
             }
         }
     }
