@@ -350,7 +350,7 @@ uint64_t graph::shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_
                     - 32 * kmer[5*kmerAmino::k - 5] * period[5*kmerAmino::k - 5];
         // update
         for(int i = 4; i>=0; i--){
-            bin += period[i] & ((right >> i) & 0b1u);
+            bin += period[i] * ((right >> i) & 0b1u);
         }
         // mod
         bin %= table_count;
@@ -628,6 +628,7 @@ next_kmer:
     sequence_order_Amino.clear();
     
     uint64_t bin = 0;
+    uint64_t amino_bin = 0;
 
     for (; pos < str.length(); ++pos) {    // collect the bases from the string
         if (!isAllowedChar(pos, str)) {
@@ -656,6 +657,7 @@ next_kmer:
                 }
             }
         } else {
+            shift_update_amino_bin(amino_bin, kmerAmino, str[pos], str[pos]);
             kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
 
             if (pos+1 - begin >= kmerAmino::k) {
@@ -668,7 +670,6 @@ next_kmer:
 
                 if (sequence_order_Amino.size() == m) {
                     // Update the minimizer in the corresponding table
-                    bin = compute_amino_bin(*value_order_Amino.begin());
                     emplace_kmer_amino(T, bin, *value_order_Amino.begin(), color);    // update the k-mer with the current color
                 }
             }
