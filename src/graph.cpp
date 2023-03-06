@@ -25,7 +25,7 @@ vector<hash_map<kmer_t, color_t>> graph::kmer_table;
 /**
  * This is a vecotr of spinlocks protecting the hash maps 
  */
-vector<spinlockMutex> graph::lock;
+vector<std::mutex> graph::lock;
 
 /**
  * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
@@ -143,7 +143,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
         
         // Init the mutex lock vector
-	    lock = vector<spinlockMutex> (table_count);
+	    lock = vector<std::mutex> (table_count);
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 32)     
@@ -158,7 +158,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
             // Set complement mod correction values
             if (last == 1)
             {
-                first_mod_correction = period[i-2];
                 second_mod_correction = period[i-1];
             }
         }
@@ -172,7 +171,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
         // Init the mutex lock vector
-        lock = vector<spinlockMutex> (table_count);
+        lock = vector<std::mutex> (table_count);
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 12)     
@@ -276,32 +275,25 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
 /**
  * This method shift-updates the bin of a kmer
  */
-uint64_t graph::shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed)
+
+uint64_t graph::shift_update_bin(uint64_t& bin, char& c_left, char& c_right)
 {
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
-    
-    #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod method
-        return kmer % table_count;
-    #else
         return (8 * table_count // Bias
             + 4 * (bin - period[2*kmer::k-1] * (left / 2) - (left % 2) * period[2*kmer::k - 2]) // Shift
             + period[1] * (right / 2) + period[0] * (right % 2)) // Update   
             % table_count; // Mod
-    #endif
 }
 
 /**
  * This method shift updates the reverse complement bin of a kmer
  */
-uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& rcmer, char& c_left, char& c_right, bool reversed)
+uint64_t graph::shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_right)
 {
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
     
-    #if maxK <= 32
-        return rcmer % table_count;
-    #else
     // Bias
     rc_bin += 8 * table_count;
     // First shift 
@@ -323,7 +315,6 @@ uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& rcmer, char& c_left
     // minimize
     rc_bin %= table_count;
     return rc_bin;
-    #endif
 }
 
 
@@ -414,7 +405,7 @@ uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 */
 void graph::hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    std::lock_guard<std::mutex> lg(lock[bin]); 
     color::set(kmer_table[bin][kmer], color);
 }
 
@@ -427,7 +418,7 @@ void graph::hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color)
 void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_bin(kmer);
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    std::lock_guard<mutex> lg(lock[table_id]); 
     color::set(kmer_table[table_id][kmer], color);
 }
 
@@ -441,7 +432,7 @@ void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
  */
 void graph::hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    std::lock_guard<mutex> lg(lock[bin]); 
     color::set(kmer_tableAmino[bin][kmer], color);
 }
 
@@ -454,7 +445,7 @@ void graph::hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_
 void graph::hash_kmer_amino(const kmerAmino_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_amino_bin(kmer);
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    std::lock_guard<mutex> lg(lock[table_id]); 
     color::set(kmer_tableAmino[table_id][kmer], color);
 }
 
@@ -531,9 +522,11 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
     uint64_t amino_bin = 0; 
 
     uint64_t pos;    // current position in the string, from 0 to length
-    kmer_t kmer;    // create a new empty bit sequence for the k-mer
 
+    kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer; // create a bit sequence for the reverse complement
+
+    char left;  // The character that is shifted out 
 
     #if maxK > 32
     if (!isAmino){
@@ -556,31 +549,30 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         }
         // DNA processing 
         if (!isAmino) {
-            char right = str[pos];
-            char left = kmer::shift_right(kmer, right);    // shift each base into the bit sequence
-            bin = shift_update_bin(bin, kmer, left, right, false); // Update the forward complement table index
+            left = kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
+
+            #if maxK <= 32
+                bin = kmer % table_count; // Simple update of the forward complement bin
+            #else
+                bin = shift_update_bin(bin, left, str[pos]); // Shift update the forward complement bin
+            #endif
+
             // Reverse complement handling
             rcmer = kmer;
-            bool reversed = false;
-	    if (reverse){
-            # if maxK <= 32
+	        if (reverse){
                 kmer::reverse_complement(rcmer, false); // invert the k-mer
-                rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
-                if(rcmer > kmer){rcmer = kmer;} // Set rcmer to to smaller complement
-                else{reversed=true;} // Set reversed accordingly
-            #else // rc_mer % m
-                reversed = kmer::reverse_complement(rcmer, true); // invert the k-mer
-                rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
-            #endif
-	    }
+                #if maxK <= 32
+                    rc_bin = rcmer % table_count;
+                    rc_bin = shift_update_rc_bin(rc_bin, left, str[pos]);  // Update the reverse complement table index
+                #endif
+	        }
             // The current word is a k-mer
             if (pos+1 - begin >= kmer::k) {
-                reversed ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, rcmer, color);
+                rcmer < kmer ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, rcmer, color);
             }
         
         // Amino processing
         } else {
-            char right = str[pos];
             // amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right, right);
             shift_update_amino_bin(amino_bin, kmerAmino, str[pos], str[pos]);
             char left = kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence

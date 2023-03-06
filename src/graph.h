@@ -107,7 +107,7 @@ private:
     /**
      * This is a vector of spinlocks protecting the hash tables.
      */
-    static vector<spinlockMutex> lock;
+    static vector<std::mutex> lock;
 
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
@@ -160,12 +160,12 @@ public:
     /**
      * This function shift updates the bin of a kmer
     */
-    static uint64_t shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed);
+    static uint64_t shift_update_bin(uint64_t& bin, char& left, char& right);
     
     /**
      * This method shift updates the reverse complement bin for a kmer
     */
-   static uint64_t shift_update_rc_bin(uint64_t rc_bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed);
+   static uint64_t shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_right);
 
     /**
     * This function shift updates a bin for an amino kmer
