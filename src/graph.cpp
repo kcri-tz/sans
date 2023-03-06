@@ -350,7 +350,7 @@ uint64_t graph::shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_
                     - 32 * kmer[5*kmerAmino::k - 5] * period[5*kmerAmino::k - 5];
         // update
         for(int i = 4; i>=0; i--){
-            bin += period[i] & ((right >> i) & 0b1u);
+            bin += period[i] * ((right >> i) & 0b1u);
         }
         // mod
         bin %= table_count;
@@ -528,6 +528,7 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
 
     uint64_t bin = 0; // current hash_map vector index
     uint64_t rc_bin = 0; // current reverse hash_map vector index
+    uint64_t amino_bin = 0; 
 
     uint64_t pos;    // current position in the string, from 0 to length
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
@@ -581,8 +582,8 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         } else {
             char right = str[pos];
             // amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right, right);
+            shift_update_amino_bin(amino_bin, kmerAmino, str[pos], str[pos]);
             char left = kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
-            bin = compute_amino_bin(kmerAmino);
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {
                 // shift update the bin
@@ -665,7 +666,6 @@ next_kmer:
 
                 if (sequence_order_Amino.size() == m) {
                     // Update the minimizer in the corresponding table
-                    bin = compute_amino_bin(*value_order_Amino.begin());
                     emplace_kmer_amino(T, bin, *value_order_Amino.begin(), color);    // update the k-mer with the current color
                 }
             }
