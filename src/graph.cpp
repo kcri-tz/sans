@@ -300,14 +300,14 @@ uint64_t graph::shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_righ
     // Remove
     rc_bin -= period[0] * (!(left % 2 ));
     // Even representation
-    if (rc_bin % 2){rc_bin += 2 * second_mod_correction - 1;}
+    if (rc_bin % 2){rc_bin += table_count;}
     rc_bin >>= 1;
 
     // Second shift
     // Remove
     rc_bin -= period[0] * (!(left / 2 ));
     // Even representation
-    if (rc_bin % 2){rc_bin += 2 * second_mod_correction - 1;}
+    if (rc_bin % 2){rc_bin += table_count;}
     rc_bin >>= 1;
 
     // update
