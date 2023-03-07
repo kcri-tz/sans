@@ -297,6 +297,19 @@ uint64_t graph::shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_righ
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
     
+    // Remove
+    rc_bin += 8 * table_count - period[1] * (!(left / 2 )) - period[0] * (!(left % 2 ));
+    // First shift
+    if (rc_bin & 0b1u) {rc_bin += table_count;}
+    rc_bin >>= 1;
+    // Second shift
+    if (rc_bin & 0b1u) {rc_bin += table_count;}
+    rc_bin >>= 1;
+    // Update
+    rc_bin += (period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2)));
+    rc_bin %= table_count;
+    return rc_bin;
+    /*
     // Bias
     rc_bin += 8 * table_count;
     // First shift 
@@ -318,6 +331,7 @@ uint64_t graph::shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_righ
     // minimize
     rc_bin %= table_count;
     return rc_bin;
+    */
 }
 
 
