@@ -142,18 +142,19 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
     if(!isAmino){
 
         // Automatic table count
-        if (kmer::k <= 16) { table_count = 2^(kmer::k - (kmer::k % 2)) - 1;} // Using an beta=2 multiple as exponent allows for implicid comgruence
-        else {table_count = 2^16 - 1;}
+        if (kmer::k <= 16) { table_count = (0b1u << kmer::k - (kmer::k % 2)) - 1;} // Using an beta=2 multiple as exponent allows for implicid comgruence
+        else {table_count = (0b1u << 16) - 1;}
 
         // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
-        
+
         // Init the mutex lock vector
 	    lock = vector<spinlockMutex> (table_count);
 
+        cout << "Using tbales: " << table_count << endl;
+
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 32)     
-        cout << "PERIOD for K=" << kmer::k <<  endl;
         uint64_t last = 1 % table_count;
         for (int i = 1; i <= 2*(kmer::k); i++)
         {
@@ -175,8 +176,8 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
         graph::allowedChars.push_back('T');
     }else{
         // Automatic table count
-        if (kmerAmino::k <= 15){ table_count = 2^(kmerAmino::k - (kmerAmino::k % 5)) - 1;} // Using an beta=5 multiple as exponent allows for implicid comgruence
-        else {table_count = 2^15 - 1;}
+        if (kmerAmino::k <= 15){ table_count = (0b1u << kmerAmino::k - (kmerAmino::k % 5)) - 1;} // Using an beta=5 multiple as exponent allows for implicid comgruence
+        else {table_count = (0b1u << 15) - 1;}
 
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
