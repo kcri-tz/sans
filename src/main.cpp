@@ -97,6 +97,9 @@ int main(int argc, char* argv[]) {
         cout << "    -M, --maxN \t Compare number of input genomes to compile paramter DmaxN" << endl;
         cout << "               \t Add path/to/makefile (default is makefile in current working directory)." << endl;
         cout << endl;
+        cout << "    -b, --bootstrap \t Perform bootstrapping with the specified number of replicates" << endl;
+        cout << "               \t Default: no bootstrapping" << endl;
+        cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
@@ -140,7 +143,7 @@ int main(int argc, char* argv[]) {
     bool check_n = false; // compare num (number of input genomes) to maxN (compile parameter DmaxN)
     string path = "./makefile"; // path to makefile
     uint64_t code = 1;
-
+	uint32_t bootstrap_no=0; // = no bootstrapping
 
     /**
      * --- Argument parser ---
@@ -265,6 +268,9 @@ int main(int argc, char* argv[]) {
 
             }
             shouldTranslate = true;
+        }
+        else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bootstrapping") == 0) {
+            bootstrap_no = stoi(argv[++i]);
         }
         else {
             cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
@@ -757,42 +763,86 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     }
     graph::add_weights(mean, min_value, verbose);  // accumulate split weights
 
-    if (verbose) {
-        cout << "\33[2K\r" << "Filtering splits..." << flush;
-    }
+	hash_map<color_t, uint32_t> support_values;
+	static multimap<double, color_t, greater<>> split_list_orig=graph::split_list;
+	bool verbose_orig=verbose;
+	
+	for (int run = 0; run < bootstrap_no+1; run++) {
 
-    //cleanliness cleanliness;
-    if (!filter.empty()) {    // apply filter
-        for (auto& split : graph::split_list) {
-            //cleanliness.addWeightStateBefore(split.first, split.second);
-        }
+	
+		if (verbose_orig) {
+			if (run==0){
+				cout << "\33[2K\r" << "Filtering splits..." << flush;
+			} if (run==1){
+				cout << "\n" << flush;
+				verbose=false; // switch off output of filtering
+			} 
+			if (run>0) {
+				cout << "\33[2K\r" << "Bootstrapping... ("<<run<<"/"<<bootstrap_no<<")" << flush;
+			}
+		}
 
-        if (filter == "strict" || filter == "tree") {
-            if (!newick.empty()) {
-                ofstream file(newick);    // output file stream
-                ostream stream(file.rdbuf());
-                stream << graph::filter_strict(map, verbose);    // filter and output
-                file.close();
-            } else {
-               graph::filter_strict(verbose);
-            }
-        }
-        else if (filter == "weakly") {
-           graph::filter_weakly(verbose);
-        }
-        else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
-            if (!newick.empty()) {
-                ofstream file(newick);    // output file stream
-                ostream stream(file.rdbuf());
-                auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
-                stream <<  ot;
-                file.close();
-            } else {
-               graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
-            }
-        }
-    }
+		if (run>0) {//i.e. bootstrapping 
+			if(run==1){ // init bootstrap support value counting
+				//hash_map for each original split with zero counts
+				for (auto it = graph::split_list.begin(); it != graph::split_list.end(); ++it){
+					support_values.insert({it->second,0});
+				}
+			}
+			graph::bootstrap(mean);
+			// exchange splitlists such that the bootstrapping one is filtered
+			graph::split_list=graph::split_list_bootstrap;
+		}
+		
+		//cleanliness cleanliness;
+		if (!filter.empty()) {    // apply filter
+			for (auto& split : graph::split_list) {
+				//cleanliness.addWeightStateBefore(split.first, split.second);
+			}
 
+			if (filter == "strict" || filter == "tree") {
+				if (!newick.empty()) {
+					ofstream file(newick);    // output file stream
+					ostream stream(file.rdbuf());
+					stream << graph::filter_strict(map, verbose);    // filter and output
+					file.close();
+				} else {
+				graph::filter_strict(verbose);
+				}
+			}
+			else if (filter == "weakly") {
+			graph::filter_weakly(verbose);
+			}
+			else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
+				if (!newick.empty()) {
+					ofstream file(newick);    // output file stream
+					ostream stream(file.rdbuf());
+					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
+					stream <<  ot;
+					file.close();
+				} else {
+				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
+				}
+			}
+		}	
+		
+		if (run>0) {//i.e. bootstrapping 
+			// count conserved splits
+			for (auto it = graph::split_list.begin(); it != graph::split_list.end(); ++it){
+				// increase support value for it->second
+				color_t colors = it->second;
+				support_values[colors]++;
+			}
+			if (run==bootstrap_no){
+				// switch back the split lists
+				graph::split_list=split_list_orig;
+				if(verbose_orig){
+					cout << "\n" << flush;
+				}
+				verbose=verbose_orig; //switch back to verbose if originally set
+			}
+		}
+	}
 
     /**
      * --- Write to output ---
@@ -803,26 +853,45 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     }
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());
-
+	ofstream file_bootstrap;
+	ostream stream_bootstrap(file_bootstrap.rdbuf());
+    if (bootstrap_no>0){
+		file_bootstrap.open(output+".bootstrap");    // output file stream
+	}
     uint64_t pos = 0;
     //cleanliness.setFilteredCount(graph::split_list.size());
     for (auto& split : graph::split_list) {
         double weight = split.first;
        // cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
+        if (bootstrap_no>0){
+			stream_bootstrap << ((1.0*support_values[split.second])/bootstrap_no);
+// 			stream_bootstrap << support_values[split.second];
+		}
         for (uint64_t i = 0; i < num; ++i) {
             if (color::test(split.second, pos)) {
                 if (i < denom_names.size())
                     stream << '\t' << denom_names[i];    // name of the file
+                    if(bootstrap_no>0){
+						stream_bootstrap << '\t' << denom_names[i];    // name of the file
+					}
             }
             split.second >>= 01u;
         }
         stream << endl;
+		if(bootstrap_no>0){
+			stream_bootstrap<<endl;
+		}
     }
 
+    
+    
     //cleanliness.calculateWeightBeforeCounter();
 
     file.close();
+	if(bootstrap_no>0){
+		file_bootstrap.close();
+	}
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
 

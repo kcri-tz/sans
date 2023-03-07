@@ -5,6 +5,12 @@
 #include <utility>
 #include <vector>
 
+#include <iomanip>
+#include <string>
+#include <random>
+
+
+
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -109,11 +115,15 @@ private:
     static hash_map<kmer_t, uint64_t> quality_map;
 
 public:
+	
+	
+	static void bootstrap(double mean(uint32_t&, uint32_t&));
 
     /**
      * This is an ordered tree collecting the splits [O(log n)].
      */
     static multimap<double, color_t, greater<>> split_list;
+    static multimap<double, color_t, greater<>> split_list_bootstrap;
 
     /**
     * These are the allowed chars.

@@ -38,6 +38,7 @@ hash_map<kmer_t, uint64_t> graph::quality_map;
  * This is an ordered tree collecting the splits [O(log n)].
  */
 multimap<double, color_t, greater<>> graph::split_list;
+multimap<double, color_t, greater<>> graph::split_list_bootstrap;
 
 /**
 * These are the allowed chars.
@@ -715,6 +716,59 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
     return min_value;
 }
 
+
+
+// BOOTSTRAP
+void graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
+
+	int max = kmer_table.size(); 
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	split_list_bootstrap.clear();
+	double min_value=0;
+
+	// perform n time max trials, each succeeds 1/max
+ 	std::binomial_distribution<> d(max, 1.0/max);
+	
+	// Iterating over the map using Iterator till map end.
+	hash_map<color_t, array<uint32_t,2>>::iterator it = color_table.begin();
+	while (it != color_table.end())	{
+
+		// Accessing the key
+		color_t colors = it->first;
+		
+		// Accessing the value
+		array<uint32_t,2> weights = it->second;
+		
+		// bootstrap the number of kmer occurrences for split and inverse
+		array<uint32_t,2> new_weights;
+		new_weights[0]=0;
+		new_weights[1]=0;
+		for (int i=0;i<2;i++) {
+			for (int r=0;r<weights[i];r++){
+				new_weights[i] += d(gen);
+			}
+		}
+
+		//insert into new split list
+		double new_mean = mean(new_weights[0], new_weights[1]);    // calculate the new mean value
+		if(split_list_bootstrap.size()<t || new_mean>min_value){
+			if(new_mean>min_value){
+				min_value=new_mean;
+			}
+			split_list_bootstrap.emplace(new_mean, colors);
+		}
+		
+		// iterator incremented to point next item
+		it++;
+		
+	}
+
+}
+
+
 /**
  * This function iterates over the hash table and calculates the split weights.
  * 
@@ -722,6 +776,9 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
  * @param verbose print progess
  */
 void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
+	
+	
+	
     //double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
     uint64_t cur=0, prog=0, next;
 
@@ -760,6 +817,10 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
 
         add_weight(color, mean, min_value, pos);
     }
+
+		bootstrap(mean);
+
+	
 }
 
 /**
