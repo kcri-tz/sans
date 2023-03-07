@@ -876,16 +876,18 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 
     uint64_t pos = 0;
     //cleanliness.setFilteredCount(graph::split_list.size());
+    color_t split_color;
     for (auto& split : graph::split_list) {
         double weight = split.first;
+        split_color = split.second;
        // cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
-            if (color::test(split.second, pos)) {
+            if (color::test(split_color, pos)) {
                 if (i < denom_names.size())
                     stream << '\t' << denom_names[i];    // name of the file
             }
-            split.second >>= 01u;
+            split_color >>= 01u;
         }
         stream << endl;
     }

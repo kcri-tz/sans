@@ -2,6 +2,7 @@
 #include "util.h"
 #include <mutex>
 #include <thread>
+#include <algorithm>
 
 /**
  * This is the size of the top list.
@@ -67,7 +68,9 @@ vector<hash_map<kmerAmino_t, uint64_t>> graph::quality_mapAmino;
 /**
  * This is an ordered tree collecting the splits [O(log n)].
  */
-multimap<double, color_t, greater<>> graph::split_list;
+// https://itecnote.com/tecnote/c-sorting-multimap-with-both-keys-and-values/
+// This is necessairy to create a sorted output
+multiset<pair<double, color_t>>graph::split_list;
 
 /**
 * These are the allowed chars.
@@ -1102,7 +1105,7 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
     array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
     double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
     if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
-        auto range = split_list.equal_range(old_value);    // get all color sets with the given weight
+        auto range = split_list.equal_range(make_pair(old_value, color));    // get all color sets with the given weight
         for (auto it = range.first; it != range.second; ++it) {
             if (it->second == color) {    // iterate over the color sets to find the correct one
                 split_list.erase(it);    // erase the entry with the old weight
@@ -1260,6 +1263,7 @@ void graph::filter_strict(bool& verbose) {
  */
 string graph::filter_strict(std::function<string(const uint64_t&)> map, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
+    color_t col;
     auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
@@ -1270,7 +1274,8 @@ loop:
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-        if (test_strict(it->second, tree)) {
+        col = it->second;
+        if (test_strict(col, tree)) {
             tree.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
@@ -1292,6 +1297,7 @@ loop:
 void graph::filter_weakly(bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
+    color_t col;
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
@@ -1301,7 +1307,8 @@ loop:
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-        if (test_weakly(it->second, network)) {
+        col = it -> second;
+        if (test_weakly(col, network)) {
             network.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
@@ -1329,6 +1336,7 @@ void graph::filter_n_tree(uint64_t n, bool& verbose) {
 string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     auto it = split_list.begin();
+    color_t col;
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
@@ -1338,9 +1346,10 @@ loop:
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-       for (auto& tree : forest)
-        if (test_strict(it->second, tree)) {
-            tree.emplace_back(it->second);
+        col = it-> second; 
+        for (auto& tree : forest)
+        if (test_strict(col, tree)) {
+            tree.emplace_back(col);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
         it = split_list.erase(it);    // otherwise, remove split

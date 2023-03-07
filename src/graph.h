@@ -139,7 +139,7 @@ public:
     /**
      * This is an ordered tree collecting the splits [O(log n)].
      */
-    static multimap<double, color_t, greater<>> split_list;
+    static multiset<pair<double, color_t>> split_list;
 
     /**
     * These are the allowed chars.
