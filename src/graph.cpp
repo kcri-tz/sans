@@ -26,7 +26,7 @@ vector<hash_map<kmer_t, color_t>> graph::kmer_table;
 /**
  * This is a vecotr of spinlocks protecting the hash maps 
  */
-vector<spinlockMutex> graph::lock;
+vector<mutex> graph::lock;
 
 /**
  * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
@@ -149,7 +149,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
 
         // Init the mutex lock vector
-	    lock = vector<spinlockMutex> (table_count);
+	    lock = vector<mutex> (table_count);
 
         cout << "Using tbales: " << table_count << endl;
 
@@ -182,7 +182,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
         // Init the mutex lock vector
-        lock = vector<spinlockMutex> (table_count);
+        lock = vector<mutex> (table_count);
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 12)     
@@ -430,7 +430,7 @@ uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 */
 void graph::hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    std::lock_guard<mutex> lg(lock[bin]); 
     color::set(kmer_table[bin][kmer], color);
 }
 
@@ -443,7 +443,7 @@ void graph::hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color)
 void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_bin(kmer);
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    std::lock_guard<mutex> lg(lock[table_id]); 
     color::set(kmer_table[table_id][kmer], color);
 }
 
@@ -457,7 +457,7 @@ void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
  */
 void graph::hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    std::lock_guard<mutex> lg(lock[bin]); 
     color::set(kmer_tableAmino[bin][kmer], color);
 }
 
@@ -470,7 +470,7 @@ void graph::hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_
 void graph::hash_kmer_amino(const kmerAmino_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_amino_bin(kmer);
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    std::lock_guard<mutex> lg(lock[table_id]); 
     color::set(kmer_tableAmino[table_id][kmer], color);
 }
 

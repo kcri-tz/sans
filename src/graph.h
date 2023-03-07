@@ -107,7 +107,7 @@ private:
     /**
      * This is a vector of spinlocks protecting the hash tables.
      */
-    static vector<spinlockMutex> lock;
+    static vector<mutex> lock;
 
     /**
      * This is a hash table mapping k-mers to colors [O(1)].
