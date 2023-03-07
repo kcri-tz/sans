@@ -572,7 +572,7 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
             }
             // The current word is a k-mer
             if (pos+1 - begin >= kmer::k) {
-                rcmer < kmer ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, rcmer, color);
+                rcmer < kmer ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, kmer, color);
             }
         
         // Amino processing
