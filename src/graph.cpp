@@ -138,10 +138,13 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
 void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bins, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
-    table_count = bins; // The number of tables to use for hashing 
-    
+
     if(!isAmino){
-        
+
+        // Automatic table count
+        if (kmer::k <= 16) { table_count = 2^(kmer::k - (kmer::k % 2)) - 1;} // Using an beta=2 multiple as exponent allows for implicid comgruence
+        else {table_count = 2^16 - 1;}
+
         // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
         
@@ -171,6 +174,10 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
     }else{
+        // Automatic table count
+        if (kmerAmino::k <= 15){ table_count = 2^(kmerAmino::k - (kmerAmino::k % 5)) - 1;} // Using an beta=5 multiple as exponent allows for implicid comgruence
+        else {table_count = 2^15 - 1;}
+
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
         // Init the mutex lock vector
