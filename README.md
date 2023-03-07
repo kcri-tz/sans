@@ -7,7 +7,7 @@
 * Alignment-free
 * Input: assembled genomes / reads, or coding sequences / amino acid sequences
 * Output: phylogenetic splits or tree
-* **NEW:** Low coverage k-mers can be discarded
+* **NEW:** Bootstrapping
 
 
 ### Dos and Don'ts
@@ -154,6 +154,9 @@ Usage: SANS [PARAMETERS]
 
     -M, --maxN    	 Compare number of input genomes to compile paramter DmaxN
                   	 Add path/to/makefile (default is makefile in current working directory).
+
+    -b, --bootstrap	 Perform bootstrapping with the specified number of replicates
+                   	 Default: no bootstrapping
 
     -v, --verbose 	 Print information messages during execution
 
