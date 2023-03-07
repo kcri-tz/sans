@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <thread>
 #include <regex>
+#include <mutex>
 
 #include "util.h"
 #include "translator.h"

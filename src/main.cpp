@@ -648,10 +648,15 @@ int main(int argc, char* argv[]) {
             cout << "SANS::main(): Reading input files..." << flush;
         }
 
+        // Thread safe implementation of getting the index of the next input to preocess
+        uint64_t index = 0;
+        std::mutex index_mutex;
+        auto index_lambda = [&] () { std::lock_guard<mutex> lg(index_mutex); return index++;};
 
-        auto lambda = [&] (uint64_t T, uint64_t lower_bound, uint64_t upper_bound){ // This lambda expression wraps the sequence-kmer hashing
+        auto lambda = [&] (uint64_t T, uint64_t max){ // This lambda expression wraps the sequence-kmer hashing
             string sequence;    // read in the sequence files and extract the k-mers
-            for (uint64_t i = lower_bound; i < upper_bound; ++i) {
+            uint64_t i = index_lambda();
+            while (i < max) {
                 vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
             
                 for (string file_name: target_files){
@@ -726,32 +731,15 @@ int main(int argc, char* argv[]) {
                     file.close();
                 }
                 graph::clear_thread(T);
+                i = index_lambda();
             }
         }; // End of lambda expression
 
         // Driver code for multithreaded kmer hashing
-        const uint64_t MAX = gen_files.size(); // The number of genomes to distribute 
-        const uint64_t SIZE = MAX / threads; // The average number of genomes per thread
-        const uint64_t CARRY = MAX % threads; // The rest to distribute
-
-        vector<uint64_t> size(threads); // The thread load table
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){ // Distribute the SIZE
-            size[thread_id] = SIZE;
-        }
-        for (uint64_t thread_id = 0; thread_id < CARRY; ++thread_id){ // Shift distribution to cover the missing genomes
-            size[thread_id]  += 1;
-        }
-
-        // Initialize the threads
-        uint64_t curr_size = 0;
-        vector<thread> thr(threads);
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
-            thr[thread_id] = thread(lambda, thread_id, curr_size, curr_size + size[thread_id]);
-            curr_size += size[thread_id];
-        }
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
-            thr[thread_id].join();
-        }
+        const uint64_t MAX = gen_files.size(); // The number of genomes
+        vector<thread> thread_holder(threads);
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda, thread_id, MAX);}
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
     }
 
     // debug: show the number of kmers hashed per table
