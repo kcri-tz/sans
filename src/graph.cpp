@@ -818,8 +818,6 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
         add_weight(color, mean, min_value, pos);
     }
 
-		bootstrap(mean);
-
 	
 }
 
