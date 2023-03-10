@@ -790,8 +790,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 				}
 			}
 			graph::bootstrap(mean);
-			// exchange splitlists such that the bootstrapping one is filtered
-			graph::split_list=graph::split_list_bootstrap;
 		}
 		
 		//cleanliness cleanliness;
@@ -833,26 +831,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 				color_t colors = it->second;
 				support_values[colors]++;
 			}
-
-			ofstream file_bootstrap;
-			ostream stream_bootstrap(file_bootstrap.rdbuf());
-			file_bootstrap.open(output+".bootstrap"+std::to_string(run));    // output file stream
-			uint64_t pos = 0;
-			for (auto& split : graph::split_list) {
-				double weight = split.first;
-				stream_bootstrap << weight;
-				for (uint64_t i = 0; i < num; ++i) {
-					if (color::test(split.second, pos)) {
-						if (i < denom_names.size())
-							stream_bootstrap << ',' << denom_names[i];    // name of the file
-					}
-					split.second >>= 01u;
-				}
-				stream_bootstrap<<endl;
-			}
-			file_bootstrap.close();
-
-			
 			
 			if (run==bootstrap_no){
 				// switch back the split lists

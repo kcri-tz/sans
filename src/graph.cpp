@@ -38,7 +38,6 @@ hash_map<kmer_t, uint64_t> graph::quality_map;
  * This is an ordered tree collecting the splits [O(log n)].
  */
 multimap<double, color_t, greater<>> graph::split_list;
-multimap<double, color_t, greater<>> graph::split_list_bootstrap;
 
 /**
 * These are the allowed chars.
@@ -726,7 +725,7 @@ void graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
-	split_list_bootstrap.clear();
+	split_list.clear();
 	double min_value=0;
 
 	// perform n time max trials, each succeeds 1/max
@@ -754,11 +753,12 @@ void graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 
 		//insert into new split list
 		double new_mean = mean(new_weights[0], new_weights[1]);    // calculate the new mean value
-		if(split_list_bootstrap.size()<t || new_mean>min_value){
-			if(new_mean>min_value){
-				min_value=new_mean;
+		if (new_mean >= min_value) {    // if it is greater than the min. value, add it to the top list
+			split_list.emplace(new_mean, colors);    // insert it at the correct position ordered by weight
+			if (split_list.size() > t) {
+				split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
+				min_value = split_list.rbegin()->first;    // update the min. value for the next iteration (only necessary of t is exceeded, otherwise min_value does not play a role.
 			}
-			split_list_bootstrap.emplace(new_mean, colors);
 		}
 		
 		// iterator incremented to point next item
