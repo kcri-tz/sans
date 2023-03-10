@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
         cout << "               \t Add path/to/makefile (default is makefile in current working directory)." << endl;
         cout << endl;
         cout << "    -b, --bootstrap \t Perform bootstrapping with the specified number of replicates" << endl;
+        cout << "                    \t No filtering on original splits - only on bootstrap replicates" << endl;
         cout << "               \t Default: no bootstrapping" << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
@@ -764,12 +765,11 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     graph::add_weights(mean, min_value, verbose);  // accumulate split weights
 
 	hash_map<color_t, uint32_t> support_values;
-	static multimap<double, color_t, greater<>> split_list_orig=graph::split_list;
 	bool verbose_orig=verbose;
+	multimap<double, color_t, greater<>>* split_list_ptr=&(graph::split_list);
+	multimap<double, color_t, greater<>> split_list_bs;
 	
 	for (int run = 0; run < bootstrap_no+1; run++) {
-
-	
 		if (verbose_orig) {
 			if (run==0){
 				cout << "\33[2K\r" << "Filtering splits..." << flush;
@@ -789,52 +789,49 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 					support_values.insert({it->second,0});
 				}
 			}
-			graph::bootstrap(mean);
+			split_list_bs = graph::bootstrap(mean);
+			split_list_ptr = &split_list_bs;
 		}
-		
+
 		//cleanliness cleanliness;
-		if (!filter.empty()) {    // apply filter
-			for (auto& split : graph::split_list) {
-				//cleanliness.addWeightStateBefore(split.first, split.second);
-			}
+		if (!filter.empty() && !(bootstrap_no>0 && run==0)) {    // apply filter
 
 			if (filter == "strict" || filter == "tree") {
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream
 					ostream stream(file.rdbuf());
-					stream << graph::filter_strict(map, verbose);    // filter and output
+					stream << graph::filter_strict(map, split_list_ptr, verbose);    // filter and output
 					file.close();
 				} else {
-				graph::filter_strict(verbose);
+				graph::filter_strict(split_list_ptr, verbose);
 				}
 			}
 			else if (filter == "weakly") {
-			graph::filter_weakly(verbose);
+				graph::filter_weakly(split_list_ptr, verbose);
 			}
 			else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream
 					ostream stream(file.rdbuf());
-					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
+					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, split_list_ptr, verbose);
 					stream <<  ot;
 					file.close();
 				} else {
-				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
+				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), split_list_ptr, verbose);
 				}
 			}
 		}	
+
 		
 		if (run>0) {//i.e. bootstrapping 
 			// count conserved splits
-			for (auto it = graph::split_list.begin(); it != graph::split_list.end(); ++it){
+			for (auto it = split_list_bs.begin(); it != split_list_bs.end(); ++it){
 				// increase support value for it->second
 				color_t colors = it->second;
 				support_values[colors]++;
 			}
 			
 			if (run==bootstrap_no){
-				// switch back the split lists
-				graph::split_list=split_list_orig;
 				if(verbose_orig){
 					cout << "\n" << flush;
 				}
