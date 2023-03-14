@@ -882,7 +882,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		
 	// BOOTSTRAPPING
 		
-		multiset<pair<double, color_t>>* split_list_ptr=&(graph::split_list);
 		multiset<pair<double, color_t>> split_list_bs;
 		hash_map<color_t, double> orig_weights;
 
@@ -906,8 +905,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 
 			// create bootstrap replicate
 			split_list_bs = graph::bootstrap(mean);
-			split_list_ptr = &split_list_bs;
-			apply_filter(filter,"", map, split_list_ptr,verbose);
+			apply_filter(filter,"", map, &split_list_bs,verbose);
 			
 			// count conserved splits
 			for (auto& it : split_list_bs){
