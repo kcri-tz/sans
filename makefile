@@ -1,5 +1,5 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=160 -std=c++14
 BF = -lpthread
 
 ## IF DEBUG
@@ -34,7 +34,7 @@ ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-SANS: obj/main.o
+SANS: start obj/ makefile obj/main.o done
 	$(CC) -o SANS obj/main.o obj/graph.o obj/spinlockMutex.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
 	$(RM)
 	$(MK)
