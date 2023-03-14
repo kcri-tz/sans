@@ -5,6 +5,7 @@
 #include "gz/gzstream.h"
 
 
+
 /**
  * This is the entry point of the program.
  *
@@ -881,8 +882,8 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		
 	// BOOTSTRAPPING
 		
-		multimap<double, color_t, greater<>>* split_list_ptr=&(graph::split_list);
-		multimap<double, color_t, greater<>> split_list_bs;
+		multiset<pair<double, color_t>>* split_list_ptr=&(graph::split_list);
+		multiset<pair<double, color_t>> split_list_bs;
 		hash_map<color_t, double> orig_weights;
 
 		bool verbose_orig=verbose;
@@ -893,9 +894,9 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		
 		// init bootstrap support value counting
 		//hash_map for each original split with zero counts
-		for (auto it = graph::split_list.begin(); it != graph::split_list.end(); ++it){
-			support_values.insert({it->second,0});
-			orig_weights.insert({it->second,it->first});
+		for (auto& it : graph::split_list){
+			support_values.insert({it.second,0});
+			orig_weights.insert({it.second,it.first});
 		}
 
 		for (int run = 1; run <= bootstrap_no; run++) {
@@ -909,9 +910,9 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 			apply_filter(filter,"", map, split_list_ptr,verbose);
 			
 			// count conserved splits
-			for (auto it = split_list_bs.begin(); it != split_list_bs.end(); ++it){
-				// increase support value for it->second
-				color_t colors = it->second;
+			for (auto& it : split_list_bs){
+				// increase support value for it.second
+				color_t colors = it.second;
 				support_values[colors]++;
 			}
 
@@ -925,20 +926,21 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		if(!conf_filter.empty()) {
 			// filter original splits by bootstrap value
 			// compose a corresponding split list
-			multimap<double, color_t, greater<>> split_list_conf;
-			for (auto it = graph::split_list.begin(); it != graph::split_list.end(); ++it){
-				double conf=(1.0*support_values[it->second])/bootstrap_no;
-				color_t colors = it->second;
-				split_list_conf.emplace(conf,colors);
+			multiset<pair<double, color_t>> split_list_conf;
+			for (auto& it : graph::split_list){
+				double conf=(1.0*support_values[it.second])/bootstrap_no;
+				color_t colors = it.second;
+  				graph::add_split(conf,colors,&split_list_conf);
+// 				split_list_conf.emplace(conf,it.second);
 			}
 			//filter
 			apply_filter(conf_filter,newick, map, &split_list_conf,verbose);
 
 			//apply result to original split list
 			graph::split_list.clear();
-			for (auto it = split_list_conf.begin(); it != split_list_conf.end(); ++it){
-				color_t colors = it->second;
-				graph::split_list.emplace(orig_weights[colors],colors);
+			for (auto& it : split_list_conf){
+				color_t colors = it.second;
+				graph::add_split(orig_weights[colors],colors);
 			}
 		}
 
@@ -1008,7 +1010,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 }
 
 
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multimap<double, color_t, greater<>>* split_list_ptr, bool verbose){
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>>* split_list_ptr, bool verbose){
 
 		if (!filter.empty()) {    // apply filter
 
