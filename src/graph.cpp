@@ -1148,6 +1148,62 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
     return min_value;
 }
 
+
+
+// BOOTSTRAP
+multimap<double, color_t, greater<>> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
+
+	int max = kmer_table.size(); 
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	multimap<double, color_t, greater<>> sl;
+// 	split_list.clear();
+	double min_value=0;
+
+	// perform n time max trials, each succeeds 1/max
+ 	std::binomial_distribution<> d(max, 1.0/max);
+	
+	// Iterating over the map using Iterator till map end.
+	hash_map<color_t, array<uint32_t,2>>::iterator it = color_table.begin();
+	while (it != color_table.end())	{
+
+		// Accessing the key
+		color_t colors = it->first;
+		
+		// Accessing the value
+		array<uint32_t,2> weights = it->second;
+		
+		// bootstrap the number of kmer occurrences for split and inverse
+		array<uint32_t,2> new_weights;
+		new_weights[0]=0;
+		new_weights[1]=0;
+		for (int i=0;i<2;i++) {
+			for (int r=0;r<weights[i];r++){
+				new_weights[i] += d(gen);
+			}
+		}
+
+		//insert into new split list
+		double new_mean = mean(new_weights[0], new_weights[1]);    // calculate the new mean value
+		if (new_mean >= min_value) {    // if it is greater than the min. value, add it to the top list
+			sl.emplace(new_mean, colors);    // insert it at the correct position ordered by weight
+			if (sl.size() > t) {
+				sl.erase(--sl.end());    // if the top list exceeds its limit, erase the last entry
+				min_value = sl.rbegin()->first;    // update the min. value for the next iteration (only necessary of t is exceeded, otherwise min_value does not play a role.
+			}
+		}
+		
+		// iterator incremented to point next item
+		it++;
+		
+	}
+
+	return sl;
+}
+
+
 /**
  * This function iterates over the hash table and calculates the split weights.
  * 
@@ -1155,6 +1211,9 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
  * @param verbose print progess
  */
 void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
+	
+	
+	
     //double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
     uint64_t cur=0, prog=0, next;
 
@@ -1203,6 +1262,8 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
             add_weight(color, mean, min_value, pos);
         }
     }
+
+	
 }
 
 /**
@@ -1274,8 +1335,8 @@ void graph::clear_thread(uint64_t& T) {
  *
  * @param verbose print progress
  */
-void graph::filter_strict(bool& verbose) {
-    filter_strict(nullptr, verbose);
+void graph::filter_strict(multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose) {
+    filter_strict(nullptr, split_list_ptr, verbose);
 }
 
 /**
@@ -1284,14 +1345,14 @@ void graph::filter_strict(bool& verbose) {
  * @param map function that maps an integer to the original id, or null if no newick output wanted
  * @param verbose print progress
  */
-string graph::filter_strict(std::function<string(const uint64_t&)> map, bool& verbose) {
+string graph::filter_strict(std::function<string(const uint64_t&)> map, multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     color_t col;
-    auto it = split_list.begin();
+    auto it = split_list_ptr->begin();
     uint64_t cur = 0, prog = 0, next;
-    uint64_t max = split_list.size();
+    uint64_t max = split_list_ptr->size();
 loop:
-    while (it != split_list.end()) {
+    while (it != split_list_ptr->end()) {
         if (verbose) {
             next = 100*cur/max;
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
@@ -1302,7 +1363,7 @@ loop:
             tree.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
-        it = split_list.erase(it);  // otherwise, remove split
+        it = split_list_ptr->erase(it);  // otherwise, remove split
     }
     if (map) {
         node* root = build_tree(tree);
@@ -1317,14 +1378,15 @@ loop:
  *
  * @param verbose print progress
  */
-void graph::filter_weakly(bool& verbose) {
+void graph::filter_weakly(multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
-    auto it = split_list.begin();
     color_t col;
+    auto it = split_list_ptr->begin();
     uint64_t cur = 0, prog = 0, next;
-    uint64_t max = split_list.size();
+    uint64_t max = split_list_ptr->size();
+
 loop:
-    while (it != split_list.end()) {
+    while (it != split_list_ptr->end()) {
         if (verbose) {
             next = 100 * (cur * sqrt(cur)) / (max * sqrt(max));
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
@@ -1335,7 +1397,7 @@ loop:
             network.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
-        it = split_list.erase(it);    // otherwise, remove split
+        it = split_list_ptr->erase(it);    // otherwise, remove split
     }
 }
 
@@ -1345,8 +1407,8 @@ loop:
  * @param n number of trees
  * @param verbose print progress
  */
-void graph::filter_n_tree(uint64_t n, bool& verbose) {
-    filter_n_tree(n, nullptr, verbose);
+void graph::filter_n_tree(uint64_t n, multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose) {
+    filter_n_tree(n, nullptr, split_list_ptr, verbose);
 }
 
 /**
@@ -1356,14 +1418,14 @@ void graph::filter_n_tree(uint64_t n, bool& verbose) {
  * @param map function that maps an integer to the original id, or null
  * @param verbose print progress
  */
-string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose) {
+string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
-    auto it = split_list.begin();
     color_t col;
+    auto it = split_list_ptr->begin();
     uint64_t cur = 0, prog = 0, next;
-    uint64_t max = split_list.size();
+    uint64_t max = split_list_ptr->size();
 loop:
-    while (it != split_list.end()) {
+    while (it != split_list_ptr->end()) {
         if (verbose) {
             next = 100*cur/max;
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
@@ -1375,7 +1437,7 @@ loop:
             tree.emplace_back(col);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
-        it = split_list.erase(it);    // otherwise, remove split
+        it = split_list_ptr->erase(it);    // otherwise, remove split
     }
     // output
     string s;
@@ -1573,3 +1635,5 @@ string graph::print_tree(node* root, std::function<string(const uint64_t&)> map)
         return s;
     }
 }
+
+

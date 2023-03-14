@@ -95,6 +95,14 @@ int main(int argc, char* argv[]) {
         cout << "    -M, --maxN \t Compare number of input genomes to compile paramter DmaxN" << endl;
         cout << "               \t Add path/to/makefile (default is makefile in current working directory)." << endl;
         cout << endl;
+        cout << "    -b, --bootstrap \t Perform bootstrapping with the specified number of replicates" << endl;
+        cout << "                    \t No filtering on original splits - only on bootstrap replicates" << endl;
+        cout << "               \t Default: no bootstrapping" << endl;
+        cout << endl;
+        cout << "    -C, --confidence\t Perform filtering of splits w.r.t. support values" << endl;
+        cout << "               \t Default: no filtering" << endl;
+		cout << "               \t See --filter for available filters" << endl;
+        cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -T, --threads \t The number of threads to run" << endl;
@@ -138,6 +146,7 @@ int main(int argc, char* argv[]) {
 
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
+    string conf_filter; // filter function for filtering after bootstrapping
     uint64_t iupac = 1;    // allow extended iupac characters
     uint64_t quality = 1;    // min. coverage threshold for k-mers
     bool reverse = true;    // consider reverse complement k-mers
@@ -149,7 +158,7 @@ int main(int argc, char* argv[]) {
     bool check_n = false; // compare num (number of input genomes) to maxN (compile parameter DmaxN)
     string path = "./makefile"; // path to makefile
     uint64_t code = 1;
-
+	uint32_t bootstrap_no=0; // = no bootstrapping
 
     /**
      * --- Argument parser ---
@@ -275,7 +284,6 @@ int main(int argc, char* argv[]) {
             }
             shouldTranslate = true;
         }
-
         // Parallelization 
         else if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--threads") == 0){ 
             threads = stoi(argv[++i]);  // The number of threads to run
@@ -288,7 +296,40 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0){
             debug = true;    // Debug mode shows internal information
         }
-
+        else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bootstrapping") == 0) {
+            bootstrap_no = stoi(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--confidence") == 0) {
+            conf_filter = argv[++i];    // Filter a greedy maximum weight subset
+            if (conf_filter == "strict" || conf_filter == "tree") {
+                // compatible to a tree
+            }
+            else if (conf_filter == "weakly") {
+                // weakly compatible network
+            }
+            else if (conf_filter.find("-tree") != -1 && conf_filter.substr(conf_filter.find("-tree")) == "-tree") {
+                for (const char &c: conf_filter.substr(0, conf_filter.find("-tree"))){
+                    if (!isdigit(c)){
+                        cerr << "Error: unexpected argument: --conf_filter " << conf_filter << ". Please specify n (Example usage: --confidence 2-tree)" << endl;
+                        return 1;
+                    }
+                }
+                stoi(conf_filter.substr(0, conf_filter.find("-tree")));
+            }
+            else if (conf_filter.find("tree") != -1 && conf_filter.substr(conf_filter.find("tree")) == "tree") {
+                for (const char &c: conf_filter.substr(0, conf_filter.find("-tree"))){
+                    if (!isdigit(c)){
+                        cerr << "Error: unexpected argument: --confidence " << conf_filter << ". Please specify n (Example usage: --confidence 2-tree)" << endl;
+                        return 1;
+                    }
+                }
+                stoi(conf_filter.substr(0, conf_filter.find("tree")));
+            }
+            else {
+                cerr << "Error: unknown argument: --confidence " << conf_filter << endl;
+                return 1;
+            }
+        }
         else {
             cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
             return 1;
@@ -388,6 +429,15 @@ int main(int argc, char* argv[]) {
         cerr << "Note: Newick output from a list of splits, some taxa could be missing" << endl;
         cerr << "      --input can be used to provide the original list of taxa" << endl;
     }
+    if (bootstrap_no>0 && filter.empty()){
+        cerr << "Error: Bootstrapping can only be applied when a filter is selected (--filter)" << endl;
+		return 1;
+	}
+	if (bootstrap_no==0 && !conf_filter.empty()){
+        cerr << "Error: Filter on bootstrap values (--confidence) can only be chosen in combination with bootstrapping (--boostrapping)" << endl;
+		return 1;
+	}
+
 
 
     // --- Post parse ---
@@ -685,10 +735,10 @@ int main(int argc, char* argv[]) {
 
                                 sequence.clear();
 
-                                if (verbose) {
-                                    cout << "\33[2K\r" << line << flush << endl;    // print progress
-                                }
-                            }
+//                            if (verbose) {
+//                                cout << "\33[2K\r" << line << flush << endl;    // print progress
+//                            }
+							}
                             else if (line[0] == '+') {    // FASTQ quality values -> ignore
                                 getline(file, line);
                             }
@@ -814,43 +864,85 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         cout << "Processing splits..." << flush;
     }
     graph::add_weights(mean, min_value, verbose);  // accumulate split weights
+	
+	
+	hash_map<color_t, uint32_t> support_values;
 
-    if (verbose) {
-        cout << "\33[2K\r" << "Filtering splits..." << flush;
-    }
+	if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
+		
+	// NO BOOTSTRAPPING
+		
+		if(verbose){
+			cout << "\33[2K\r" << "Filtering splits..." << flush;
+		}
+		apply_filter(filter,newick, map, &(graph::split_list),verbose);
+		
+	}else{
+		
+	// BOOTSTRAPPING
+		
+		multimap<double, color_t, greater<>>* split_list_ptr=&(graph::split_list);
+		multimap<double, color_t, greater<>> split_list_bs;
+		hash_map<color_t, double> orig_weights;
 
-    //cleanliness cleanliness;
-    if (!filter.empty()) {    // apply filter
-        for (auto& split : graph::split_list) {
-            //cleanliness.addWeightStateBefore(split.first, split.second);
-        }
+		bool verbose_orig=verbose;
+		if(verbose){
+			cout << "\n" << flush;
+			verbose=false; // switch off output of filtering
+		}
+		
+		// init bootstrap support value counting
+		//hash_map for each original split with zero counts
+		for (auto it = graph::split_list.begin(); it != graph::split_list.end(); ++it){
+			support_values.insert({it->second,0});
+			orig_weights.insert({it->second,it->first});
+		}
 
-        if (filter == "strict" || filter == "tree") {
-            if (!newick.empty()) {
-                ofstream file(newick);    // output file stream
-                ostream stream(file.rdbuf());
-                stream << graph::filter_strict(map, verbose);    // filter and output
-                file.close();
-            } else {
-               graph::filter_strict(verbose);
-            }
-        }
-        else if (filter == "weakly") {
-           graph::filter_weakly(verbose);
-        }
-        else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
-            if (!newick.empty()) {
-                ofstream file(newick);    // output file stream
-                ostream stream(file.rdbuf());
-                auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, verbose);
-                stream <<  ot;
-                file.close();
-            } else {
-               graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), verbose);
-            }
-        }
-    }
+		for (int run = 1; run <= bootstrap_no; run++) {
+			if (verbose_orig) {
+				cout << "\33[2K\r" << "Bootstrapping... ("<<run<<"/"<<bootstrap_no<<")" << flush;
+			}
 
+			// create bootstrap replicate
+			split_list_bs = graph::bootstrap(mean);
+			split_list_ptr = &split_list_bs;
+			apply_filter(filter,"", map, split_list_ptr,verbose);
+			
+			// count conserved splits
+			for (auto it = split_list_bs.begin(); it != split_list_bs.end(); ++it){
+				// increase support value for it->second
+				color_t colors = it->second;
+				support_values[colors]++;
+			}
+
+		}
+		
+		if(verbose_orig){
+			cout << "\n" << flush;
+		}
+		verbose=verbose_orig; //switch back to verbose if originally set
+
+		if(!conf_filter.empty()) {
+			// filter original splits by bootstrap value
+			// compose a corresponding split list
+			multimap<double, color_t, greater<>> split_list_conf;
+			for (auto it = graph::split_list.begin(); it != graph::split_list.end(); ++it){
+				double conf=(1.0*support_values[it->second])/bootstrap_no;
+				color_t colors = it->second;
+				split_list_conf.emplace(conf,colors);
+			}
+			//filter
+			apply_filter(conf_filter,newick, map, &split_list_conf,verbose);
+
+			//apply result to original split list
+			graph::split_list.clear();
+			for (auto it = split_list_conf.begin(); it != split_list_conf.end(); ++it){
+				color_t colors = it->second;
+				graph::split_list.emplace(orig_weights[colors],colors);
+			}
+		}
+
+	}
 
     /**
      * --- Write to output ---
@@ -861,7 +953,11 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     }
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());
-
+	ofstream file_bootstrap;
+	ostream stream_bootstrap(file_bootstrap.rdbuf());
+    if (bootstrap_no>0){
+		file_bootstrap.open(output+".bootstrap");    // output file stream
+	}
     uint64_t pos = 0;
     //cleanliness.setFilteredCount(graph::split_list.size());
     color_t split_color;
@@ -870,19 +966,34 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         split_color = split.second;
        // cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
+        if (bootstrap_no>0){
+			stream_bootstrap << ((1.0*support_values[split.second])/bootstrap_no);
+// 			stream_bootstrap << support_values[split.second];
+		}
         for (uint64_t i = 0; i < num; ++i) {
             if (color::test(split_color, pos)) {
                 if (i < denom_names.size())
                     stream << '\t' << denom_names[i];    // name of the file
+                    if(bootstrap_no>0){
+						stream_bootstrap << '\t' << denom_names[i];    // name of the file
+					}
             }
             split_color >>= 01u;
         }
         stream << endl;
+		if(bootstrap_no>0){
+			stream_bootstrap<<endl;
+		}
     }
 
+    
+    
     //cleanliness.calculateWeightBeforeCounter();
 
     file.close();
+	if(bootstrap_no>0){
+		file_bootstrap.close();
+	}
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
 
@@ -894,4 +1005,37 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         cout << " (" << util::format_time(end - begin) << ")" << endl;
     }
     return 0;
+}
+
+
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multimap<double, color_t, greater<>>* split_list_ptr, bool verbose){
+
+		if (!filter.empty()) {    // apply filter
+
+			if (filter == "strict" || filter == "tree") {
+				if (!newick.empty()) {
+					ofstream file(newick);    // output file stream
+					ostream stream(file.rdbuf());
+					stream << graph::filter_strict(map, split_list_ptr, verbose);    // filter and output
+					file.close();
+				} else {
+				graph::filter_strict(split_list_ptr, verbose);
+				}
+			}
+			else if (filter == "weakly") {
+				graph::filter_weakly(split_list_ptr, verbose);
+			}
+			else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
+				if (!newick.empty()) {
+					ofstream file(newick);    // output file stream
+					ostream stream(file.rdbuf());
+					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, split_list_ptr, verbose);
+					stream <<  ot;
+					file.close();
+				} else {
+				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), split_list_ptr, verbose);
+				}
+			}
+		}	
+
 }

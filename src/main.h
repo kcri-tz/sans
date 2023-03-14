@@ -32,3 +32,5 @@ using namespace std;
  * @return exit status
  */ 
 int main(int argc, char* argv[]);
+
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multimap<double, color_t, greater<>>* split_list_ptr, bool verbose);
