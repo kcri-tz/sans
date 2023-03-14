@@ -142,7 +142,7 @@ public:
     // [Temporary: Test]
     static void showTableSizes();
 
-	static multimap<double, color_t, greater<>> bootstrap(double mean(uint32_t&, uint32_t&));
+	static multiset<pair<double, color_t>> bootstrap(double mean(uint32_t&, uint32_t&));
 
     /**
      * This is an ordered tree collecting the splits [O(log n)].
@@ -359,6 +359,8 @@ public:
      * @param color split colors
      */
     static void add_split(double& weight, color_t& color);
+	static void add_split(double& weight, color_t& color, multiset<pair<double, color_t>>* split_list_ptr);
+
 
     /**
      * This funtion adds a sigle split from a cdbg to the output list.
@@ -382,7 +384,7 @@ public:
      * @param verbose print progress
      * @return the new minimal weight represented in the top list
      */
-    static void filter_strict(multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose);
+    static void filter_strict(multiset<pair<double, color_t>>* split_list_ptr, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
@@ -390,14 +392,14 @@ public:
      * @param map function that maps an integer to the original id, or null
      * @param verbose print progress
      */
-    static string filter_strict(std::function<string(const uint64_t&)> map, multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose);
+    static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>>* split_list_ptr, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight weakly compatible subset.
      *
      * @param verbose print progress
      */
-    static void filter_weakly(multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose);
+    static void filter_weakly(multiset<pair<double, color_t>>* split_list_ptr, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset.
@@ -405,7 +407,7 @@ public:
      * @param n number of trees
      * @param verbose print progress
      */
-    static void filter_n_tree(uint64_t n, multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose);
+    static void filter_n_tree(uint64_t n, multiset<pair<double, color_t>>* split_list_ptr, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
@@ -414,7 +416,7 @@ public:
      * @param map function that maps an integer to the original id, or null
      * @param verbose print progress
      */
-    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multimap<double, color_t, greater<>>* split_list_ptr, bool& verbose);
+    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>>* split_list_ptr, bool& verbose);
 	
 	
 
