@@ -866,6 +866,8 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     }
     graph::add_weights(mean, min_value, verbose);  // accumulate split weights
 	
+
+	// for bootstrapping: hash_map for each original split with zero counts
 	hash_map<color_t, uint32_t> support_values;
 
 	if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
@@ -875,13 +877,12 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		if(verbose){
 			cout << "\33[2K\r" << "Filtering splits..." << flush;
 		}
-		apply_filter(filter,newick, map, &(graph::split_list),verbose);
+		apply_filter(filter,newick, map, graph::split_list,verbose);
 		
 	}else{
 		
 	// BOOTSTRAPPING
 		
-		hash_map<color_t, double> orig_weights;
 
 		bool verbose_orig=verbose;
 		if(verbose){
@@ -890,7 +891,8 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		}
 		
 		// init bootstrap support value counting
-		//hash_map for each original split with zero counts
+		// remember original split weights for later
+		hash_map<color_t, double> orig_weights;
 		for (auto& it : graph::split_list){
 			support_values.insert({it.second,0});
 			orig_weights.insert({it.second,it.first});
@@ -914,17 +916,11 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 				}
 				
 				// create bootstrap replicate
-				multiset<pair<double, color_t>, greater<>> split_list_bs;
-				split_list_bs = graph::bootstrap(mean);
-				apply_filter(filter,"", map, &split_list_bs,verbose);
+				multiset<pair<double, color_t>, greater<>>  split_list_bs = graph::bootstrap(mean);
+				apply_filter(filter,"", map, split_list_bs,verbose);
 				
 				// count conserved splits
 				lambda_bootstrap_count(split_list_bs, support_values);
-// 				for (auto& it : graph::split_list){
-// 					cout << support_values[it.second] << ", "<<flush;
-// 				}
-// 				cout << "\n" << flush;
-
 				
 				// more to do for this thread?
 				i = index_lambda_bootstrap();
@@ -932,7 +928,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		};
 		
 		// Driver code for multithreaded bootstrapping
-// 		const uint64_t MAXb = 10;//bootstrap_no;
 		vector<thread> thread_holder(threads);
 		for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda_bootstrap, thread_id, bootstrap_no);}
 		for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
@@ -950,11 +945,11 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 			for (auto& it : graph::split_list){
 				double conf=(1.0*support_values[it.second])/bootstrap_no;
 				color_t colors = it.second;
-  				graph::add_split(conf,colors,&split_list_conf);
+  				graph::add_split(conf,colors,split_list_conf);
 // 				split_list_conf.emplace(conf,it.second);
 			}
 			//filter
-			apply_filter(conf_filter,newick, map, &split_list_conf,verbose);
+			apply_filter(conf_filter,newick, map, split_list_conf,verbose);
 
 			//apply result to original split list
 			graph::split_list.clear();
@@ -1029,8 +1024,16 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
     return 0;
 }
 
-
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool verbose){
+/** This function applies the specified filter to the given split list.
+ * 
+ * @param filter string specifying the type of filter
+ * @param newick string with a file name to write a newick output to (or empty string)
+ * @param map function that maps an integer to the original id, or null
+ * @param split_list the list of splits to be filtered, e.g. graph::split_list
+ * @param verbose print progress
+ * 
+ */
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool verbose){
 
 		if (!filter.empty()) {    // apply filter
 
@@ -1038,24 +1041,24 @@ void apply_filter(string filter, string newick, std::function<string(const uint6
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream
 					ostream stream(file.rdbuf());
-					stream << graph::filter_strict(map, split_list_ptr, verbose);    // filter and output
+					stream << graph::filter_strict(map, split_list, verbose);    // filter and output
 					file.close();
 				} else {
-				graph::filter_strict(split_list_ptr, verbose);
+				graph::filter_strict(split_list, verbose);
 				}
 			}
 			else if (filter == "weakly") {
-				graph::filter_weakly(split_list_ptr, verbose);
+				graph::filter_weakly(split_list, verbose);
 			}
 			else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream
 					ostream stream(file.rdbuf());
-					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, split_list_ptr, verbose);
+					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, split_list, verbose);
 					stream <<  ot;
 					file.close();
 				} else {
-				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), split_list_ptr, verbose);
+				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), split_list, verbose);
 				}
 			}
 		}	

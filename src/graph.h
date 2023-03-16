@@ -142,6 +142,11 @@ public:
     // [Temporary: Test]
     static void showTableSizes();
 
+	/**
+	* This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.
+	* @param mean weight function
+	* @return the new list of splits of length at least t ordered by weight as usual
+	*/
 	static multiset<pair<double, color_t>, greater<>> bootstrap(double mean(uint32_t&, uint32_t&));
 
     /**
@@ -357,9 +362,10 @@ public:
      *
      * @param weight split weight
      * @param color split colors
+	 * (@param split_list list of splits to add the split to)
      */
     static void add_split(double& weight, color_t& color);
-	static void add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>* split_list_ptr);
+	static void add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>& split_list);
 
 
     /**
@@ -381,42 +387,47 @@ public:
     /**
      * This function filters a greedy maximum weight tree compatible subset.
      *
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      * @return the new minimal weight represented in the top list
      */
-    static void filter_strict(multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose);
+    static void filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
      *
      * @param map function that maps an integer to the original id, or null
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose);
+    static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight weakly compatible subset.
      *
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static void filter_weakly(multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose);
+    static void filter_weakly(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset.
      *
      * @param n number of trees
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static void filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose);
+    static void filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
      *
      * @param n number of trees
      * @param map function that maps an integer to the original id, or null
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose);
+    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 	
 	
 
@@ -505,6 +516,7 @@ protected:
      * This function returns a newick string generated from the given tree structure (set).
      *
      * @param root root of the tree/set structure
+     * @param map function that maps an integer to the original id, or null
      * @return newick string
      */
     static string print_tree(node* root, std::function<string(const uint64_t&)> map);

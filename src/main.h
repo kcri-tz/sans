@@ -36,4 +36,13 @@ using namespace std;
  */ 
 int main(int argc, char* argv[]);
 
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool verbose);
+/** This function applies the specified filter to the given split list.
+ * 
+ * @param filter string specifying the type of filter
+ * @param newick string with a file name to write a newick output to (or empty string)
+ * @param map function that maps an integer to the original id, or null
+ * @param split_list the list of splits to be filtered, e.g. graph::split_list
+ * @param verbose print progress
+ * 
+ */
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool verbose);

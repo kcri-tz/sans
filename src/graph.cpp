@@ -1139,14 +1139,7 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
     weight[pos]++; // update the weight or the inverse weight of the current color set
     double new_value = mean(weight[0], weight[1]);    // calculate the new mean value
     if (new_value >= min_value) {    // if it is greater than the min. value, add it to the top list
-// cout << new_value << " -> " << flush;
         split_list.emplace(new_value, color);    // insert it at the correct position ordered by weight
-// 		for (auto& it : graph::split_list){
-// cout << it.first << ", " << flush;
-// 		}
-// cout << "\n";
-
-		
 		if (split_list.size() > t) {
             split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
             min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
@@ -1158,7 +1151,11 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
 
 
 
-// BOOTSTRAP
+/**
+ * This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.
+ * @param mean weight function
+ * @return the new list of splits of length at least t ordered by weight as usual
+ */
 multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 
 	int max = kmer_table.size(); 
@@ -1215,6 +1212,7 @@ multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t
  * This function iterates over the hash table and calculates the split weights.
  * 
  * @param mean weight function
+ * @param min_value the minimal weight represented in the top list
  * @param verbose print progess
  */
 void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
@@ -1274,19 +1272,26 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
 }
 
 /**
- * This function adds a single split (weight and colors) to the output list.
+ * This function calls add_split onthe global split_list
  *
  * @param weight split weight
  * @param color split colors
  */
 void graph::add_split(double& weight, color_t& color) {
-	add_split(weight, color, &split_list);
+	add_split(weight, color, split_list);
 }
 
-void graph::add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>* split_list_ptr) {
-    split_list_ptr->emplace(weight, color);    // insert it at the correct position ordered by weight
-    if (split_list_ptr->size() > t) {
-        split_list_ptr->erase(--split_list_ptr->end());    // if the top list exceeds its limit, erase the last entry
+/**
+ * This function adds a single split (weight and colors) to the output list.
+ *
+ * @param weight split weight
+ * @param color split colors
+ * @param split_list list of splits
+ */
+void graph::add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>& split_list) {
+    split_list.emplace(weight, color);    // insert it at the correct position ordered by weight
+    if (split_list.size() > t) {
+        split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
     }
 }
 
@@ -1296,6 +1301,7 @@ void graph::add_split(double& weight, color_t& color, multiset<pair<double, colo
  * 
  * @param seq kmer
  * @param kmer_color the split colors
+ * @param min_value the minimal weight represented in the top list
  */
 double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value){
     
@@ -1345,26 +1351,28 @@ void graph::clear_thread(uint64_t& T) {
 /**
  * This function filters a greedy maximum weight tree compatible subset.
  *
+ * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-void graph::filter_strict(multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose) {
-    filter_strict(nullptr, split_list_ptr, verbose);
+void graph::filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+    filter_strict(nullptr, split_list, verbose);
 }
 
 /**
  * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
  *
  * @param map function that maps an integer to the original id, or null if no newick output wanted
+ * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-string graph::filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose) {
+string graph::filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     color_t col;
-    auto it = split_list_ptr->begin();
+    auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
-    uint64_t max = split_list_ptr->size();
+    uint64_t max = split_list.size();
 loop:
-    while (it != split_list_ptr->end()) {
+    while (it != split_list.end()) {
         if (verbose) {
             next = 100*cur/max;
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
@@ -1375,7 +1383,7 @@ loop:
             tree.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
-        it = split_list_ptr->erase(it);  // otherwise, remove split
+        it = split_list.erase(it);  // otherwise, remove split
     }
     if (map) {
         node* root = build_tree(tree);
@@ -1388,17 +1396,18 @@ loop:
 /**
  * This function filters a greedy maximum weight weakly compatible subset.
  *
+ * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-void graph::filter_weakly(multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose) {
+void graph::filter_weakly(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
     color_t col;
-    auto it = split_list_ptr->begin();
+    auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
-    uint64_t max = split_list_ptr->size();
+    uint64_t max = split_list.size();
 
 loop:
-    while (it != split_list_ptr->end()) {
+    while (it != split_list.end()) {
         if (verbose) {
             next = 100 * (cur * sqrt(cur)) / (max * sqrt(max));
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
@@ -1409,7 +1418,7 @@ loop:
             network.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
-        it = split_list_ptr->erase(it);    // otherwise, remove split
+        it = split_list.erase(it);    // otherwise, remove split
     }
 }
 
@@ -1417,10 +1426,11 @@ loop:
  * This function filters a greedy maximum weight n-tree compatible subset.
  *
  * @param n number of trees
+ * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose) {
-    filter_n_tree(n, nullptr, split_list_ptr, verbose);
+void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+    filter_n_tree(n, nullptr, split_list, verbose);
 }
 
 /**
@@ -1428,16 +1438,17 @@ void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>
  *
  * @param n number of trees
  * @param map function that maps an integer to the original id, or null
+ * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool& verbose) {
+string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     color_t col;
-    auto it = split_list_ptr->begin();
+    auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
-    uint64_t max = split_list_ptr->size();
+    uint64_t max = split_list.size();
 loop:
-    while (it != split_list_ptr->end()) {
+    while (it != split_list.end()) {
         if (verbose) {
             next = 100*cur/max;
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
@@ -1449,7 +1460,7 @@ loop:
             tree.emplace_back(col);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
-        it = split_list_ptr->erase(it);    // otherwise, remove split
+        it = split_list.erase(it);    // otherwise, remove split
     }
     // output
     string s;
