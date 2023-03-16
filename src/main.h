@@ -5,6 +5,7 @@
 #include <thread>
 #include <regex>
 #include <mutex>
+#include <omp.h>
 
 #include "util.h"
 #include "translator.h"
@@ -35,4 +36,4 @@ using namespace std;
  */ 
 int main(int argc, char* argv[]);
 
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>>* split_list_ptr, bool verbose);
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>* split_list_ptr, bool verbose);
