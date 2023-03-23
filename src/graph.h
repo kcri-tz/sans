@@ -400,7 +400,8 @@ public:
      * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
+// 	static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);	
+	static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight weakly compatible subset.
@@ -427,7 +428,7 @@ public:
      * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
+    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
 	
 	
 
@@ -519,6 +520,7 @@ protected:
      * @param map function that maps an integer to the original id, or null
      * @return newick string
      */
+    static string print_tree(node* root, std::function<string(const uint64_t&)> map, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no);
     static string print_tree(node* root, std::function<string(const uint64_t&)> map);
 
     /**
