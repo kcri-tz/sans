@@ -842,7 +842,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){ // iterate the unitig colors
                     color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
 		}
-                min_value = graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
+                graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
 	   }
         }
     }
@@ -865,10 +865,12 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         cout << "Processing splits..." << flush;
     }
     graph::add_weights(mean, min_value, verbose);  // accumulate split weights
+	graph::compile_split_list(mean, min_value);
 	
 
 	// for bootstrapping: hash_map for each original split with zero counts
 	hash_map<color_t, uint32_t> support_values;
+	
 
 	if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
 		
