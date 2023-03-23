@@ -401,8 +401,8 @@ int main(int argc, char* argv[]) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
         return 1;
     }
-    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1) {
-        cerr << "Error: Newick output only applicable in combination with -f strict or n-tree" << endl;
+    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1 && conf_filter != "strict" && conf_filter.find("tree") == -1) {
+        cerr << "Error: Newick output only applicable in combination with -f strict or n-tree, or -C strict or -C n-tree, respectively" << endl;
         return 1;
     }
 
@@ -949,7 +949,8 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 // 				split_list_conf.emplace(conf,it.second);
 			}
 			//filter
-			apply_filter(conf_filter,newick, map, split_list_conf,verbose);
+// 			apply_filter(conf_filter,newick, map, split_list_conf,verbose);
+			apply_filter(conf_filter,newick, map, split_list_conf,&support_values,bootstrap_no,verbose);
 
 			//apply result to original split list
 			graph::split_list.clear();
@@ -1034,6 +1035,10 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
  * 
  */
 void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool verbose){
+	apply_filter(filter, newick, map, split_list, nullptr, 0, verbose);
+}
+
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool verbose){
 
 		if (!filter.empty()) {    // apply filter
 
@@ -1041,10 +1046,10 @@ void apply_filter(string filter, string newick, std::function<string(const uint6
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream
 					ostream stream(file.rdbuf());
-					stream << graph::filter_strict(map, split_list, verbose);    // filter and output
+					stream << graph::filter_strict(map, split_list, support_values, bootstrap_no, verbose);    // filter and output
 					file.close();
 				} else {
-				graph::filter_strict(split_list, verbose);
+					graph::filter_strict(split_list, verbose);
 				}
 			}
 			else if (filter == "weakly") {
@@ -1054,11 +1059,11 @@ void apply_filter(string filter, string newick, std::function<string(const uint6
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream
 					ostream stream(file.rdbuf());
-					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, split_list, verbose);
+					auto ot = graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), map, split_list, support_values, bootstrap_no, verbose);
 					stream <<  ot;
 					file.close();
 				} else {
-				graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), split_list, verbose);
+					graph::filter_n_tree(stoi(filter.substr(0, filter.find("tree"))), split_list, verbose);
 				}
 			}
 		}	

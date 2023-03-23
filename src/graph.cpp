@@ -1355,7 +1355,7 @@ void graph::clear_thread(uint64_t& T) {
  * @param verbose print progress
  */
 void graph::filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
-    filter_strict(nullptr, split_list, verbose);
+    filter_strict(nullptr, split_list, nullptr, 0, verbose);
 }
 
 /**
@@ -1365,7 +1365,7 @@ void graph::filter_strict(multiset<pair<double, color_t>, greater<>>& split_list
  * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-string graph::filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+string graph::filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
@@ -1387,7 +1387,7 @@ loop:
     }
     if (map) {
         node* root = build_tree(tree);
-        return print_tree(root, map) + ";\n";
+        return print_tree(root, map, support_values, bootstrap_no) + ";\n";
     } else {
         return "";
     }
@@ -1430,7 +1430,7 @@ loop:
  * @param verbose print progress
  */
 void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
-    filter_n_tree(n, nullptr, split_list, verbose);
+    filter_n_tree(n, nullptr, split_list, nullptr, 0, verbose);
 }
 
 /**
@@ -1441,7 +1441,7 @@ void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>
  * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
@@ -1467,7 +1467,7 @@ loop:
     if (map) {
         for (auto& tree : forest) {
             node* root = build_tree(tree);
-            s += print_tree(root, map) + ";\n";
+            s += print_tree(root, map, support_values,bootstrap_no) + ";\n";
         }
     }
     return s;
@@ -1633,6 +1633,10 @@ node* graph::build_tree(vector<color_t>& color_set) {
  * @return newick string
  */
 string graph::print_tree(node* root, std::function<string(const uint64_t&)> map) {
+	return print_tree(root, map,nullptr,0);
+}
+
+string graph::print_tree(node* root, std::function<string(const uint64_t&)> map, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no) {
     vector<node*> subsets = root->subsets;
     color_t taxa = root->taxa;
 
@@ -1650,10 +1654,14 @@ string graph::print_tree(node* root, std::function<string(const uint64_t&)> map)
     else {
         string s = "(";
         for (node* subset : subsets) {
-            s += print_tree(subset, map);
+            s += print_tree(subset, map, support_values, bootstrap_no);
             if (subset != subsets.back()) { s += ","; }
         }
-        s += "):";
+        s += ")";
+		if(support_values!=nullptr){
+			s+=to_string(((1.0*(*support_values)[taxa])/bootstrap_no));
+		}
+		s += ":";
         s += to_string(root->weight);
         return s;
     }
