@@ -1349,23 +1349,22 @@ void graph::clear_thread(uint64_t& T) {
     }
 }
 
-/**
- * This function filters a greedy maximum weight tree compatible subset.
- *
- * @param split_list list of splits to be filtered
- * @param verbose print progress
- */
-void graph::filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
-    filter_strict(nullptr, split_list, nullptr, 0, verbose);
-}
+
 
 /**
  * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
  *
- * @param map function that maps an integer to the original id, or null if no newick output wanted
+ * (@param map function that maps an integer to the original id, or null if no newick output wanted)
  * @param split_list list of splits to be filtered
+ * (@param support_values a hash map storing the absolut support values for each color set)
+ * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @param verbose print progress
  */
+
+void graph::filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+    filter_strict(nullptr, split_list, nullptr, 0, verbose);
+}
+
 string graph::filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     color_t col;
@@ -1424,24 +1423,19 @@ loop:
 }
 
 /**
- * This function filters a greedy maximum weight n-tree compatible subset.
+ * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
  *
  * @param n number of trees
+ * (@param map function that maps an integer to the original id, or null)
  * @param split_list list of splits to be filtered
+ * (@param support_values a hash map storing the absolut support values for each color set)
+ * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @param verbose print progress
  */
 void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
     filter_n_tree(n, nullptr, split_list, nullptr, 0, verbose);
 }
 
-/**
- * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
- *
- * @param n number of trees
- * @param map function that maps an integer to the original id, or null
- * @param split_list list of splits to be filtered
- * @param verbose print progress
- */
 string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     color_t col;
@@ -1631,6 +1625,9 @@ node* graph::build_tree(vector<color_t>& color_set) {
  * This function returns a newick string generated from the given tree structure (set).
  *
  * @param root root of the tree/set structure
+ * @param map function that maps an integer to the original id, or null
+ * (@param support_values a hash map storing the absolut support values for each color set)
+ * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @return newick string
  */
 string graph::print_tree(node* root, std::function<string(const uint64_t&)> map) {

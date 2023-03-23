@@ -394,9 +394,10 @@ public:
      *
      * @param map function that maps an integer to the original id, or null
      * @param split_list list of splits to be filtered
+	 * @param support_values a hash map storing the absolut support values for each color set
+	 * @param bootstrap_no the number of bootstrap replicates for computing the per centage support
      * @param verbose print progress
      */
-// 	static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);	
 	static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
 
     /**
@@ -422,6 +423,8 @@ public:
      * @param n number of trees
      * @param map function that maps an integer to the original id, or null
      * @param split_list list of splits to be filtered
+	 * @param support_values a hash map storing the absolut support values for each color set
+	 * @param bootstrap_no the number of bootstrap replicates for computing the per centage support
      * @param verbose print progress
      */
     static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
@@ -514,6 +517,8 @@ protected:
      *
      * @param root root of the tree/set structure
      * @param map function that maps an integer to the original id, or null
+	 * (@param support_values a hash map storing the absolut support values for each color set)
+	 * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
      * @return newick string
      */
     static string print_tree(node* root, std::function<string(const uint64_t&)> map, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no);
