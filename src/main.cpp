@@ -1033,6 +1033,8 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
  * @param newick string with a file name to write a newick output to (or empty string)
  * @param map function that maps an integer to the original id, or null
  * @param split_list the list of splits to be filtered, e.g. graph::split_list
+ * (@param support_values a hash map storing the absolut support values for each color set)
+ * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @param verbose print progress
  * 
  */
