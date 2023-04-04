@@ -100,8 +100,8 @@ int main(int argc, char* argv[]) {
         cout << "                    \t No filtering on original splits - only on bootstrap replicates" << endl;
         cout << "               \t Default: no bootstrapping" << endl;
         cout << endl;
-        cout << "    -C, --confidence\t Perform filtering of splits w.r.t. support values" << endl;
-        cout << "               \t Default: no filtering" << endl;
+        cout << "    -C, --confidence\t Apply final filter w.r.t. support values" << endl;
+        cout << "               \t Default: same filter as --filter w.r.t. weights" << endl;
 		cout << "               \t See --filter for available filters" << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
@@ -940,7 +940,10 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		}
 		verbose=verbose_orig; //switch back to verbose if originally set
 
-		if(!conf_filter.empty()) {
+		if(conf_filter.empty()) {
+			// filter original splits by weight
+			apply_filter(filter,newick, map, graph::split_list,&support_values,bootstrap_no,verbose);
+		}else{
 			// filter original splits by bootstrap value
 			// compose a corresponding split list
 			multiset<pair<double, color_t>, greater<>> split_list_conf;
