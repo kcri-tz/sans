@@ -8,7 +8,7 @@ import pygtrie
 from math import log
 from math import sqrt
 
-fileext=[".fa",".fas",".fastq",".mfasta",".fasta",".fsa",".fna"]
+fileext=[".fa",".fas",".fastq",".mfasta",".fasta",".fsa",".fna",".ffn"]
 
 
 
@@ -38,7 +38,7 @@ def readfile(filename,taxa):
     splits=pygtrie.StringTrie()
     for line in (s.strip() for s in open(filename)):
         #split line
-        fields = line.split('\t')
+        fields = line.split()
         weight = float(fields[0])
         split_orig = fields[1:]
         #store tax names if necessary
@@ -48,7 +48,7 @@ def readfile(filename,taxa):
             if os.path.splitext(f)[1] in fileext:
                 f=os.path.basename(os.path.splitext(f)[0])
             if f not in taxa.keys():
-                eprint("WARNING: taxa from split not in taxa file and thus discarded: "+f)
+                eprint("WARNING: taxa from split not in taxa file and thus discarded: "+f+" "+filename+" "+line)
 #                exit(1)
             else:
                 split.append(taxa[f])
@@ -145,7 +145,7 @@ print(splitstring)
 print(";\nEND; [Splits]")
 
 
-print("BEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = false DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=none;\n exclude  no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]\n")
+print("BEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=none;\n exclude  no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]\n")
 
 
 
