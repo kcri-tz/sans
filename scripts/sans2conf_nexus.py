@@ -168,7 +168,7 @@ print(splitstring)
 print(";\nEND; [Splits]")
 
 
-print("BEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = false DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=none;\n exclude  no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]\n")
+print("BEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=none;\n exclude  no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]\n")
 
 
 
