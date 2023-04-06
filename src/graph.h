@@ -139,7 +139,7 @@ public:
     /**
      * This is an ordered tree collecting the splits [O(log n)].
      */
-    static multiset<pair<double, color_t>> split_list;
+    static multiset<pair<double, color_t>,greater<>> split_list;
 
     /**
     * These are the allowed chars.
@@ -170,7 +170,7 @@ public:
     /**
     * This function shift updates a bin for an amino kmer
     */
-    static uint64_t shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_left, char& c_right);
+    static uint64_t shift_update_amino_bin(uint64_t& bin, kmerAmino_t& kmer, char& c_left, char& c_right);
 
     /**
      *  This method computes the bin of a given kmer(slower than shift update)
@@ -189,7 +189,7 @@ public:
      * @return uint64_t The bin
      */
     #if (maxK <= 12)
-        static uint64_t compute_amino_bin(const kmerAmino_t kmer);
+        static uint64_t compute_amino_bin(const kmerAmino_t& kmer);
     #else
         static uint64_t compute_amino_bin(const bitset<5*maxK>& kmer);
     #endif
@@ -216,7 +216,7 @@ public:
      *  @param color The color to store 
      *  @param reversed The bool implying if the k-mer was reversed or not
      */
-    static void hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color);
+    static void hash_kmer(uint64_t& bin, const kmer_t& kmer, const uint64_t& color);
 
 
     /**
@@ -235,7 +235,7 @@ public:
      *  @param kmer The kmer to store
      *  @param color The color to store 
      */
-    static void hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_t& color);
+    static void hash_kmer_amino(uint64_t& bin, const kmerAmino_t& kmer, const uint64_t& color);
 
     /**
      * This function hashes an amino k-mer and stores it in the correstponding hash table (sequential version)
