@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #include <map>
 #include <set>
@@ -55,8 +56,6 @@ template <typename T>
     typedef color64 color;
     typedef uint64_t color_t;
 #endif
-
-#include "spinlockMutex.h"
 
 
 /**

@@ -362,12 +362,13 @@ uint64_t graph::shift_update_amino_bin(uint64_t& bin, kmerAmino_t& kmer, char& c
 #if (maxK <= 32)
 uint64_t graph::compute_bin(const kmer_t& kmer)
 {
-    return kmer % table_count;
+    return hash_in_parallel ? kmer % table_count : 0;
 }
 #else
 uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 {
-	if (table_count <= 1){return 0;}
+	if (!hash_in_parallel){return 0;}
+
 	uint64_t carry = 1;
 	uint64_t rest = 0;
 	if (kmer[0]){rest++;} // Test the last bit
@@ -382,12 +383,12 @@ uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 #if (maxK <= 12)
     uint64_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
-        return kmer % table_count;
+        return hash_in_parallel ? kmer % table_count : 0;
     }
 #else
     uint64_t graph::compute_amino_bin(const bitset<5*maxK>& kmer)
     {
-	    if (table_count <= 1){return 0;}
+	    if (!hash_in_parallel){return 0;}
 	
 	    uint64_t carry = 1;
 	    uint64_t rest = 0;
