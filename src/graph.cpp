@@ -380,7 +380,7 @@ uint64_t graph::compute_bin(const bitset<2*maxK>& kmer)
 #endif
 
 #if (maxK <= 12)
-    uint64_t graph::compute_amino_bin(const kmerAmino_t kmer)
+    uint64_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
         return kmer % table_count;
     }
