@@ -16,6 +16,7 @@ uint64_t graph::quality;
 
 bool graph::isAmino;
 
+bool graph::hash_in_parallel;
 uint64_t graph::table_count;
 
 /**
@@ -32,8 +33,6 @@ vector<mutex> graph::lock;
  * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
  */
 vector<uint64_t> graph::period;
-uint64_t graph::first_mod_correction;
-uint64_t graph::second_mod_correction;
 
 /**
  * This is the amino equivalent.
@@ -135,16 +134,21 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  * @param quality coverage threshold
  */
 
-void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bins, uint64_t& thread_count) {
+void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
-    table_count = bins;
-
+    hash_in_parallel = thread_count > 1 ? true : false;
     if(!isAmino){
 
         // Automatic table count
-        // if (kmer::k <= 4) { table_count = (0b1u << (2 * kmer::k)) - 1;} // Using an beta=2 multiple as exponent allows for implicid comgruence
-        // else {table_count = 257;}
+        if (hash_in_parallel)
+        {
+            hash_in_parallel = true;
+            table_count = 45 * thread_count - 33; // Estimated scaling
+            table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        }
+        else {table_count = 1;}
+        
 
         // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
@@ -162,12 +166,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
             // cout << last << endl;
 	        period.push_back(last);
 	        last = (2 * last) % table_count;
-            
-            // Set complement mod correction values
-            if (last == 1)
-            {
-                second_mod_correction = period[i-1];
-            }
         }
         #endif
 
@@ -177,8 +175,13 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
         graph::allowedChars.push_back('T');
     }else{
         // Automatic table count
-        // if (kmerAmino::k <= 15){ table_count = (0b1u << kmerAmino::k - (kmerAmino::k % 5)) - 1;} // Using an beta=5 multiple as exponent allows for implicid comgruence
-        // else {table_count = (0b1u << 15) - 1;}
+        if (hash_in_parallel)
+        {
+            hash_in_parallel = true;
+            table_count = 33 * thread_count + 33; // Estimated scaling
+            table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        }
+        else {table_count = 1;}
 
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
@@ -282,7 +285,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
 /**
 * --- [Hash map access] ---
 * The following methods
-* get_table_index, hash_kmer, hash_kmer_amino, search_kmer, get_color and remove_kmer
 * are used to access the entries of the multi_table hash maps
 */ 
 
@@ -326,15 +328,13 @@ uint64_t graph::shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_righ
 /**
  * This method shift-updates the bin of an amino kmer
  */
-uint64_t graph::shift_update_amino_bin(uint64_t& bin, kmerAmino_t& kmer, char& c_left, char& c_right)
+uint64_t graph::shift_update_amino_bin(uint64_t& bin, kmerAmino_t& kmer, char& c_right)
 {
     #if (maxK <= 12) // This is not a real shift update due to performance of the build in mod
         return  kmer % table_count; 
     #else
         // update the binning carry (solution of the shift-update-carry equation)
         uint64_t right = util::amino_char_to_bits(c_right); // Transcode the new character to bits
-        // uint64_t left = util::amino_char_to_bits(c_left);
-        // bias
         
         // shift
         bin = 160 * table_count + // Bias 
@@ -579,8 +579,7 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         
         // Amino processing
         } else {
-            // amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right, right);
-            amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, str[pos], str[pos]);
+            amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, str[pos]);
             char left = kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {

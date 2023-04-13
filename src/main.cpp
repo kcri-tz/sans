@@ -5,6 +5,7 @@
 #include "gz/gzstream.h"
 
 
+
 /**
  * This is the entry point of the program.
  *
@@ -97,9 +98,7 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
-        cout << "    -T, --threads \t The number of threads to run" << endl;
-        cout << endl;
-        cout << "    -B, --bins \t The number of hash tables to use" << endl;
+        cout << "    -T, --threads \t The number of threads to spawn (default is all)" << endl;
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
         cout << endl;
@@ -131,8 +130,7 @@ int main(int argc, char* argv[]) {
     uint64_t top = -1;    // number of splits
     bool dyn_top = false; // bind number of splits to num
 
-    uint64_t threads = 1; // The number of threads to run on
-    uint64_t bins = 0; // The number of hash tables to use
+    uint64_t threads = thread::hardware_concurrency(); // The number of threads to run on
 
     bool debug = false;
 
@@ -281,10 +279,6 @@ int main(int argc, char* argv[]) {
             threads = stoi(argv[++i]);  // The number of threads to run
         }
 
-        else if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--bins") == 0){
-            bins = stoi(argv[++i]);    // The number of hash tables to use
-        }
-
         else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0){
             debug = true;    // Debug mode shows internal information
         }
@@ -400,12 +394,12 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Check hash table setup for parallelization:
-    if (bins == 0)
+    if (threads <= 0)
     {
-        if (threads != 1){!amino ? bins = 3 : bins =  31;} // default binning strategies for multithreading
-        else {bins = 1;} // default binning strategy for sequential hashing
+        threads = 1;
     }
+
+
     /**
      * [Indexing]
      * --- Indexing inputs ---
@@ -598,7 +592,7 @@ int main(int argc, char* argv[]) {
     kmer::init(kmer);      // initialize the k-mer length
     kmerAmino::init(kmer); // initialize the k-mer length
     color::init(num);    // initialize the color number
-    graph::init(top, amino, quality, bins, threads); // initialize the toplist size and the allowed characters
+    graph::init(top, amino, quality, threads); // initialize the toplist size and the allowed characters
 
     /**
      *  --- Split processing ---
