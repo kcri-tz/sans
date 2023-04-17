@@ -77,25 +77,3 @@ char kmerAminoXX::shift_right(bitset<5 * maxK>& kmer, char& c) {
 bool kmerAminoXX::reverse_complement(bitset<5 * maxK>& kmer, bool minimize) {
     return false;
 }
-
-
-/**
- * The function computes the module on the Amino bitset
- *
- */
-uint64_t kmerAminoXX::bit_mod(const bitset<5 * maxK>& kmer, uint64_t& module) {
-	bitset<5 * maxK> bits = kmer;
-	if (module <= 1){return 0;}
-	
-	uint64_t carry = 1;
-	uint64_t rest = 0;
-
-	if (bits[0]){rest++;} // Test the last bit
-	
-	for (uint64_t it=1; it < 5*k; it--){
-	    carry = (2*carry) % module;
-	    if (bits[it]){rest += carry;}
-	}
-	return rest % module;
-}
-
