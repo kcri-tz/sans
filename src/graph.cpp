@@ -156,8 +156,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
         // Init the mutex lock vector
 	    lock = vector<mutex> (table_count);
 
-        cout << "Using tbales: " << table_count << endl;
-
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 32)     
         uint64_t last = 1 % table_count;
