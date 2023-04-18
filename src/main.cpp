@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
         cout << "                    \t No filtering on original splits - only on bootstrap replicates" << endl;
         cout << "               \t Default: no bootstrapping" << endl;
         cout << endl;
-        cout << "    -C, --confidence\t Apply final filter w.r.t. support values" << endl;
+        cout << "    -C, --consensus\t Apply final filter w.r.t. support values" << endl;
         cout << "               \t Default: same filter as --filter w.r.t. weights" << endl;
 		cout << "               \t See --filter for available filters" << endl;
         cout << endl;
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
 
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
-    string conf_filter; // filter function for filtering after bootstrapping
+    string consensus_filter; // filter function for filtering after bootstrapping
     uint64_t iupac = 1;    // allow extended iupac characters
     uint64_t quality = 1;    // min. coverage threshold for k-mers
     bool reverse = true;    // consider reverse complement k-mers
@@ -293,34 +293,34 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bootstrapping") == 0) {
             bootstrap_no = stoi(argv[++i]);
         }
-        else if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--confidence") == 0) {
-            conf_filter = argv[++i];    // Filter a greedy maximum weight subset
-            if (conf_filter == "strict" || conf_filter == "tree") {
+        else if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--consensus") == 0) {
+            consensus_filter = argv[++i];    // Filter a greedy maximum weight subset
+            if (consensus_filter == "strict" || consensus_filter == "tree") {
                 // compatible to a tree
             }
-            else if (conf_filter == "weakly") {
+            else if (consensus_filter == "weakly") {
                 // weakly compatible network
             }
-            else if (conf_filter.find("-tree") != -1 && conf_filter.substr(conf_filter.find("-tree")) == "-tree") {
-                for (const char &c: conf_filter.substr(0, conf_filter.find("-tree"))){
+            else if (consensus_filter.find("-tree") != -1 && consensus_filter.substr(consensus_filter.find("-tree")) == "-tree") {
+                for (const char &c: consensus_filter.substr(0, consensus_filter.find("-tree"))){
                     if (!isdigit(c)){
-                        cerr << "Error: unexpected argument: --conf_filter " << conf_filter << ". Please specify n (Example usage: --confidence 2-tree)" << endl;
+                        cerr << "Error: unexpected argument: --consensus_filter " << consensus_filter << ". Please specify n (Example usage: --consensus 2-tree)" << endl;
                         return 1;
                     }
                 }
-                stoi(conf_filter.substr(0, conf_filter.find("-tree")));
+                stoi(consensus_filter.substr(0, consensus_filter.find("-tree")));
             }
-            else if (conf_filter.find("tree") != -1 && conf_filter.substr(conf_filter.find("tree")) == "tree") {
-                for (const char &c: conf_filter.substr(0, conf_filter.find("-tree"))){
+            else if (consensus_filter.find("tree") != -1 && consensus_filter.substr(consensus_filter.find("tree")) == "tree") {
+                for (const char &c: consensus_filter.substr(0, consensus_filter.find("-tree"))){
                     if (!isdigit(c)){
-                        cerr << "Error: unexpected argument: --confidence " << conf_filter << ". Please specify n (Example usage: --confidence 2-tree)" << endl;
+                        cerr << "Error: unexpected argument: --consensus " << consensus_filter << ". Please specify n (Example usage: --consensus 2-tree)" << endl;
                         return 1;
                     }
                 }
-                stoi(conf_filter.substr(0, conf_filter.find("tree")));
+                stoi(consensus_filter.substr(0, consensus_filter.find("tree")));
             }
             else {
-                cerr << "Error: unknown argument: --confidence " << conf_filter << endl;
+                cerr << "Error: unknown argument: --consensus " << consensus_filter << endl;
                 return 1;
             }
         }
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
         return 1;
     }
-    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1 && conf_filter != "strict" && conf_filter.find("tree") == -1) {
+    if (!newick.empty() && filter != "strict" && filter.find("tree") == -1 && consensus_filter != "strict" && consensus_filter.find("tree") == -1) {
         cerr << "Error: Newick output only applicable in combination with -f strict or n-tree, or -C strict or -C n-tree, respectively" << endl;
         return 1;
     }
@@ -427,8 +427,8 @@ int main(int argc, char* argv[]) {
         cerr << "Error: Bootstrapping can only be applied when a filter is selected (--filter)" << endl;
 		return 1;
 	}
-	if (bootstrap_no==0 && !conf_filter.empty()){
-        cerr << "Error: Filter on bootstrap values (--confidence) can only be chosen in combination with bootstrapping (--boostrapping)" << endl;
+	if (bootstrap_no==0 && !consensus_filter.empty()){
+        cerr << "Error: Filter on bootstrap values (--consensus) can only be chosen in combination with bootstrapping (--boostrapping)" << endl;
 		return 1;
 	}
 
@@ -933,7 +933,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 		}
 		verbose=verbose_orig; //switch back to verbose if originally set
 
-		if(conf_filter.empty()) {
+		if(consensus_filter.empty()) {
 			// filter original splits by weight
 			apply_filter(filter,newick, map, graph::split_list,&support_values,bootstrap_no,verbose);
 		}else{
@@ -947,8 +947,8 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 // 				split_list_conf.emplace(conf,it.second);
 			}
 			//filter
-// 			apply_filter(conf_filter,newick, map, split_list_conf,verbose);
-			apply_filter(conf_filter,newick, map, split_list_conf,&support_values,bootstrap_no,verbose);
+// 			apply_filter(consensus_filter,newick, map, split_list_conf,verbose);
+			apply_filter(consensus_filter,newick, map, split_list_conf,&support_values,bootstrap_no,verbose);
 
 			//apply result to original split list
 			graph::split_list.clear();
