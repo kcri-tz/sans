@@ -225,7 +225,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
         graph::allowedChars.push_back('*');
     }
 
-    cout << "Treads: " << thread_count << " Tables: " << table_count << endl;
+    cout << "Threads: " << thread_count << " Tables: " << table_count << endl;
 
         graph::quality = quality;
         switch (quality) {
@@ -1136,7 +1136,13 @@ void graph::compile_split_list(double mean(uint32_t&, uint32_t&), double min_val
  */
 multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 
-	int max = kmer_table.size(); 
+	int max = 0;
+	
+	if (isAmino){ // use the sum of amino table sizes
+		for (auto table: kmer_tableAmino){max += table.size();}
+	} else { // use the sum of base table sizeskmer_table.size(); 
+		for (auto table: kmer_table){max+=table.size();}
+	}
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -1166,7 +1172,7 @@ multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t
 				new_weights[i] += d(gen);
 			}
 		}
-
+		
 		//insert into new split list
 		double new_mean = mean(new_weights[0], new_weights[1]);    // calculate the new mean value
 		if (new_mean >= min_value) {    // if it is greater than the min. value, add it to the top list
