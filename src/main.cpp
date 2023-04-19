@@ -295,10 +295,10 @@ int main(int argc, char* argv[]) {
      * - Check if the given argument configuration does violate any run restrictions
      */ 
     if (!userKmer) {
-        if (!amino) {
-            kmer = 31;
-        } else {
+        if (amino || shouldTranslate) {
             kmer = 10;
+        } else {
+            kmer = 31;
         }
     }
 
