@@ -56,8 +56,8 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -k, --kmer    \t Length of k-mers (default: 31, or 10 for --amino and --code)" << endl;
         cout << endl;
-//        cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
-//        cout << endl;
+        // cout << "    -w, --window  \t Number of k-mers per minimizer window (default: 1)" << endl;
+        // cout << endl;
         cout << "    -t, --top     \t Number of splits in the output list (default: all)." << endl;
         cout << "                  \t Use -t <integer>n to limit relative to number of input files, or" << endl;
         cout << "                  \t use -t <integer> to limit by absolute value." << endl;
@@ -79,6 +79,8 @@ int main(int argc, char* argv[]) {
         cout << "                  \t Specify a number to limit the k-mers per position between" << endl;
         cout << "                  \t 1 (no ambiguity) and 4^k respectively 22^k (allows NNN...N)" << endl;
         cout << "                  \t Without --iupac respective k-mers are ignored" << endl;
+        cout << endl;
+        cout << "    -q, --qualify \t Discard k-mers with lower coverage than a threshold" << endl;
         cout << endl;
         cout << "    -n, --norev   \t Do not consider reverse complement k-mers" << endl;
         cout << endl;
@@ -128,8 +130,10 @@ int main(int argc, char* argv[]) {
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
     uint64_t iupac = 1;    // allow extended iupac characters
+    uint64_t quality = 1;    // min. coverage threshold for k-mers
     bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
+
     bool amino = false;      // input files are amino acid sequences
     bool shouldTranslate = false;   // translate input files
     bool userKmer = false; // is k-mer default or custom
@@ -232,6 +236,9 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-x") == 0 || strcmp(argv[i], "--iupac") == 0) {
             iupac = stoi(argv[++i]);    // Extended IUPAC alphabet, resolve ambiguous bases
         }
+        else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--qualify") == 0) {
+            quality = stoi(argv[++i]);    // Discard k-mers below a min. coverage threshold
+        }
         else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--norev") == 0) {
             reverse = false;    // Do not consider reverse complement k-mers
         }
@@ -288,10 +295,10 @@ int main(int argc, char* argv[]) {
      * - Check if the given argument configuration does violate any run restrictions
      */ 
     if (!userKmer) {
-        if (!amino) {
-            kmer = 31;
-        } else {
+        if (amino || shouldTranslate) {
             kmer = 10;
+        } else {
+            kmer = 31;
         }
     }
 
@@ -307,16 +314,15 @@ int main(int argc, char* argv[]) {
         cerr << "Error: too many input arguments: --graph and --splits" << endl;
         return 1;
     }
+
     if (input.empty() && amino) {
         cerr << "Error: missing argument: --input <file_name> for option --amino" << endl;
         return 1;
     }
-
     if (!splits.empty() && amino) {
         cerr << "Error: too many input arguments: --splits and --amino" << endl;
         return 1;
     }
-
     if (!graph.empty() && amino) {
         cerr << "Error: too many input arguments: --graph and --amino" << endl;
         return 1;
@@ -334,6 +340,23 @@ int main(int argc, char* argv[]) {
         cerr << "Error: Newick output only applicable in combination with -f strict or n-tree" << endl;
         return 1;
     }
+
+    if (amino && quality > 1) {
+        cerr << "Error: using --qualify with --amino is (currently) not supported" << endl;
+        cerr << "       Please send us a message if you have this special use case" << endl;
+        return 1;
+    }
+    if (!graph.empty()) {
+        if (quality > 1) {
+            cerr << "Warning: input from graph with --qualify can produce unexpected results" << endl;
+        }
+        else if (window > 1) {
+            cerr << "Warning: input from graph with --window can produce unexpected results" << endl;
+        }
+    } else if (quality > 1 && window > 1) {
+        cerr << "Warning: using --qualify with --window could produce unexpected results" << endl;
+    }
+
     if (!input.empty() && !splits.empty()) {
         cerr << "Note: two input arguments --input and --splits were provided" << endl;
         cerr << "      --input is used for lookup only, no additional splits are inferred" << endl;
@@ -441,7 +464,7 @@ int main(int argc, char* argv[]) {
 
 
             // check files
-	    if (!splits.empty()){
+	    if (splits.empty()){
             	for(string file_name: target_files){
                     ifstream file_stream = ifstream(folder+file_name);
                     if (!file_stream.good()) { // catch unreadable file
@@ -534,7 +557,7 @@ int main(int argc, char* argv[]) {
      */ 
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
-    graph::init(top, amino); // initialize the toplist size and the allowed characters
+    graph::init(top, quality, amino); // initialize the top list size, coverage threshold, and allowed characters
 
 
     /**
@@ -594,8 +617,8 @@ int main(int argc, char* argv[]) {
             vector<string> target_files = gen_files[i]; // the filenames corresponding to the target	    
             for (string file_name: target_files){
 		
-	 	char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
-		strcpy(c_name, (folder + file_name).c_str()); // Transcire to char array 
+	 	        char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
+		        strcpy(c_name, (folder + file_name).c_str()); // Transcire to char array
 
                 igzstream file(c_name, ios::in);    // input file stream
                 if (verbose) {
@@ -663,6 +686,7 @@ int main(int argc, char* argv[]) {
                 }
                 file.close();
             }
+            graph::clear_thread();
         }
     }
 
