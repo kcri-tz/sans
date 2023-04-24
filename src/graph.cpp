@@ -1216,9 +1216,9 @@ multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t
 			for (int r=0;r<weights[i];r++){
 				new_weights[i] += d(gen);
 			}
-			uint64_t n = weights[i]*max;
-			std::binomial_distribution<> dn(n, 1.0/max);
-			cout << weights[i] << "\t" << dn(gen) << "\t" << new_weights[i] << "\n" << flush;
+// 			uint64_t n = weights[i]*max;
+// 			std::binomial_distribution<> dn(n, 1.0/max);
+// 			cout << weights[i] << "\t" << dn(gen) << "\t" << new_weights[i] << "\n" << flush;
 		}
 		
 		//insert into new split list
