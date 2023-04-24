@@ -89,7 +89,8 @@ private:
     /**
      * This is the min. coverage threshold for k-mers.
      */
-    static uint64_t quality;
+    static vector<int> q_table;
+	static int quality;
 
     static bool isAmino;
     
@@ -163,11 +164,12 @@ public:
      *
      * @param top list size
      * @param isAmino use amino processing
-     * @param quality coverage threshold
+     * @param q_table coverage threshold
+	 * @param quality global q or maximum among all q values
      * @param bins hash_tables to use for parallel processing
      * @param thread_count the number of threads used for processing
      */
-    static void init(uint64_t& top_size, bool isAmino, uint64_t& quality, uint64_t& thread_count);
+    static void init(uint64_t& top_size, bool isAmino, vector<int>& q_table, int& quality, uint64_t& thread_count);
 
 
 

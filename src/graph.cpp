@@ -12,7 +12,8 @@ uint64_t graph::t;
 /**
  * This is the min. coverage threshold for k-mers.
  */
-uint64_t graph::quality;
+vector<int> graph::q_table;
+int graph::quality;
 
 bool graph::isAmino;
 
@@ -131,10 +132,11 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  * This function initializes the top list size, coverage threshold, and allowed characters.
  *
  * @param t top list size
- * @param quality coverage threshold
+ * @param q_table coverage thresholds
+ * @param quality global q or maximum among all q values
  */
 
-void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& thread_count) {
+void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& quality, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
     hash_in_parallel = thread_count > 1 ? true : false;
@@ -227,7 +229,7 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
 
     cout << "Threads: " << thread_count << " Tables: " << table_count << endl;
 
-        graph::quality = quality;
+        graph::q_table = q_table;
         switch (quality) {
         case 1:
             case 0: /* no quality check */
@@ -241,41 +243,84 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
 
         case 2:
             isAmino ? quality_setAmino.resize(thread_count) : quality_set.resize(thread_count);
-            emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
-                if (quality_set[T].find(kmer) == quality_set[T].end()) {
-                    quality_set[T].emplace(kmer);
-                } else {
-                    quality_set[T].erase(kmer);
-                    hash_kmer(bin, kmer, color);
-                }
-            };
-            emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
-                if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
-                    quality_setAmino[T].emplace(kmer);
-                } else {
-                    quality_setAmino[T].erase(kmer);
-                    hash_kmer_amino(bin, kmer, color);
-                }
-            };
+			if (q_table.size()>0){
+				emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
+					if (q_table[color]==1){
+						hash_kmer(bin, kmer, color);
+					} else if (quality_set[T].find(kmer) == quality_set[T].end()) {
+						quality_set[T].emplace(kmer);
+					} else {
+						quality_set[T].erase(kmer);
+						hash_kmer(bin, kmer, color);
+					}
+				};
+				emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+					if (q_table[color]==1){
+						hash_kmer_amino(bin, kmer, color);
+					} else if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
+						quality_setAmino[T].emplace(kmer);
+					} else {
+						quality_setAmino[T].erase(kmer);
+						hash_kmer_amino(bin, kmer, color);
+					}
+				};
+			} else { // global quality value (one if-clause fewer)
+				emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
+					if (quality_set[T].find(kmer) == quality_set[T].end()) {
+						quality_set[T].emplace(kmer);
+					} else {
+						quality_set[T].erase(kmer);
+						hash_kmer(bin, kmer, color);
+					}
+				};
+				emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+					if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
+						quality_setAmino[T].emplace(kmer);
+					} else {
+						quality_setAmino[T].erase(kmer);
+						hash_kmer_amino(bin, kmer, color);
+					}
+				};
+			}
             break;
         default:
             isAmino ? quality_mapAmino.resize(thread_count) : quality_map.resize(thread_count);
-            emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
-                if (quality_map[T][kmer] < quality-1) {
-                    quality_map[T][kmer]++;
-                } else {
-                    quality_map[T].erase(kmer);
-                    hash_kmer(bin, kmer, color);
-                }
-            };
-            emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
-                if (quality_mapAmino[T][kmer] < quality-1) {
-                    quality_mapAmino[T][kmer]++;
-                } else {
-                    quality_mapAmino[T].erase(kmer);
-                    hash_kmer_amino(bin, kmer, color);
-                }
-            };
+			if (q_table.size()>0){
+				emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
+					if (quality_map[T][kmer] < q_table[color]-1) {
+						quality_map[T][kmer]++;
+					} else {
+						quality_map[T].erase(kmer);
+						hash_kmer(bin, kmer, color);
+					}
+				};
+				emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+					if (quality_mapAmino[T][kmer] < q_table[color]-1) {
+						quality_mapAmino[T][kmer]++;
+					} else {
+						quality_mapAmino[T].erase(kmer);
+						hash_kmer_amino(bin, kmer, color);
+					}
+				};
+            }else { // global quality value
+				emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
+					if (quality_map[T][kmer] < quality-1) {
+						quality_map[T][kmer]++;
+					} else {
+						quality_map[T].erase(kmer);
+						hash_kmer(bin, kmer, color);
+					}
+				};
+				emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+					if (quality_mapAmino[T][kmer] < quality-1) {
+						quality_mapAmino[T][kmer]++;
+					} else {
+						quality_mapAmino[T].erase(kmer);
+						hash_kmer_amino(bin, kmer, color);
+					}
+				};
+
+			}
             break;
     }
 }
@@ -1136,7 +1181,7 @@ void graph::compile_split_list(double mean(uint32_t&, uint32_t&), double min_val
  */
 multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 
-	int max = 0;
+	uint64_t max = 0;
 	
 	if (isAmino){ // use the sum of amino table sizes
 		for (auto table: kmer_tableAmino){max += table.size();}
@@ -1151,7 +1196,7 @@ multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t
 	double min_value=0;
 
 	// perform n time max trials, each succeeds 1/max
- 	std::binomial_distribution<> d(max, 1.0/max);
+	std::binomial_distribution<> d(max, 1.0/max);
 	
 	// Iterating over the map using Iterator till map end.
 	hash_map<color_t, array<uint32_t,2>>::iterator it = color_table.begin();
@@ -1171,6 +1216,9 @@ multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t
 			for (int r=0;r<weights[i];r++){
 				new_weights[i] += d(gen);
 			}
+			uint64_t n = weights[i]*max;
+			std::binomial_distribution<> dn(n, 1.0/max);
+			cout << weights[i] << "\t" << dn(gen) << "\t" << new_weights[i] << "\n" << flush;
 		}
 		
 		//insert into new split list

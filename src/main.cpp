@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
     string filter;    // filter function
     string consensus_filter; // filter function for filtering after bootstrapping
     uint64_t iupac = 1;    // allow extended iupac characters
-    uint64_t quality = 1;    // min. coverage threshold for k-mers
+	int quality = 1;    // min. coverage threshold for k-mers (if individual q values per file are given, this is the maximum among all)
     bool reverse = true;    // consider reverse complement k-mers
     bool verbose = false;    // print messages during execution
 
@@ -468,7 +468,9 @@ int main(int argc, char* argv[]) {
     hash_map<string, uint64_t> name_table; // the name to color map
     vector<string> denom_names; // storing the representative name per color
     vector<vector<string>> gen_files; // genome file collection
+    vector<int> q_table; // q value (k-mer occurrence threshold) per genome/color
 
+    
     if (!input.empty()) {
         // check the input file 
         ifstream file(input);
@@ -483,25 +485,32 @@ int main(int argc, char* argv[]) {
         string file_name; // the current file name
         bool is_first; // indicating the first filename of a line (For file list)
         bool has_files; // indicating if a line contains filenames
-
+		int min_q=quality;
+		int max_q=quality;
+        
         getline(file, line);
         // check the file format
         std::smatch matches;
-        std::regex_search(line, matches, std::regex("(:)"));
-        bool is_kmt = !matches.empty();
 
         // parse file of files
         while(true){
+			std::regex_search(line, matches, std::regex("(:)"));
+			int q=quality;
             vector<string> target_files; // container of the current target files
-            if (is_kmt){ // parse kmt format
+            if (!matches.empty()){ // parse kmt format
                 // ensure the terminal signs " !" exists.
-                if (line.find_first_of('!') != line.npos){line = line.substr(0, line.find_first_of('!') + 1);} // cut off unused tail
+                if (line.find_first_of('!') != line.npos){
+					int p=line.find_first_of('!');
+					q = stoi(line.substr(p+1,line.length()));
+					line = line.substr(0, line.find_first_of('!') + 1); // cut off tail
+				}
                 else if (line.back() == ' '){line += '!';} // append terminal sign if missing
                 else {line += " !";} // append both terminal signs if missing
 
                 string denom = line.substr(0, line.find_first_of(" ")); // get the dataset-id
                 denom_names.push_back(denom); // add id to denominators
                 num ++;
+
                 line = line.substr(line.find_first_of(":") + 2, line.npos); // cut off the dataset-id
 
                 std::smatch matches; // Match files
@@ -538,22 +547,29 @@ int main(int argc, char* argv[]) {
                 if (has_files) {num++;}
             }
 
+            q_table.push_back(q);
+			if (q>max_q){max_q=q;}
+			if (q<min_q){min_q=q;}
 
             // check files
-	    if (splits.empty()){
-            	for(string file_name: target_files){
-                    ifstream file_stream = ifstream(folder+file_name);
-                    if (!file_stream.good()) { // catch unreadable file
-                        cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
-                    	file_stream.close();
-                    	return 1;
-                    }
-                    else{ file_stream.close();}	
-            	}
-	    }
+			if (splits.empty()){
+					for(string file_name: target_files){
+						ifstream file_stream = ifstream(folder+file_name);
+						if (!file_stream.good()) { // catch unreadable file
+							cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
+							file_stream.close();
+							return 1;
+						}
+						else{ file_stream.close();}	
+					}
+			}
+			
             gen_files.push_back(target_files); // add the files of the current genome to the genome collection
             if (!getline(file, line)) {break;}
         }
+        
+        quality=max_q;
+        if(max_q==min_q){q_table.clear();} // all q_values the same (=quality)
     }
     int denom_file_count = denom_names.size(); 
 
@@ -642,7 +658,7 @@ int main(int argc, char* argv[]) {
     kmer::init(kmer);      // initialize the k-mer length
     kmerAmino::init(kmer); // initialize the k-mer length
     color::init(num);    // initialize the color number
-    graph::init(top, amino, quality, threads); // initialize the toplist size and the allowed characters
+    graph::init(top, amino, q_table, quality, threads); // initialize the toplist size and the allowed characters
 
     /**
      *  --- Split processing ---
@@ -710,7 +726,11 @@ int main(int argc, char* argv[]) {
 
                     igzstream file(c_name, ios::in);    // input file stream
                     if (verbose) {
-                        cout << "\33[2K\r" << folder+file_name<< " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
+                        cout << "\33[2K\r" << folder+file_name;
+						if (q_table.size()>0) {
+							cout <<" q="<<q_table[i];
+						}
+						cout << " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
                     }
                     count::deleteCount();
 
