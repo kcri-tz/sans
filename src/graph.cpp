@@ -143,7 +143,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
         // Automatic table count
         if (hash_in_parallel)
         {
-            hash_in_parallel = true;
             table_count = 45 * thread_count - 33; // Estimated scaling
             table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
         }
@@ -155,8 +154,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
 
         // Init the mutex lock vector
 	    lock = vector<mutex> (table_count);
-
-        cout << "Using tbales: " << table_count << endl;
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 32)     
@@ -177,7 +174,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
         // Automatic table count
         if (hash_in_parallel)
         {
-            hash_in_parallel = true;
             table_count = 33 * thread_count + 33; // Estimated scaling
             table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
         }
@@ -226,8 +222,6 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
         //graph::allowedChars.push_back('Z');
         graph::allowedChars.push_back('*');
     }
-
-    cout << "Treads: " << thread_count << " Tables: " << table_count << endl;
 
         graph::quality = quality;
         switch (quality) {

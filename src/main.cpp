@@ -102,8 +102,6 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
         cout << endl;
-        cout << "    -d, --debug \t Show debug information" << endl;
-        cout << endl;
         cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
         cout << "  Evaluation: https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans" << endl;
         cout << endl;
@@ -131,8 +129,6 @@ int main(int argc, char* argv[]) {
     bool dyn_top = false; // bind number of splits to num
 
     uint64_t threads = thread::hardware_concurrency(); // The number of threads to run on
-
-    bool debug = false;
 
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
@@ -277,10 +273,6 @@ int main(int argc, char* argv[]) {
         // Parallelization 
         else if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--threads") == 0){ 
             threads = stoi(argv[++i]);  // The number of threads to run
-        }
-
-        else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0){
-            debug = true;    // Debug mode shows internal information
         }
 
         else {
@@ -535,10 +527,7 @@ int main(int argc, char* argv[]) {
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
         for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
-            
-            // DEBUG
-	    // cout << col_name << " SANS ID: " << num << endl;
-	    // cout << col_name << " BIFROST COL: " << cdbg.getColorName(num) << endl;
+        
 
 	    if (name_table.find(col_name) == name_table.end()){
                             name_table[col_name] = num++;
@@ -736,10 +725,6 @@ int main(int argc, char* argv[]) {
         for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
     }
 
-    // debug: show the number of kmers hashed per table
-    if (debug) {graph::showTableSizes();}
-
-
     /**
      * --- Bifrost CDBG processing ---
      * - Iterate all colored k-mers from a CDBG
@@ -773,9 +758,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
             auto end = colors->end();
             for (it ; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
                 uc_kmers[it.getKmerPosition()].add(unitig_map, it.getColorID());
-            	
-		// DEBUG
-		// cout << it.getColorID() << "->" << cdbg.getColorName(it.getColorID()) << endl;
 	    
 	    }
             
