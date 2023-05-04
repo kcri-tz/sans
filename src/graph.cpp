@@ -2,6 +2,7 @@
 #include "util.h"
 #include <mutex>
 #include <thread>
+#include <algorithm>
 
 /**
  * This is the size of the top list.
@@ -15,6 +16,7 @@ uint64_t graph::quality;
 
 bool graph::isAmino;
 
+bool graph::hash_in_parallel;
 uint64_t graph::table_count;
 
 /**
@@ -25,14 +27,12 @@ vector<hash_map<kmer_t, color_t>> graph::kmer_table;
 /**
  * This is a vecotr of spinlocks protecting the hash maps 
  */
-vector<spinlockMutex> graph::lock;
+vector<mutex> graph::lock;
 
 /**
  * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
  */
 vector<uint64_t> graph::period;
-uint64_t graph::first_mod_correction;
-uint64_t graph::second_mod_correction;
 
 /**
  * This is the amino equivalent.
@@ -67,7 +67,9 @@ vector<hash_map<kmerAmino_t, uint64_t>> graph::quality_mapAmino;
 /**
  * This is an ordered tree collecting the splits [O(log n)].
  */
-multimap<double, color_t, greater<>> graph::split_list;
+// https://itecnote.com/tecnote/c-sorting-multimap-with-both-keys-and-values/
+// This is necessairy to create a sorted output
+multiset<pair<double, color_t>,greater<>>graph::split_list;
 
 /**
 * These are the allowed chars.
@@ -132,35 +134,35 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  * @param quality coverage threshold
  */
 
-void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bins, uint64_t& thread_count) {
+void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
-    table_count = bins; // The number of tables to use for hashing 
-    
+    hash_in_parallel = thread_count > 1 ? true : false;
     if(!isAmino){
+
+        // Automatic table count
+        if (hash_in_parallel)
+        {
+            table_count = 45 * thread_count - 33; // Estimated scaling
+            table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        }
+        else {table_count = 1;}
         
+
         // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
-        
+
         // Init the mutex lock vector
-	    lock = vector<spinlockMutex> (table_count);
+	    lock = vector<mutex> (table_count);
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 32)     
-        cout << "PERIOD for K=" << kmer::k <<  endl;
         uint64_t last = 1 % table_count;
         for (int i = 1; i <= 2*(kmer::k); i++)
         {
             // cout << last << endl;
 	        period.push_back(last);
 	        last = (2 * last) % table_count;
-            
-            // Set complement mod correction values
-            if (last == 1)
-            {
-                first_mod_correction = period[i-2];
-                second_mod_correction = period[i-1];
-            }
         }
         #endif
 
@@ -169,15 +171,23 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
         graph::allowedChars.push_back('G');
         graph::allowedChars.push_back('T');
     }else{
+        // Automatic table count
+        if (hash_in_parallel)
+        {
+            table_count = 33 * thread_count + 33; // Estimated scaling
+            table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        }
+        else {table_count = 1;}
+
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
         // Init the mutex lock vector
-        lock = vector<spinlockMutex> (table_count);
+        lock = vector<mutex> (table_count);
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 12)     
         uint64_t last = 1 % table_count;
-        for (int i = 1; i <= 5*(kmerAmino::k + 1); i++)
+        for (int i = 1; i <= 5*(kmerAmino::k); i++)
         {
 	        period.push_back(last);
 	        last = (2 * last) % table_count;
@@ -269,88 +279,68 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& bi
 /**
 * --- [Hash map access] ---
 * The following methods
-* get_table_index, hash_kmer, hash_kmer_amino, search_kmer, get_color and remove_kmer
 * are used to access the entries of the multi_table hash maps
 */ 
 
 /**
  * This method shift-updates the bin of a kmer
  */
-uint64_t graph::shift_update_bin(uint64_t bin, kmer_t& kmer, char& c_left, char& c_right, bool reversed)
+
+uint64_t graph::shift_update_bin(uint64_t& bin, char& c_left, char& c_right)
 {
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
-    
-    #if (maxK <= 32) // This is not a real shift update due to performance of the build in mod method
-        return kmer % table_count;
-    #else
         return (8 * table_count // Bias
             + 4 * (bin - period[2*kmer::k-1] * (left / 2) - (left % 2) * period[2*kmer::k - 2]) // Shift
             + period[1] * (right / 2) + period[0] * (right % 2)) // Update   
             % table_count; // Mod
-    #endif
 }
 
 /**
  * This method shift updates the reverse complement bin of a kmer
  */
-uint64_t graph::shift_update_rc_bin(uint64_t rc_bin, kmer_t& rcmer, char& c_left, char& c_right, bool reversed)
+uint64_t graph::shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_right)
 {
     uint64_t left = util::char_to_bits(c_left);
     uint64_t right = util::char_to_bits(c_right);
     
-    #if maxK <= 32
-        return rcmer % table_count;
-    #else
-    // Bias
-    rc_bin += 8 * table_count;
-    // First shift 
     // Remove
-    rc_bin -= period[0] * (!(left % 2 ));
-    // Even representation
-    if (rc_bin % 2){rc_bin += 2 * second_mod_correction - 1;}
+    rc_bin += 8 * table_count - period[1] * (!(left / 2 )) - period[0] * (!(left % 2 ));
+    // First shift
+    if (rc_bin & 0b1u) {rc_bin += table_count;}
     rc_bin >>= 1;
-
     // Second shift
-    // Remove
-    rc_bin -= period[0] * (!(left / 2 ));
-    // Even representation
-    if (rc_bin % 2){rc_bin += 2 * second_mod_correction - 1;}
+    if (rc_bin & 0b1u) {rc_bin += table_count;}
     rc_bin >>= 1;
-
-    // update
+    // Update
     rc_bin += (period[2*kmer::k-1] * (!(right / 2)) + period[2*kmer::k-2] * (!(right % 2)));
-    // minimize
     rc_bin %= table_count;
     return rc_bin;
-    #endif
 }
 
 
 /**
  * This method shift-updates the bin of an amino kmer
  */
-uint64_t graph::shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_left, char& c_right)
+uint64_t graph::shift_update_amino_bin(uint64_t& bin, kmerAmino_t& kmer, char& c_right)
 {
     #if (maxK <= 12) // This is not a real shift update due to performance of the build in mod
         return  kmer % table_count; 
     #else
         // update the binning carry (solution of the shift-update-carry equation)
         uint64_t right = util::amino_char_to_bits(c_right); // Transcode the new character to bits
-        uint64_t left = util::amino_char_to_bits(c_left);
-        // bias
         
         // shift
         bin = 160 * table_count + // Bias 
-                    32 * bin // Shift
-                    - 32 * kmer[5*kmerAmino::k - 1] * period[5*kmerAmino::k - 1]
-                    - 32 * kmer[5*kmerAmino::k - 2] * period[5*kmerAmino::k - 2]
-                    - 32 * kmer[5*kmerAmino::k - 3] * period[5*kmerAmino::k - 3]
-                    - 32 * kmer[5*kmerAmino::k - 4] * period[5*kmerAmino::k - 4]
-                    - 32 * kmer[5*kmerAmino::k - 5] * period[5*kmerAmino::k - 5];
+                    32 * (bin // Shift
+                    - kmer[5*kmerAmino::k - 1] * period[5*kmerAmino::k - 1]
+                    - kmer[5*kmerAmino::k - 2] * period[5*kmerAmino::k - 2]
+                    - kmer[5*kmerAmino::k - 3] * period[5*kmerAmino::k - 3]
+                    - kmer[5*kmerAmino::k - 4] * period[5*kmerAmino::k - 4]
+                    - kmer[5*kmerAmino::k - 5] * period[5*kmerAmino::k - 5]);
         // update
         for(int i = 4; i>=0; i--){
-            bin += period[i] & ((right >> i) & 0b1u);
+            bin += period[i] * ((right >> i) & 0b1u);
         }
         // mod
         bin %= table_count;
@@ -366,12 +356,13 @@ uint64_t graph::shift_update_amino_bin(uint64_t bin, kmerAmino_t& kmer, char& c_
 #if (maxK <= 32)
 uint64_t graph::compute_bin(const kmer_t& kmer)
 {
-    return kmer % table_count;
+    return hash_in_parallel ? kmer % table_count : 0;
 }
 #else
 uint64_t graph::compute_bin(const kmer_t& kmer)
 {
-	if (table_count <= 1){return 0;}
+	if (!hash_in_parallel){return 0;}
+
 	uint64_t carry = 1;
 	uint64_t rest = 0;
 	if (kmer.test(0)){rest++;} // Test the last bit
@@ -384,14 +375,14 @@ uint64_t graph::compute_bin(const kmer_t& kmer)
 #endif
 
 #if (maxK <= 12)
-    uint64_t graph::compute_amino_bin(const kmerAmino_t kmer)
+    uint64_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
-        return kmer % table_count;
+        return hash_in_parallel ? kmer % table_count : 0;
     }
 #else
     uint64_t graph::compute_amino_bin(const bitset<5*maxK>& kmer)
     {
-	    if (table_count <= 1){return 0;}
+	    if (!hash_in_parallel){return 0;}
 	
 	    uint64_t carry = 1;
 	    uint64_t rest = 0;
@@ -412,9 +403,9 @@ uint64_t graph::compute_bin(const kmer_t& kmer)
 *  @param kmer The kmer to store
 *  @param color The color to store 
 */
-void graph::hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color)
+void graph::hash_kmer(uint64_t& bin, const kmer_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    std::lock_guard<mutex> lg(lock[bin]); 
     kmer_table[bin][kmer].set(color);
 }
 
@@ -427,7 +418,7 @@ void graph::hash_kmer(uint64_t bin, const kmer_t& kmer, const uint64_t& color)
 void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_bin(kmer);
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    std::lock_guard<mutex> lg(lock[table_id]); 
     kmer_table[table_id][kmer].set(color);
 }
 
@@ -439,9 +430,9 @@ void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
  * @param kmer The kmer to store
  * @param color The color to store
  */
-void graph::hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_t& color)
+void graph::hash_kmer_amino(uint64_t& bin, const kmerAmino_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlockMutex> lg(lock[bin]); 
+    std::lock_guard<mutex> lg(lock[bin]);
     kmer_tableAmino[bin][kmer].set(color);
 }
 
@@ -454,7 +445,7 @@ void graph::hash_kmer_amino(uint64_t bin, const kmerAmino_t& kmer, const uint64_
 void graph::hash_kmer_amino(const kmerAmino_t& kmer, const uint64_t& color)
 {
     uint64_t table_id = compute_amino_bin(kmer);
-    std::lock_guard<spinlockMutex> lg(lock[table_id]); 
+    std::lock_guard<mutex> lg(lock[table_id]); 
     kmer_tableAmino[table_id][kmer].set(color);
 }
 
@@ -528,11 +519,14 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
 
     uint64_t bin = 0; // current hash_map vector index
     uint64_t rc_bin = 0; // current reverse hash_map vector index
+    uint64_t amino_bin = 0; 
 
     uint64_t pos;    // current position in the string, from 0 to length
-    kmer_t kmer;    // create a new empty bit sequence for the k-mer
 
+    kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer; // create a bit sequence for the reverse complement
+
+    char left;  // The character that is shifted out 
 
     #if maxK > 32
     if (!isAmino){
@@ -555,42 +549,38 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         }
         // DNA processing 
         if (!isAmino) {
-            char right = str[pos];
-            uint64_t left_bits = 2*kmer.test(2*kmer::k-1) + kmer.test(2*kmer::k-2);
-            char left = util::bits_to_char(left_bits);
-            kmer::shift(kmer, right);    // shift each base into the bit sequence
-            bin = shift_update_bin(bin, kmer, left, right, false); // Update the forward complement table index
+            left = kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
+
+            #if maxK <= 32
+                bin = kmer % table_count; // Simple update of the forward complement bin
+            #else
+                bin = shift_update_bin(bin, left, str[pos]); // Shift update the forward complement bin
+            #endif
+
             // Reverse complement handling
             rcmer = kmer;
-
-            bool reversed = false;
-            if (reverse){
-                # if maxK <= 32
-                    kmer::reverse_complement(rcmer); // invert the k-mer
-                    rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
-                    if(rcmer > kmer){rcmer = kmer;} // Set rcmer to to smaller complement
-                    else{reversed=true;} // Set reversed accordingly
-                #else // rc_mer % m
-                    reversed = kmer::reverse_represent(rcmer); // invert the k-mer
-                    rc_bin = shift_update_rc_bin(rc_bin, rcmer, left, right, false);  // Update the reverse complement table index
+	        if (reverse){
+                kmer::reverse_complement(rcmer); // invert the k-mer
+                #if maxK <= 32
+                    rc_bin = rcmer % table_count;
+                #else
+                    rc_bin = shift_update_rc_bin(rc_bin, left, str[pos]);  // Update the reverse complement table index
                 #endif
             }
             // The current word is a k-mer
             if (pos+1 - begin >= kmer::k) {
-                reversed ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, rcmer, color);
+                rcmer < kmer ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, kmer, color);
             }
         
         // Amino processing
         } else {
-            char right = str[pos];
-            // amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, right, right);
+            amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, str[pos]);
             char left = kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
-            bin = compute_amino_bin(kmerAmino);
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {
                 // shift update the bin
                 // Insert the k-mer into its table
-                emplace_kmer_amino(T, bin, kmerAmino, color);  // update the k-mer with the current color
+                emplace_kmer_amino(T, amino_bin, kmerAmino, color);  // update the k-mer with the current color
             }
         }
     }
@@ -668,7 +658,6 @@ next_kmer:
 
                 if (sequence_order_Amino.size() == m) {
                     // Update the minimizer in the corresponding table
-                    bin = compute_amino_bin(*value_order_Amino.begin());
                     emplace_kmer_amino(T, bin, *value_order_Amino.begin(), color);    // update the k-mer with the current color
                 }
             }
@@ -1113,7 +1102,7 @@ double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), doub
     array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
     double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
     if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
-        auto range = split_list.equal_range(old_value);    // get all color sets with the given weight
+        auto range = split_list.equal_range(make_pair(old_value, color));    // get all color sets with the given weight
         for (auto it = range.first; it != range.second; ++it) {
             if (it->second == color) {    // iterate over the color sets to find the correct one
                 split_list.erase(it);    // erase the entry with the old weight
@@ -1271,6 +1260,7 @@ void graph::filter_strict(bool& verbose) {
  */
 string graph::filter_strict(std::function<string(const uint64_t&)> map, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
+    color_t col;
     auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
@@ -1281,7 +1271,8 @@ loop:
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-        if (test_strict(it->second, tree)) {
+        col = it->second;
+        if (test_strict(col, tree)) {
             tree.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
@@ -1303,6 +1294,7 @@ loop:
 void graph::filter_weakly(bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
     auto it = split_list.begin();
+    color_t col;
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
@@ -1312,7 +1304,8 @@ loop:
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-        if (test_weakly(it->second, network)) {
+        col = it -> second;
+        if (test_weakly(col, network)) {
             network.emplace_back(it->second);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
@@ -1340,6 +1333,7 @@ void graph::filter_n_tree(uint64_t n, bool& verbose) {
 string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     auto it = split_list.begin();
+    color_t col;
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
@@ -1349,9 +1343,10 @@ loop:
              if (prog < next)  cout << "\33[2K\r" << "Filtering splits... " << next << "%" << flush;
             prog = next; cur++;
         }
-       for (auto& tree : forest)
-        if (test_strict(it->second, tree)) {
-            tree.emplace_back(it->second);
+        col = it-> second; 
+        for (auto& tree : forest)
+        if (test_strict(col, tree)) {
+            tree.emplace_back(col);
             ++it; goto loop;    // if compatible, add the new split to the set
         }
         it = split_list.erase(it);    // otherwise, remove split

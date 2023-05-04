@@ -5,6 +5,7 @@
 #include "gz/gzstream.h"
 
 
+
 /**
  * This is the entry point of the program.
  *
@@ -97,13 +98,9 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
-        cout << "    -T, --threads \t The number of threads to run" << endl;
-        cout << endl;
-        cout << "    -B, --bins \t The number of hash tables to use" << endl;
+        cout << "    -T, --threads \t The number of threads to spawn (default is all)" << endl;
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
-        cout << endl;
-        cout << "    -d, --debug \t Show debug information" << endl;
         cout << endl;
         cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
         cout << "  Evaluation: https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans" << endl;
@@ -131,10 +128,7 @@ int main(int argc, char* argv[]) {
     uint64_t top = -1;    // number of splits
     bool dyn_top = false; // bind number of splits to num
 
-    uint64_t threads = 1; // The number of threads to run on
-    uint64_t bins = 0; // The number of hash tables to use
-
-    bool debug = false;
+    uint64_t threads = thread::hardware_concurrency(); // The number of threads to run on
 
     auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
@@ -281,14 +275,6 @@ int main(int argc, char* argv[]) {
             threads = stoi(argv[++i]);  // The number of threads to run
         }
 
-        else if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--bins") == 0){
-            bins = stoi(argv[++i]);    // The number of hash tables to use
-        }
-
-        else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0){
-            debug = true;    // Debug mode shows internal information
-        }
-
         else {
             cerr << "Error: unknown argument: " << argv[i] <<  "\t type --help" << endl;
             return 1;
@@ -400,12 +386,12 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Check hash table setup for parallelization:
-    if (bins == 0)
+    if (threads <= 0)
     {
-        if (threads != 1){!amino ? bins = 3 : bins =  31;} // default binning strategies for multithreading
-        else {bins = 1;} // default binning strategy for sequential hashing
+        threads = 1;
     }
+
+
     /**
      * [Indexing]
      * --- Indexing inputs ---
@@ -494,7 +480,6 @@ int main(int argc, char* argv[]) {
                 if (has_files) {num++;}
             }
 
-
             // check files
 	    if (splits.empty()){
             	for(string file_name: target_files){
@@ -541,10 +526,7 @@ int main(int argc, char* argv[]) {
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
         for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
-            
-            // DEBUG
-	    // cout << col_name << " SANS ID: " << num << endl;
-	    // cout << col_name << " BIFROST COL: " << cdbg.getColorName(num) << endl;
+        
 
 	    if (name_table.find(col_name) == name_table.end()){
                             name_table[col_name] = num++;
@@ -598,7 +580,7 @@ int main(int argc, char* argv[]) {
     kmer::init(kmer);      // initialize the k-mer length
     kmerAmino::init(kmer); // initialize the k-mer length
     color::init(num);    // initialize the color number
-    graph::init(top, amino, quality, bins, threads); // initialize the toplist size and the allowed characters
+    graph::init(top, amino, quality, threads); // initialize the toplist size and the allowed characters
 
     /**
      *  --- Split processing ---
@@ -648,10 +630,15 @@ int main(int argc, char* argv[]) {
             cout << "SANS::main(): Reading input files..." << flush;
         }
 
+        // Thread safe implementation of getting the index of the next input to preocess
+        uint64_t index = 0;
+        std::mutex index_mutex;
+        auto index_lambda = [&] () { std::lock_guard<mutex> lg(index_mutex); return index++;};
 
-        auto lambda = [&] (uint64_t T, uint64_t lower_bound, uint64_t upper_bound){ // This lambda expression wraps the sequence-kmer hashing
+        auto lambda = [&] (uint64_t T, uint64_t max){ // This lambda expression wraps the sequence-kmer hashing
             string sequence;    // read in the sequence files and extract the k-mers
-            for (uint64_t i = lower_bound; i < upper_bound; ++i) {
+            uint64_t i = index_lambda();
+            while (i < max) {
                 vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
             
                 for (string file_name: target_files){
@@ -726,37 +713,16 @@ int main(int argc, char* argv[]) {
                     file.close();
                 }
                 graph::clear_thread(T);
+                i = index_lambda();
             }
         }; // End of lambda expression
 
         // Driver code for multithreaded kmer hashing
-        const uint64_t MAX = gen_files.size(); // The number of genomes to distribute 
-        const uint64_t SIZE = MAX / threads; // The average number of genomes per thread
-        const uint64_t CARRY = MAX % threads; // The rest to distribute
-
-        vector<uint64_t> size(threads); // The thread load table
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){ // Distribute the SIZE
-            size[thread_id] = SIZE;
-        }
-        for (uint64_t thread_id = 0; thread_id < CARRY; ++thread_id){ // Shift distribution to cover the missing genomes
-            size[thread_id]  += 1;
-        }
-
-        // Initialize the threads
-        uint64_t curr_size = 0;
-        vector<thread> thr(threads);
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
-            thr[thread_id] = thread(lambda, thread_id, curr_size, curr_size + size[thread_id]);
-            curr_size += size[thread_id];
-        }
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){
-            thr[thread_id].join();
-        }
+        const uint64_t MAX = gen_files.size(); // The number of genomes
+        vector<thread> thread_holder(threads);
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda, thread_id, MAX);}
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
     }
-
-    // debug: show the number of kmers hashed per table
-    if (debug) {graph::showTableSizes();}
-
 
     /**
      * --- Bifrost CDBG processing ---
@@ -791,9 +757,6 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
             auto end = colors->end();
             for (it ; it != end; ++it) { // iterate the unitig and collect the colors and corresponding k-mer starts
                 uc_kmers[it.getKmerPosition()].add(unitig_map, it.getColorID());
-            	
-		// DEBUG
-		// cout << it.getColorID() << "->" << cdbg.getColorName(it.getColorID()) << endl;
 	    
 	    }
             
@@ -876,16 +839,18 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 
     uint64_t pos = 0;
     //cleanliness.setFilteredCount(graph::split_list.size());
+    color_t split_color;
     for (auto& split : graph::split_list) {
         double weight = split.first;
+        split_color = split.second;
        // cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
         for (uint64_t i = 0; i < num; ++i) {
-            if (split.second.test(pos)) {
+            if (split_color.test(pos)) {
                 if (i < denom_names.size())
                     stream << '\t' << denom_names[i];    // name of the file
             }
-            split.second >>= 01u;
+            split_color >>= 01u;
         }
         stream << endl;
     }
