@@ -7,6 +7,12 @@
 #include <thread>
 #include <mutex>
 
+#include <iomanip>
+#include <string>
+#include <random>
+
+
+
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -66,7 +72,8 @@ private:
     /**
      * This is the min. coverage threshold for k-mers.
      */
-    static uint64_t quality;
+    static vector<int> q_table;
+	static int quality;
 
     static bool isAmino;
     
@@ -118,10 +125,17 @@ public:
     // [Temporary: Test]
     static void showTableSizes();
 
+	/**
+	* This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.
+	* @param mean weight function
+	* @return the new list of splits of length at least t ordered by weight as usual
+	*/
+	static multiset<pair<double, color_t>, greater<>> bootstrap(double mean(uint32_t&, uint32_t&));
+
     /**
      * This is an ordered tree collecting the splits [O(log n)].
      */
-    static multiset<pair<double, color_t>,greater<>> split_list;
+    static multiset<pair<double, color_t>, greater<>> split_list;
 
     /**
     * These are the allowed chars.
@@ -133,11 +147,12 @@ public:
      *
      * @param top list size
      * @param isAmino use amino processing
-     * @param quality coverage threshold
+     * @param q_table coverage threshold
+	 * @param quality global q or maximum among all q values
      * @param bins hash_tables to use for parallel processing
      * @param thread_count the number of threads used for processing
      */
-    static void init(uint64_t& top_size, bool isAmino, uint64_t& quality, uint64_t& thread_count);
+    static void init(uint64_t& top_size, bool isAmino, vector<int>& q_table, int& quality, uint64_t& thread_count);
 
 
 
@@ -293,15 +308,12 @@ public:
      */
     static void add_minimizers(uint64_t& T, string& str, uint64_t& color, bool& reverse, uint64_t& m, uint64_t& max_iupac);
 
-    /**
-     * This function calculates the split weight for a single entry of the hash table
-     * 
-     * @param mean weight function
-     * @param verbose print progress
-     * @param min_value the minimal weight represented in the top list
-     * @return the new minimal weight represented in the top list
-     */
-    static double add_weight(color_t& color, double mean(uint32_t&, uint32_t&), double min_value, bool pos);
+	/**
+	* This function calculates the weight for all splits and puts them into the split_ölist
+	* @param mean weight function
+	* @param min_value the minimal weight represented in the top list
+	*/
+	static void compile_split_list(double mean(uint32_t&, uint32_t&), double min_value);
 
     /**
      * This function iterates over the hash table and calculates the split weights.
@@ -317,8 +329,11 @@ public:
      *
      * @param weight split weight
      * @param color split colors
+	 * (@param split_list list of splits to add the split to)
      */
     static void add_split(double& weight, color_t& color);
+	static void add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>& split_list);
+
 
     /**
      * This funtion adds a sigle split from a cdbg to the output list.
@@ -327,9 +342,8 @@ public:
      * @param kmer_seq kmer
      * @param kmer_color split colors
      * @param min_value the minimal weight currently represented in the top list
-     * @return The minimal weight currently represented in the top list
      */
-     static double add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value);       
+     static void add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value);       
 
     /**
      * This function clears color-related temporary files.
@@ -339,42 +353,54 @@ public:
     /**
      * This function filters a greedy maximum weight tree compatible subset.
      *
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      * @return the new minimal weight represented in the top list
      */
-    static void filter_strict(bool& verbose);
+    static void filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
      *
      * @param map function that maps an integer to the original id, or null
+     * @param split_list list of splits to be filtered
+	 * @param support_values a hash map storing the absolut support values for each color set
+	 * @param bootstrap_no the number of bootstrap replicates for computing the per centage support
      * @param verbose print progress
      */
-    static string filter_strict(std::function<string(const uint64_t&)> map, bool& verbose);
+	static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight weakly compatible subset.
      *
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static void filter_weakly(bool& verbose);
+    static void filter_weakly(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset.
      *
      * @param n number of trees
+     * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static void filter_n_tree(uint64_t n, bool& verbose);
+    static void filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
      *
      * @param n number of trees
      * @param map function that maps an integer to the original id, or null
+     * @param split_list list of splits to be filtered
+	 * @param support_values a hash map storing the absolut support values for each color set
+	 * @param bootstrap_no the number of bootstrap replicates for computing the per centage support
      * @param verbose print progress
      */
-    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose);
+    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
+	
+	
+
 
 protected:
 
@@ -460,8 +486,12 @@ protected:
      * This function returns a newick string generated from the given tree structure (set).
      *
      * @param root root of the tree/set structure
+     * @param map function that maps an integer to the original id, or null
+	 * (@param support_values a hash map storing the absolut support values for each color set)
+	 * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
      * @return newick string
      */
+    static string print_tree(node* root, std::function<string(const uint64_t&)> map, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no);
     static string print_tree(node* root, std::function<string(const uint64_t&)> map);
 
     /**

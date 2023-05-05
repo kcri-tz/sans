@@ -34,12 +34,14 @@ def unify(split, taxa):
 
 
 
-def readfile(filename,taxa):
+def readfile(filename,taxa,bootstrapvalues):
     splits=pygtrie.StringTrie()
+    i=0
     for line in (s.strip() for s in open(filename)):
         #split line
         fields = line.split('\t')
-        weight = float(fields[0])
+        weight = fields[0]+" "+bootstrapvalues[i]
+        i+=1
         split_orig = fields[1:]
         #store tax names if necessary
         split=[] #storing ids
@@ -56,26 +58,12 @@ def readfile(filename,taxa):
             continue
         split=unify(split,taxa.values())
         split_txt="/".join(map(str,split))
-        #update or store split
-        if split_txt in splits:
-            splits[split_txt]+=weight
-        else:
-            splits[split_txt]=weight
+        splits[split_txt]=weight
 
     return splits
 
+                     
 
-                        
-
-if len(sys.argv)>3:
-    min_weight=int(sys.argv[3])
-else:
-    min_weight=-1
-
-if len(sys.argv)>4:
-    add_weight=int(sys.argv[4])
-else:
-    add_weight=0
 
 
 
@@ -91,22 +79,51 @@ def readtaxa(filename):
     return(taxa)
 
 
-if len(sys.argv)<3:
-    eprint("Usage: sans2nexus.py <sans output file> <list of genomes (file names)>")
+
+def readbootstrapvalues(filename):
+    bsv=[] #BootStrapValues
+    for line in (s.strip().split()[0] for s in open(filename)):
+        bsv.append(line)
+    return(bsv)
+
+def printusage():
+    eprint("Usage: sans2conf_nexus.py <sans output file> <bootstrap values> <list of genomes (file names)> [m]")
+    eprint("Optional: m: multiply weights by bootstrap support values")
     eprint("Output in NEXUS format on stdout.")
     sys.exit(1)
 
 
+if len(sys.argv)<4 or len(sys.argv)>5:
+    printusage()
+
+mult=False
+
+if len(sys.argv)==5:
+    if(sys.argv[4]=="m"):
+         mult=True
+    else:
+         printusage()
+
 eprint("read taxa")
-taxa=readtaxa(sys.argv[2])
+taxa=readtaxa(sys.argv[3])
 ntax=len(taxa)
 eprint(ntax)
 
+
+eprint("read bootstrap values file")
+bootstrapvalues=readbootstrapvalues(sys.argv[2])
+eprint("read:")
+l=len(bootstrapvalues)
+eprint(l)
+
 eprint("read split file")
-splitlist=readfile(sys.argv[1],taxa)
+splitlist=readfile(sys.argv[1],taxa,bootstrapvalues)
 eprint("read:")
 l=len(splitlist)
 eprint(l)
+
+
+
 
    
 # output nexus format stuff
@@ -120,23 +137,29 @@ for tupel in sorted( ((v,k) for k,v in taxa.items())):
 nsplits=0
 splitstring=""
 for (split_str,weight) in splitlist.iteritems():
+    if mult:
+       (w,b)=weight.split(" ")
+       weight=float(w)*float(b)
+       if (weight==0): continue
+       weight=str(weight)+" "+b
+       #print(w,b,weight)
     if split_str=="":
         split=[]
     else:
         split=split_str.split('/')
-    if (float(weight)>min_weight or len(split)==1 or len(split)==ntax-1) and len(split)>0: #don't output split all versus none and too small splits
+    #if (len(split)==1 or len(split)==ntax-1) and len(split)>0: #don't output split all versus none and too small splits
         nsplits+=1
-        #splitstring+="%s\t%s\n"%(len(split),weight)
-        #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),log(weight)*len(split),' '.join(map(str,split)))
+            #splitstring+="%s\t%s\n"%(len(split),weight)
+            #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),log(weight)*len(split),' '.join(map(str,split)))
         splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),weight,' '.join(map(str,split)))
-        #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),1.0*weight/sqrt(len(split)*(ntax-len(split))),' '.join(map(str,split)))
-        #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),1.0*weight/len(split),' '.join(map(str,split)))
-        #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),weight/100.0,' '.join(map(str,split)))
-        #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),log(weight),' '.join(map(str,split)))
+            #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),1.0*weight/sqrt(len(split)*(ntax-len(split))),' '.join(map(str,split)))
+            #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),1.0*weight/len(split),' '.join(map(str,split)))
+            #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),weight/100.0,' '.join(map(str,split)))
+            #splitstring+="[%s, size=%s]\t%s\t%s,\n"%(nsplits,len(split),log(weight),' '.join(map(str,split)))
 
 
 # output nexus format stuff
-print(";\nEND; [Taxa]\n\n\n\nBEGIN Splits;\nDIMENSIONS ntax=%s nsplits=%s;\nMATRIX"%(ntax,nsplits))
+print(";\nEND; [Taxa]\n\n\n\nBEGIN Splits;\nDIMENSIONS ntax=%s nsplits=%s;\nFORMAT CONFIDENCES=YES;\nMATRIX"%(ntax,nsplits))
 
 #output splits
 print(splitstring)

@@ -12,7 +12,8 @@ uint64_t graph::t;
 /**
  * This is the min. coverage threshold for k-mers.
  */
-uint64_t graph::quality;
+vector<int> graph::q_table;
+int graph::quality;
 
 bool graph::isAmino;
 
@@ -69,7 +70,7 @@ vector<hash_map<kmerAmino_t, uint64_t>> graph::quality_mapAmino;
  */
 // https://itecnote.com/tecnote/c-sorting-multimap-with-both-keys-and-values/
 // This is necessairy to create a sorted output
-multiset<pair<double, color_t>,greater<>>graph::split_list;
+multiset<pair<double, color_t>, greater<>> graph::split_list;
 
 /**
 * These are the allowed chars.
@@ -131,10 +132,11 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  * This function initializes the top list size, coverage threshold, and allowed characters.
  *
  * @param t top list size
- * @param quality coverage threshold
+ * @param q_table coverage thresholds
+ * @param quality global q or maximum among all q values
  */
 
-void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& thread_count) {
+void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& quality, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
     hash_in_parallel = thread_count > 1 ? true : false;
@@ -223,20 +225,42 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
         graph::allowedChars.push_back('*');
     }
 
-        graph::quality = quality;
-        switch (quality) {
-        case 1:
-            case 0: /* no quality check */
+    graph::q_table = q_table;
+    switch (quality) {
+    case 1:
+        case 0: /* no quality check */
+        emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
+            hash_kmer(bin, kmer, color);
+        };
+        emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+            hash_kmer_amino(bin, kmer, color);
+        };
+        break;
+
+    case 2:
+        isAmino ? quality_setAmino.resize(thread_count) : quality_set.resize(thread_count);
+        if (q_table.size()>0){
             emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
-                hash_kmer(bin, kmer, color);
+                if (q_table[color]==1){
+                    hash_kmer(bin, kmer, color);
+                } else if (quality_set[T].find(kmer) == quality_set[T].end()) {
+                    quality_set[T].emplace(kmer);
+                } else {
+                    quality_set[T].erase(kmer);
+                    hash_kmer(bin, kmer, color);
+                }
             };
             emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
-                hash_kmer_amino(bin, kmer, color);
+                if (q_table[color]==1){
+                    hash_kmer_amino(bin, kmer, color);
+                } else if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
+                    quality_setAmino[T].emplace(kmer);
+                } else {
+                    quality_setAmino[T].erase(kmer);
+                    hash_kmer_amino(bin, kmer, color);
+                }
             };
-            break;
-
-        case 2:
-            isAmino ? quality_setAmino.resize(thread_count) : quality_set.resize(thread_count);
+        } else { // global quality value (one if-clause fewer)
             emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
                 if (quality_set[T].find(kmer) == quality_set[T].end()) {
                     quality_set[T].emplace(kmer);
@@ -253,9 +277,28 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
                     hash_kmer_amino(bin, kmer, color);
                 }
             };
-            break;
-        default:
-            isAmino ? quality_mapAmino.resize(thread_count) : quality_map.resize(thread_count);
+        }
+        break;
+    default:
+        isAmino ? quality_mapAmino.resize(thread_count) : quality_map.resize(thread_count);
+        if (q_table.size()>0){
+            emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
+                if (quality_map[T][kmer] < q_table[color]-1) {
+                    quality_map[T][kmer]++;
+                } else {
+                    quality_map[T].erase(kmer);
+                    hash_kmer(bin, kmer, color);
+                }
+            };
+            emplace_kmer_amino = [&] (const uint64_t& T, uint64_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+                if (quality_mapAmino[T][kmer] < q_table[color]-1) {
+                    quality_mapAmino[T][kmer]++;
+                } else {
+                    quality_mapAmino[T].erase(kmer);
+                    hash_kmer_amino(bin, kmer, color);
+                }
+            };
+        }else { // global quality value
             emplace_kmer = [&] (const uint64_t& T, uint64_t& bin, const kmer_t& kmer, const size_t& color) {
                 if (quality_map[T][kmer] < quality-1) {
                     quality_map[T][kmer]++;
@@ -272,7 +315,9 @@ void graph::init(uint64_t& top_size, bool amino, uint64_t& quality, uint64_t& th
                     hash_kmer_amino(bin, kmer, color);
                 }
             };
-            break;
+
+        }
+        break;
     }
 }
 
@@ -664,6 +709,7 @@ next_kmer:
         }
     }
 }
+
 /**
  * This function checks if the character at the given position is allowed.
  * @param pos position in str
@@ -1091,44 +1137,116 @@ void graph::iupac_shift_amino(hash_set<kmerAmino_t>& prev, hash_set<kmerAmino_t>
 }
 
 /**
- * This function calculates the weight of a single hash table entry
+ * This function calculates the weight for all splits and puts them into the split_ölist
  * @param mean weight function
- * @param verbose print progress
  * @param min_value the minimal weight represented in the top list
- * @return the new minimal weight represented in the top list
  */
-double graph::add_weight(color_t& color, double mean(uint32_t&, uint32_t&), double min_value, bool pos)
+void graph::compile_split_list(double mean(uint32_t&, uint32_t&), double min_value)
 {
-    array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
-    double old_value = mean(weight[0], weight[1]);    // calculate the old mean value
-    if (old_value >= min_value) {    // if it is greater than the min. value, find it in the top list
-        auto range = split_list.equal_range(make_pair(old_value, color));    // get all color sets with the given weight
-        for (auto it = range.first; it != range.second; ++it) {
-            if (it->second == color) {    // iterate over the color sets to find the correct one
-                split_list.erase(it);    // erase the entry with the old weight
-                break;
-            }
-        }
-    }
-    weight[pos]++; // update the weight or the inverse weight of the current color set
-    double new_value = mean(weight[0], weight[1]);    // calculate the new mean value
-    if (new_value >= min_value) {    // if it is greater than the min. value, add it to the top list
-        split_list.emplace(new_value, color);    // insert it at the correct position ordered by weight
-        if (split_list.size() > t) {
-            split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
-            min_value = split_list.rbegin()->first;    // update the min. value for the next iteration
-        }
-    }
-    return min_value;
+	// Iterating over the map using Iterator till map end.
+	hash_map<color_t, array<uint32_t,2>>::iterator it = color_table.begin();
+	while (it != color_table.end())	{
+
+		// Accessing the key
+		color_t colors = it->first;
+		
+		// Accessing the value
+		array<uint32_t,2> weights = it->second;
+		
+		//insert into split list
+		double new_mean = mean(weights[0], weights[1]);    // calculate the mean value
+		if (new_mean >= min_value) {    // if it is greater than the min. value, add it to the top list
+			split_list.emplace(new_mean, colors);    // insert it at the correct position ordered by weight
+			if (split_list.size() > t) {
+				split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
+				min_value = split_list.rbegin()->first;    // update the min. value for the next iteration (only necessary of t is exceeded, otherwise min_value does not play a role.
+			}
+		}
+		
+		// iterator incremented to point next item
+		it++;
+	}
 }
+
+
+
+/**
+ * This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.
+ * @param mean weight function
+ * @return the new list of splits of length at least t ordered by weight as usual
+ */
+multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
+
+	uint64_t max = 0;
+	
+	if (isAmino){ // use the sum of amino table sizes
+		for (auto table: kmer_tableAmino){max += table.size();}
+	} else { // use the sum of base table sizeskmer_table.size(); 
+		for (auto table: kmer_table){max+=table.size();}
+	}
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	multiset<pair<double, color_t>, greater<>> sl;
+	double min_value=0;
+
+	// perform n time max trials, each succeeds 1/max
+	std::binomial_distribution<> d(max, 1.0/max);
+	
+	// Iterating over the map using Iterator till map end.
+	hash_map<color_t, array<uint32_t,2>>::iterator it = color_table.begin();
+	while (it != color_table.end())	{
+
+		// Accessing the key
+		color_t colors = it->first;
+		
+		// Accessing the value
+		array<uint32_t,2> weights = it->second;
+		
+		// bootstrap the number of kmer occurrences for split and inverse
+		array<uint32_t,2> new_weights;
+		new_weights[0]=0;
+		new_weights[1]=0;
+		for (int i=0;i<2;i++) {
+			for (int r=0;r<weights[i];r++){
+				new_weights[i] += d(gen);
+			}
+// 			uint64_t n = weights[i]*max;
+// 			std::binomial_distribution<> dn(n, 1.0/max);
+// 			cout << weights[i] << "\t" << dn(gen) << "\t" << new_weights[i] << "\n" << flush;
+		}
+		
+		//insert into new split list
+		double new_mean = mean(new_weights[0], new_weights[1]);    // calculate the new mean value
+		if (new_mean >= min_value) {    // if it is greater than the min. value, add it to the top list
+			sl.emplace(new_mean, colors);    // insert it at the correct position ordered by weight
+			if (sl.size() > t) {
+				sl.erase(--sl.end());    // if the top list exceeds its limit, erase the last entry
+				min_value = sl.rbegin()->first;    // update the min. value for the next iteration (only necessary of t is exceeded, otherwise min_value does not play a role.
+			}
+		}
+		
+		// iterator incremented to point next item
+		it++;
+		
+	}
+
+	return sl;
+}
+
 
 /**
  * This function iterates over the hash table and calculates the split weights.
  * 
  * @param mean weight function
+ * @param min_value the minimal weight represented in the top list
  * @param verbose print progess
  */
 void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
+	
+	
+	
     //double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
     uint64_t cur=0, prog=0, next;
 
@@ -1174,9 +1292,22 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
             color_t& color = *color_ref;
             bool pos = color::represent(color);    // invert the color set, if necessary
             if (color == 0) continue;    // ignore empty splits
-            add_weight(color, mean, min_value, pos);
-        }
+            // add_weight(color, mean, min_value, pos);
+			array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
+			weight[pos]++; // update the weight or the inverse weight of the current color set
+		}
     }
+//    compile_split_list(mean,min_value); done in main.cpp
+}
+
+/**
+ * This function calls add_split onthe global split_list
+ *
+ * @param weight split weight
+ * @param color split colors
+ */
+void graph::add_split(double& weight, color_t& color) {
+	add_split(weight, color, split_list);
 }
 
 /**
@@ -1184,21 +1315,24 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
  *
  * @param weight split weight
  * @param color split colors
+ * @param split_list list of splits
  */
-void graph::add_split(double& weight, color_t& color) {
+void graph::add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>& split_list) {
     split_list.emplace(weight, color);    // insert it at the correct position ordered by weight
     if (split_list.size() > t) {
         split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
     }
 }
 
+
 /**
  * This function computes a split from the current map and cdbg colored kmer. 
  * 
  * @param seq kmer
  * @param kmer_color the split colors
+ * @param min_value the minimal weight represented in the top list
  */
-double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value){
+void graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string kmer_seq, color_t& kmer_color, double min_value){
     
     bool has_kmers = false; 
     for (auto table : kmer_table){if(!table.empty()){has_kmers = true; break;}} // Check if any entries exist
@@ -1213,23 +1347,24 @@ double graph::add_cdbg_colored_kmer(double mean(uint32_t&, uint32_t&), string km
 
 	    bool reversed = kmer::reverse_represent(kmer);
 
-
         if (search_kmer(kmer)){ // Check if additional colors are stored for this kmer
             // Get the colors stored for this kmer
             color_t hashed_color = get_color(kmer, reversed); // the currently stored colores of the kmer
-	    for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
-              	if(hashed_color.test(pos) && !kmer_color.test(pos)){ // test if the color is set in the stored color set
-              		kmer_color.set(pos);
-               	}
+            for (uint64_t pos=0; pos < maxN; pos++){ // transcribe hashed colores to the cdbg color set
+                    if(hashed_color.test(pos) && !kmer_color.test(pos)){ // test if the color is set in the stored color set
+                        kmer_color.set(pos);
+                    }
            }
            // Remove the kmer from the hash table
            remove_kmer(kmer, reversed); // remove the kmer from the table
 	   }
-    }
+    }            
+    //Todo 
     bool pos = color::represent(kmer_color);  // invert the color set, if necessary
-    if (kmer_color == 0) return min_value; // ignore empty splits
-    min_value = add_weight(kmer_color, mean, min_value, pos); // compute weight
-    return min_value; // return new minimal weight
+    if (kmer_color == 0) return; // ignore empty splits
+    // min_value = add_weight(kmer_color, mean, min_value, pos); // compute weight
+	array<uint32_t,2>& weight = color_table[kmer_color]; // get the weight and inverse weight for the color set
+	weight[pos]++; // update the weight or the inverse weight of the current color set
 }
 
 /**
@@ -1243,22 +1378,23 @@ void graph::clear_thread(uint64_t& T) {
     }
 }
 
-/**
- * This function filters a greedy maximum weight tree compatible subset.
- *
- * @param verbose print progress
- */
-void graph::filter_strict(bool& verbose) {
-    filter_strict(nullptr, verbose);
-}
+
 
 /**
  * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
  *
- * @param map function that maps an integer to the original id, or null if no newick output wanted
+ * (@param map function that maps an integer to the original id, or null if no newick output wanted)
+ * @param split_list list of splits to be filtered
+ * (@param support_values a hash map storing the absolut support values for each color set)
+ * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @param verbose print progress
  */
-string graph::filter_strict(std::function<string(const uint64_t&)> map, bool& verbose) {
+
+void graph::filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+    filter_strict(nullptr, split_list, nullptr, 0, verbose);
+}
+
+string graph::filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
@@ -1280,7 +1416,7 @@ loop:
     }
     if (map) {
         node* root = build_tree(tree);
-        return print_tree(root, map) + ";\n";
+        return print_tree(root, map, support_values, bootstrap_no) + ";\n";
     } else {
         return "";
     }
@@ -1289,14 +1425,16 @@ loop:
 /**
  * This function filters a greedy maximum weight weakly compatible subset.
  *
+ * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-void graph::filter_weakly(bool& verbose) {
+void graph::filter_weakly(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
-    auto it = split_list.begin();
     color_t col;
+    auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
+
 loop:
     while (it != split_list.end()) {
         if (verbose) {
@@ -1314,26 +1452,23 @@ loop:
 }
 
 /**
- * This function filters a greedy maximum weight n-tree compatible subset.
- *
- * @param n number of trees
- * @param verbose print progress
- */
-void graph::filter_n_tree(uint64_t n, bool& verbose) {
-    filter_n_tree(n, nullptr, verbose);
-}
-
-/**
  * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
  *
  * @param n number of trees
- * @param map function that maps an integer to the original id, or null
+ * (@param map function that maps an integer to the original id, or null)
+ * @param split_list list of splits to be filtered
+ * (@param support_values a hash map storing the absolut support values for each color set)
+ * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @param verbose print progress
  */
-string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, bool& verbose) {
+void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+    filter_n_tree(n, nullptr, split_list, nullptr, 0, verbose);
+}
+
+string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
-    auto it = split_list.begin();
     color_t col;
+    auto it = split_list.begin();
     uint64_t cur = 0, prog = 0, next;
     uint64_t max = split_list.size();
 loop:
@@ -1356,7 +1491,7 @@ loop:
     if (map) {
         for (auto& tree : forest) {
             node* root = build_tree(tree);
-            s += print_tree(root, map) + ";\n";
+            s += print_tree(root, map, support_values,bootstrap_no) + ";\n";
         }
     }
     return s;
@@ -1519,9 +1654,16 @@ node* graph::build_tree(vector<color_t>& color_set) {
  * This function returns a newick string generated from the given tree structure (set).
  *
  * @param root root of the tree/set structure
+ * @param map function that maps an integer to the original id, or null
+ * (@param support_values a hash map storing the absolut support values for each color set)
+ * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @return newick string
  */
 string graph::print_tree(node* root, std::function<string(const uint64_t&)> map) {
+	return print_tree(root, map,nullptr,0);
+}
+
+string graph::print_tree(node* root, std::function<string(const uint64_t&)> map, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no) {
     vector<node*> subsets = root->subsets;
     color_t taxa = root->taxa;
 
@@ -1539,11 +1681,17 @@ string graph::print_tree(node* root, std::function<string(const uint64_t&)> map)
     else {
         string s = "(";
         for (node* subset : subsets) {
-            s += print_tree(subset, map);
+            s += print_tree(subset, map, support_values, bootstrap_no);
             if (subset != subsets.back()) { s += ","; }
         }
-        s += "):";
+        s += ")";
+		if(support_values!=nullptr){
+			s+=to_string(((1.0*(*support_values)[taxa])/bootstrap_no));
+		}
+		s += ":";
         s += to_string(root->weight);
         return s;
     }
 }
+
+
