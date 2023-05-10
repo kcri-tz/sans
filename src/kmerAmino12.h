@@ -22,18 +22,12 @@ public:
      */
     static uint64_t k;
 
-    // The current binning carry
-    static uint64_t bin;
-
-    // The binning mod
-    static uint64_t table_count;
-
     /**
      * This function initializes the k-mer length and bit-mask.
      *
      * @param kmer_length k-mer length
      */
-    static void init(uint64_t& kmer_length, uint64_t& bins);
+    static void init(uint64_t& kmer_length);
 
     /**
      * This function shifts a k-mer adding a new character to the left.
