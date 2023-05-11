@@ -595,7 +595,6 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         // DNA processing 
         if (!isAmino) {
             left = kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
-
             #if maxK <= 32
                 bin = kmer % table_count; // Simple update of the forward complement bin
             #else
@@ -663,6 +662,7 @@ next_kmer:
     sequence_order_Amino.clear();
     
     uint64_t bin = 0;
+    uint64_t amino_bin = 0;
 
     for (; pos < str.length(); ++pos) {    // collect the bases from the string
         if (!isAllowedChar(pos, str)) {
@@ -691,6 +691,7 @@ next_kmer:
                 }
             }
         } else {
+            shift_update_amino_bin(amino_bin, kmerAmino, str[pos]);
             kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
 
             if (pos+1 - begin >= kmerAmino::k) {

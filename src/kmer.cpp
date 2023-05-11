@@ -31,14 +31,16 @@ void kmer::shift(kmer_t& kmer, const char& chr) {
 
 char kmer::shift_right(kmer_t& kmer, char& c) {
     uint64_t left = 2*kmer.test(2*k-1)+kmer.test(2*k-2);    // old leftmost character
+    char c_left;
+
     uint64_t right = char_to_bits(c);    // new rightmost character
 
     kmer <<= 02u;    // shift all current bits to the left by two positions
     kmer |= right;    // encode the new character within the rightmost two bits
     kmer &= mask;    // set all bits to zero that exceed the k-mer length
 
-    bits_to_char(left, c);    // return the dropped leftmost character
-    return c;
+    bits_to_char(left, c_left);    // return the dropped leftmost character
+    return c_left;
 }
 
 /**
