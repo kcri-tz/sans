@@ -14,11 +14,11 @@
  * @return exit status
  */
 int main(int argc, char* argv[]) {
+
     /**
-    * [Info]
-    * --- Help page ---
-    * - Print the help page to console
-    * - Describes the program arguments
+    * [Help page]
+    * - Show the help page
+    * - Describes the software and argument usage
     */
 
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
@@ -118,11 +118,11 @@ int main(int argc, char* argv[]) {
 
 
     /**
-    * [Meta]
-    * --- Defaults ---
-    * - Initialise meta variables and set defaults
+    * [argument and meta variable initialization]
+    * defaults are set here
     */
 
+    // file definitions
     string input;    // name of input file
     string graph;    // name of graph file
     string splits;    // name of splits file
@@ -130,32 +130,46 @@ int main(int argc, char* argv[]) {
     string newick;    // name of newick output file // Todo
     string translate; // name of translate file
 
+    // input
+    uint64_t num = 0;    // number of input files
+
+    // automatic recompilation
+    string path = "./makefile"; // path to makefile for automatic recompilation
+    bool check_n = false; // compare num (number of input genomes) to maxN (compile parameter DmaxN)
+
+    // kmer args --
+    bool userKmer = false; // is k-mer default or custom
     uint64_t kmer = 31;    // length of k-mers
     uint64_t window = 1;    // number of k-mers
-    uint64_t num = 0;    // number of input files
-    uint64_t top = -1;    // number of splits
-    bool dyn_top = false; // bind number of splits to num
 
-    uint64_t threads = thread::hardware_concurrency(); // The number of threads to run on
-
-    auto mean = util::geometric_mean2;    // weight function
-    string filter;    // filter function
-    string consensus_filter; // filter function for filtering after bootstrapping
-    uint64_t iupac = 1;    // allow extended iupac characters
-	int quality = 1;    // min. coverage threshold for k-mers (if individual q values per file are given, this is the maximum among all)
+    // kmer preprocessing and filtering
     bool reverse = true;    // consider reverse complement k-mers
-    bool verbose = false;    // print messages during execution
+    uint64_t iupac = 1;    // allow extended iupac characters
+    int quality = 1;    // min. coverage threshold for k-mers (if individual q values per file are given, this is the maximum among all)
 
+    // split args
+    uint64_t top = -1;    // maximal number of splits to compute
+    bool dyn_top = false; // use multiplicity of inputs as maximal number of splits
+    auto mean = util::geometric_mean2;    // weight function
+
+    // parallel hashing
+    uint64_t threads = thread::hardware_concurrency(); // The number of threads to run on (default is number of virtual cores including smt)
+
+    // amino acid processing
     bool amino = false;      // input files are amino acid sequences
     bool shouldTranslate = false;   // translate input files
-    bool userKmer = false; // is k-mer default or custom
-    bool check_n = false; // compare num (number of input genomes) to maxN (compile parameter DmaxN)
-    string path = "./makefile"; // path to makefile
     uint64_t code = 1;
+
+    // bootsrapping
+    string filter;    // filter function
+    string consensus_filter; // filter function for filtering after bootstrapping
 	uint32_t bootstrap_no=0; // = no bootstrapping
 
+    // qol
+    bool verbose = false;    // print messages during execution
+
     /**
-     * --- Argument parser ---
+     * [Argument parser]
      * - Parse the command line arguments and update the meta variables accordingly
      */
 
