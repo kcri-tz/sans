@@ -19,90 +19,77 @@ ifeq ($(OS), Windows_NT)
 	RM = rmdir /s /q obj
 	MV = cmd /C move *.o obj
 	CP = cp makefile obj
-
 else
 	TD = obj/
 	MK = mkdir -p obj/
 	RM = rm -rf obj/
-	MV = ""mv *.o obj/
+	MV = mv *.o obj/
 	CP = cp makefile obj/makefile
-	
-
 endif
+
 
 ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-SANS: obj/main.o
+SANS: start makefile obj/main.o done
 	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
-	$(RM)
-	$(MK)
 
 
 obj/main.o: makefile src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
 	$(CC) -c src/main.cpp
-	@$(MV)
 
 obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color.o
 	$(CC) -c src/graph.cpp
-	@$(MV)
 
-obj/kmer.o: src/kmer.cpp src/kmer.h
+obj/kmer.o: makefile src/kmer.cpp src/kmer.h
 	$(CC) -c src/kmer.cpp
-	@$(MV)
 
-obj/kmerAmino12.o: src/kmerAmino12.cpp src/kmerAmino12.h obj/util.o
+obj/kmerAmino12.o: makefile src/kmerAmino12.cpp src/kmerAmino12.h obj/util.o
 	$(CC) -c src/kmerAmino12.cpp
-	@$(MV)
 
 obj/kmerAminoXX.o: makefile src/kmerAminoXX.cpp src/kmerAminoXX.h obj/util.o
 	$(CC) -c src/kmerAminoXX.cpp
-	@$(MV)
 
-obj/color.o: src/color.cpp src/color.h
+obj/color.o: makefile src/color.cpp src/color.h
 	$(CC) -c src/color.cpp
-	@$(MV)
 
-obj/util.o: src/util.cpp src/util.h
+obj/util.o: makefile src/util.cpp src/util.h
 	$(CC) -c src/util.cpp
-	@$(MV)
 
-obj/translator.o: src/translator.cpp src/translator.h src/gc.h
+obj/translator.o:  makefile src/translator.cpp src/translator.h src/gc.h
 	$(CC) -c src/translator.cpp
-	@$(MV)
 
-obj/cleanliness.o: src/cleanliness.cpp src/cleanliness.h
+obj/cleanliness.o: makefile src/cleanliness.cpp src/cleanliness.h
 	$(CC) -c src/cleanliness.cpp
-	@$(MV)
 
-obj/gzstream.o: src/gz/gzstream.C src/gz/gzstream.h	
+obj/gzstream.o: makefile src/gz/gzstream.C src/gz/gzstream.h	
 	$(CFLAGS) -c src/gz/gzstream.C
-	@$(MV)
 
 # [Internal rules]
-
-# Creating the object folder
-obj/:
-	@$(MK)
 
 # Print info at compile start
 start:
 	@echo "";
-	@echo "   ________________________________ \n";
-	@echo "     <<< BUILDING SANS SERIF >>>  \n";
+	@echo "   ________________________________";
+	@echo "     <<< BUILDING SANS SERIF >>>   ";
 	@echo "   ________________________________";
 	@echo "";
+	$(MK)
 
 # Print info when done
 done:
+	$(MV)
 	@echo "";
-	@echo "   _______________ \n";
-	@echo "    <<< Done! >>> \n";
+	@echo "   _______________";
+	@echo "    <<< Done! >>> ";
 	@echo "   _______________";
 	@echo "";
 
+
 .PHONY: clean
+
+# Remove build files
 clean:
 	$(RM)
 
