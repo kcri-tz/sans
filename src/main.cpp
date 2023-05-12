@@ -16,12 +16,12 @@
 int main(int argc, char* argv[]) {
 
     /**
-    * [Help page]
-    * - Show the help page
-    * - Describes the software and argument usage
+    * [help page definition]
+    * - show the help page
+    * - describes the software and argument usage
     */
 
-    if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+    auto show_help_page = [](){
         cout << endl;
         cout << "SANS serif | version " << SANS_VERSION << endl;
         cout << "Usage: SANS [PARAMETERS]" << endl;
@@ -33,9 +33,9 @@ int main(int argc, char* argv[]) {
         cout << "                  \t Or: kmtricks input format (see https://github.com/tlemane/kmtricks)" << endl;
         cout << endl;
         cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
-#ifndef useBF
+        #ifndef useBF
         cout << "                  \t (requires compiler flag -DuseBF, please edit makefile)" << endl;
-#endif
+        #endif
         cout << endl;
         cout << "    -s, --splits  \t Splits file: load an existing list of splits file" << endl;
         cout << "                  \t (allows to filter -t/-f, other arguments are ignored)" << endl;
@@ -113,9 +113,10 @@ int main(int argc, char* argv[]) {
         cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
         cout << "  Evaluation: https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans" << endl;
         cout << endl;
-        return 0;
-    }
+    };
 
+    // show the help page if no args are given or the arg is --help 
+    if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) { show_help_page(); return(0);}
 
     /**
     * [argument and meta variable initialization]
@@ -169,15 +170,30 @@ int main(int argc, char* argv[]) {
     bool verbose = false;    // print messages during execution
 
     /**
-     * [Argument parser]
-     * - Parse the command line arguments and update the meta variables accordingly
+     * [argument parser]
+     * - parse the command line arguments and update the meta variables accordingly
      */
+
+    // this lambda function throws an error, if a dependent argument is NULL
+    auto catch_missing_dependent_args = [] (auto arg, string parent)
+    {
+        if(arg == NULL){cerr << "Error: Missing dependent argument after " << parent << endl;exit(1);}
+    };
+
+    // this lambda function throws an error if the target arg-string could not be parse to int 
+    auto catch_failed_stoi_cast = [] (auto arg, string parent)
+    {
+    try {stoi(arg);}
+    catch( invalid_argument &excp )    {cerr << "Error: Invalid dependent argument: '" << arg << "' at: " << parent << " " << arg << endl; cerr << endl; exit(1);}
+    }; 
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
             input = argv[++i];    // Input file: list of sequence files, one per line
         }
         else if (strcmp(argv[i], "-g") == 0 || strcmp(argv[i], "--graph") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
             graph = argv[++i];    // Graph file: load a Bifrost graph, file name prefix
             #ifndef useBF
                 cerr << "Error: requires compiler flag -DuseBF" << endl;
@@ -185,15 +201,20 @@ int main(int argc, char* argv[]) {
             #endif
         }
         else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--splits") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
             splits = argv[++i];    // Splits file: load an existing list of splits file
         }
         else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
             output = argv[++i];    // Output file: list of splits, sorted by weight desc.
         }
         else if (strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--newick") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
             newick = argv[++i];    // Output newick file
         }
-        else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {
+        else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {            
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+
             kmer = stoi(argv[++i]);    // Length of k-mers (default: 31, 10 for amino acids)
             userKmer = true;
         }
@@ -204,6 +225,8 @@ int main(int argc, char* argv[]) {
             }
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            catch_failed_stoi_cast(argv[i + 1], argv[i]);
             i++;
             string top_str = argv[i];
             top = stoi(top_str); // Number of splits (default: all)
@@ -213,6 +236,7 @@ int main(int argc, char* argv[]) {
             }
         }
         else if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--mean") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
             string arg = argv[++i];    // Mean weight function to handle asymmetric splits
             if (arg == "arith") {
                 mean = util::arithmetic_mean;
@@ -229,6 +253,7 @@ int main(int argc, char* argv[]) {
             }
         }
         else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--filter") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
             filter = argv[++i];    // Filter a greedy maximum weight subset
             if (filter == "strict" || filter == "tree") {
                 // compatible to a tree
@@ -260,9 +285,13 @@ int main(int argc, char* argv[]) {
             }
         }
         else if (strcmp(argv[i], "-x") == 0 || strcmp(argv[i], "--iupac") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            catch_failed_stoi_cast(argv[i + 1], argv[i]);
             iupac = stoi(argv[++i]);    // Extended IUPAC alphabet, resolve ambiguous bases
         }
         else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--qualify") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            catch_failed_stoi_cast(argv[i + 1], argv[i]);
             quality = stoi(argv[++i]);    // Discard k-mers below a min. coverage threshold
         }
         else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--norev") == 0) {
@@ -292,12 +321,16 @@ int main(int argc, char* argv[]) {
             }
             shouldTranslate = true;
         }
-        // Parallelization 
+        // parallelization 
         else if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--threads") == 0){ 
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            catch_failed_stoi_cast(argv[i + 1], argv[i]);
             threads = stoi(argv[++i]);  // The number of threads to run
         }
-        // Bootsrapping
+        // bootsrapping
         else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bootstrapping") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            catch_failed_stoi_cast(argv[i + 1], argv[i]);
             bootstrap_no = stoi(argv[++i]);
         }
         else if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--consensus") == 0) {
@@ -339,8 +372,8 @@ int main(int argc, char* argv[]) {
 
     
     /**
-     * --- Version check --- 
-     * - Request the current SANS version from gitlab and check if this version is up to date (Requires wget)
+     *   [version check]
+     *   request the current SANS version from gitlab and check if this version is up to date (requires wget)
      */
 
     if (verbose){cout << "Checking for updates" << endl;}
