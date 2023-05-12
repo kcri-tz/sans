@@ -174,18 +174,35 @@ int main(int argc, char* argv[]) {
      * - parse the command line arguments and update the meta variables accordingly
      */
 
+
     // this lambda function throws an error, if a dependent argument is NULL
     auto catch_missing_dependent_args = [] (auto arg, string parent)
     {
         if(arg == NULL){cerr << "Error: Missing dependent argument after " << parent << endl;exit(1);}
     };
 
-    // this lambda function throws an error if the target arg-string could not be parse to int 
+    // this lambda function throws an error if the target arg-string could not be parsed as int 
     auto catch_failed_stoi_cast = [] (auto arg, string parent)
     {
     try {stoi(arg);}
     catch( invalid_argument &excp )    {cerr << "Error: Invalid dependent argument: '" << arg << "' at: " << parent << " " << arg << endl; cerr << endl; exit(1);}
-    }; 
+    };
+
+    // this lambda function asks for user confirmation
+    auto ask_for_user_confirmation = [] ()
+    {
+        string user_confirmation;
+        int requests = 0;
+        cout << "Please enter 'yes' or 'no'" << endl;
+        while (requests <= 5)
+        {
+            getline(cin, user_confirmation);
+            if (user_confirmation.compare("yes") == 0){return true;}
+            if (user_confirmation.compare("no") == 0){return false;}
+            requests++;
+        }
+        return false;
+    };   
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0) {
@@ -325,7 +342,18 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--threads") == 0){ 
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             catch_failed_stoi_cast(argv[i + 1], argv[i]);
-            threads = stoi(argv[++i]);  // The number of threads to run
+            threads = stoi(argv[++i]); // Number of threads to create
+            // Catch negative thread count
+            if (threads <= 0) 
+            {
+                cerr << "Error: processing requires at least one thread" << threads << endl;
+            }
+            // Ask for user confirmation if the number of threads exceeds 64
+            else if(threads > 64)
+            {
+                cout << "Are you sure you want to create " << threads << " threads?" << endl;
+                if (!ask_for_user_confirmation()){return 0;}
+            }
         }
         // bootsrapping
         else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bootstrapping") == 0) {
@@ -389,17 +417,9 @@ int main(int argc, char* argv[]) {
 
 
     /**
-     * --- Restriction check ---
+     * [Restriction check]
      * - Check if the given argument configuration does violate any run restrictions
      */ 
-    if (!userKmer) {
-        if (amino || shouldTranslate) {
-            kmer = 10;
-        } else {
-            kmer = 31;
-        }
-    }
-
     if (input.empty() && graph.empty() && splits.empty()) {
         cerr << "Error: missing argument: --input <file_name> or --graph <file_name>" << endl;
         return 1;
@@ -473,36 +493,35 @@ int main(int argc, char* argv[]) {
 	}
 
 
+    /*[Processing setup]
+    *
+    * Prepare the processing based on the input (DNA / Amnio)
+    */
 
-    // --- Post parse ---
-
-    // check if we need to init translation
+    // enable translation
     if (shouldTranslate) {
         amino = true;
         if (!translator::init(code)) {
             cerr << "Error: No translation data found" << translate << endl;
         }
     }
-
-    if (threads <= 0)
-    {
-        threads = 1;
-    }
+    // deduct default kmer size if not user defined
+    if (!userKmer) {kmer = amino == true ? 10 : 31;}
 
 
     /**
      * [Indexing]
-     * --- Indexing inputs ---
      * - Collect all target file names and locations
-     * - Check if the given files exist
+     * - Check whether the given files exist or not
      */ 
 
     // determine the folder the list is contained in
     string folder="";
 	uint64_t found=input.find_last_of("/\\");
-	if (found!=string::npos){
-	  folder=input.substr(0,found+1);
-	}
+	if (found!=string::npos)
+    { 
+        folder=input.substr(0,found+1);
+    }
 
     // parse the list of input sequence files
     hash_map<string, uint64_t> name_table; // the name to color map
