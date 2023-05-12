@@ -378,11 +378,11 @@ uint64_t graph::shift_update_amino_bin(uint64_t& bin, kmerAmino_t& kmer, char& c
         // shift
         bin = 160 * table_count + // Bias 
                     32 * (bin // Shift
-                    - kmer[5*kmerAmino::k - 1] * period[5*kmerAmino::k - 1]
-                    - kmer[5*kmerAmino::k - 2] * period[5*kmerAmino::k - 2]
-                    - kmer[5*kmerAmino::k - 3] * period[5*kmerAmino::k - 3]
-                    - kmer[5*kmerAmino::k - 4] * period[5*kmerAmino::k - 4]
-                    - kmer[5*kmerAmino::k - 5] * period[5*kmerAmino::k - 5]);
+                    - kmer.test(5*kmerAmino::k - 1) * period[5*kmerAmino::k - 1]
+                    - kmer.test(5*kmerAmino::k - 2) * period[5*kmerAmino::k - 2]
+                    - kmer.test(5*kmerAmino::k - 3) * period[5*kmerAmino::k - 3]
+                    - kmer.test(5*kmerAmino::k - 4) * period[5*kmerAmino::k - 4]
+                    - kmer.test(5*kmerAmino::k - 5) * period[5*kmerAmino::k - 5]);
         // update
         for(int i = 4; i>=0; i--){
             bin += period[i] * ((right >> i) & 0b1u);
@@ -419,13 +419,13 @@ uint64_t graph::compute_bin(const kmer_t& kmer)
 }
 #endif
 
-#if (maxK <= 12)
+#if makX <= 12
     uint64_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
         return hash_in_parallel ? kmer % table_count : 0;
     }
 #else
-    uint64_t graph::compute_amino_bin(const bitset<5*maxK>& kmer)
+    uint64_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
 	    if (!hash_in_parallel){return 0;}
 	
@@ -619,7 +619,7 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         // Amino processing
         } else {
             amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, str[pos]);
-            char left = kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
+            kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {
                 // shift update the bin

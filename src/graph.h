@@ -30,10 +30,10 @@ template <typename T>
     using hash_set = tsl::sparse_pg_set<T>;
 
 #include "kmer.h"
-#include "kmerAmino12.h"
-#include "kmerAminoXX.h"
+#include "kmerAmino.h"
 
 
+/**
 #if maxK > 12 // store k-mers in a bitset, allows larger k-mers
     typedef kmerAminoXX kmerAmino;
     typedef bitset<5*maxK> kmerAmino_t;
@@ -41,7 +41,7 @@ template <typename T>
     typedef kmerAmino12 kmerAmino;
     typedef uint64_t kmerAmino_t;
 #endif
-
+*/
 
 
 #include "color.h"
@@ -188,11 +188,7 @@ public:
      * @param kmer The target kmer
      * @return uint64_t The bin
      */
-    #if (maxK <= 12)
-        static uint64_t compute_amino_bin(const kmerAmino_t& kmer);
-    #else
-        static uint64_t compute_amino_bin(const bitset<5*maxK>& kmer);
-    #endif
+    static uint64_t compute_amino_bin(const kmerAmino_t& kmer);
 
     /**
      * This function hashes a base k-mer and stores it in the corresponding hash table

@@ -33,23 +33,20 @@ ifeq ("$(wildcard $(TD))", "")
 endif
 
 SANS: start makefile obj/main.o done
-	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
+	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer.o obj/kmerAmino.o obj/color.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
 
 
 obj/main.o: makefile src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
 	$(CC) -c src/main.cpp
 
-obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color.o
+obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer.o obj/kmerAmino.o obj/color.o
 	$(CC) -c src/graph.cpp
 
 obj/kmer.o: makefile src/kmer.cpp src/kmer.h
 	$(CC) -c src/kmer.cpp
 
-obj/kmerAmino12.o: makefile src/kmerAmino12.cpp src/kmerAmino12.h obj/util.o
-	$(CC) -c src/kmerAmino12.cpp
-
-obj/kmerAminoXX.o: makefile src/kmerAminoXX.cpp src/kmerAminoXX.h obj/util.o
-	$(CC) -c src/kmerAminoXX.cpp
+obj/kmerAmino.o: makefile src/kmerAmino.cpp src/kmerAmino.h obj/util.o
+	$(CC) -c src/kmerAmino.cpp
 
 obj/color.o: makefile src/color.cpp src/color.h
 	$(CC) -c src/color.cpp
