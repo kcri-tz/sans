@@ -196,17 +196,7 @@ public:
      *  @param kmer  The k-mer to store
      *  @param color The color to store 
      */
-    static void hash_kmer(uint64_t& bin, const kmer_t& kmer, const uint64_t& color);
-
-
-    /**
-     * This function hashes a base k-mer and stores it in the corresponding hash table (sequential version)
-     *  @param kmer The k-mer to store
-     *  @param color The color to store 
-     */
-    static void hash_kmer(const kmer_t& kmer, const uint64_t& color);
-
-
+    static void hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color);
 
     /**
      * This function hashes an amino k-mer and stores it in the correstponding hash table
@@ -214,15 +204,7 @@ public:
      *  @param kmer The kmer to store
      *  @param color The color to store 
      */
-    static void hash_kmer_amino(uint64_t& bin, const kmerAmino_t& kmer, const uint64_t& color);
-
-    /**
-     * This function hashes an amino k-mer and stores it in the correstponding hash table (sequential version)
-     *  @param kmer The kmer to store
-     *  @param color The color to store 
-     */
-    static void hash_kmer_amino(const kmerAmino_t& kmer, const uint64_t& color);
-
+    static void hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color);
 
     /**
      * This function searches the bit-wise corresponding hash table for the given kmer

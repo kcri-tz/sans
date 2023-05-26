@@ -145,8 +145,9 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         // Automatic table count
         if (hash_in_parallel)
         {
-            table_count = 45 * thread_count - 33; // Estimated scaling
-            table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        //    table_count = 45 * thread_count - 33; // Estimated scaling
+        //    table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        table_count = (0b1u << 14) + 1;
         }
         else {table_count = 1;}
         
@@ -176,8 +177,9 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         // Automatic table count
         if (hash_in_parallel)
         {
-            table_count = 33 * thread_count + 33; // Estimated scaling
-            table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        //    table_count = 33 * thread_count + 33; // Estimated scaling
+        //    table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
+        table_count = (0b1u << 14) + 1;
         }
         else {table_count = 1;}
 
@@ -453,20 +455,6 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
     kmer_table[bin][kmer].set(color);
 }
 
-/**
-* This function hashes a k-mer and stores it in the correstponding hash table.
-* The corresponding table is chosen by the carry of the encoded k-mer given the number of tables as module.
-*  @param kmer The kmer to store
-*  @param color The color to store 
-*/
-void graph::hash_kmer(const kmer_t& kmer, const uint64_t& color)
-{
-    uint_fast32_t table_id = compute_bin(kmer);
-    std::lock_guard<mutex> lg(lock[table_id]); 
-    kmer_table[table_id][kmer].set(color);
-}
-
-
 
 /**
  * This function hashes an amino k-mer and stores it in the corresponding hash table.
@@ -479,20 +467,6 @@ void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const u
     std::lock_guard<mutex> lg(lock[bin]);
     kmer_tableAmino[bin][kmer].set(color);
 }
-
-/**
- * This function hashes an amino k-mer and stores it in the corresponding hash table.
- * The correspontind table is chosen by the carry of the encoded k-mer bitset by the bit-module function.
- * @param kmer The kmer to store
- * @param color The color to store
- */
-void graph::hash_kmer_amino(const kmerAmino_t& kmer, const uint64_t& color)
-{
-    uint64_t table_id = compute_amino_bin(kmer);
-    std::lock_guard<mutex> lg(lock[table_id]); 
-    kmer_tableAmino[table_id][kmer].set(color);
-}
-
 
 /**
  * This function searches the corresponding hash table for the given kmer
