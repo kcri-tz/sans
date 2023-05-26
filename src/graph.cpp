@@ -17,7 +17,6 @@ int graph::quality;
 
 bool graph::isAmino;
 
-bool graph::hash_in_parallel;
 uint64_t graph::table_count;
 
 /**
@@ -139,17 +138,12 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
 void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& quality, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
-    hash_in_parallel = thread_count > 1 ? true : false;
     if(!isAmino){
 
         // Automatic table count
-        if (hash_in_parallel)
-        {
         //    table_count = 45 * thread_count - 33; // Estimated scaling
         //    table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
         table_count = (0b1u << 14) + 1;
-        }
-        else {table_count = 1;}
         
 
         // Init base tables
@@ -175,13 +169,9 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         graph::allowedChars.push_back('T');
     }else{
         // Automatic table count
-        if (hash_in_parallel)
-        {
         //    table_count = 33 * thread_count + 33; // Estimated scaling
         //    table_count = table_count % 2 ? table_count : table_count + 1; // Ensure the table count is odd
         table_count = (0b1u << 14) + 1;
-        }
-        else {table_count = 1;}
 
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
@@ -402,13 +392,11 @@ uint64_t graph::shift_update_amino_bin(uint_fast32_t& bin, kmerAmino_t& kmer, ch
 #if (maxK <= 32)
 uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 {
-    return hash_in_parallel ? kmer % table_count : 0;
+    return kmer % table_count;
 }
 #else
 uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 {
-	if (!hash_in_parallel){return 0;}
-
 	uint_fast32_t carry = 1;
 	uint_fast32_t rest = 0;
 	if (kmer.test(0)){rest++;} // Test the last bit
@@ -423,13 +411,11 @@ uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 #if makX <= 12
     uint_fast32_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
-        return hash_in_parallel ? kmer % table_count : 0;
+        return kmer % table_count;
     }
 #else
     uint_fast32_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
-	    if (!hash_in_parallel){return 0;}
-	
 	    uint_fast32_t carry = 1;
 	    uint_fast32_t rest = 0;
 

@@ -77,8 +77,6 @@ private:
 
     static bool isAmino;
     
-
-    static bool hash_in_parallel;
     /**
      * This int indicates the number of tables to use for hashing
      */
