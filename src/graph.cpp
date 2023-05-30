@@ -17,12 +17,13 @@ int graph::quality;
 
 bool graph::isAmino;
 
-uint64_t graph::table_count;
+/*
+*
+* [Parallelization]
+*
+*/
 
-/**
- * This is vector of hash tables mapping k-mers to colors [O(1)].
- */
-vector<hash_map<kmer_t, color_t>> graph::kmer_table;
+uint64_t graph::table_count;
 
 /**
  * This is a vecotr of spinlocks protecting the hash maps 
@@ -30,9 +31,14 @@ vector<hash_map<kmer_t, color_t>> graph::kmer_table;
 vector<spinlock> graph::lock;
 
 /**
- * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
+ * This vector holds the carries of 2**i % table_count for fast distribution of binary represented kmers
  */
 vector<uint_fast32_t> graph::period;
+
+/**
+ * This is vector of hash tables mapping k-mers to colors [O(1)].
+ */
+vector<hash_map<kmer_t, color_t>> graph::kmer_table;
 
 /**
  * This is the amino equivalent.
@@ -451,8 +457,9 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
  */
 void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlock> lg(lock[bin]);
+    lock[bin].lock();
     kmer_tableAmino[bin][kmer].set(color);
+    lock[bin].unlock();
 }
 
 /**
