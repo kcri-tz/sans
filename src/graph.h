@@ -188,17 +188,17 @@ public:
     /**
      * This function shift updates the bin of a kmer
     */
-    static uint64_t shift_update_bin(uint64_t& bin, char& left, char& right);
+    static uint_fast32_t shift_update_bin(uint_fast32_t& bin, uint_fast8_t& left, uint_fast8_t& right);
     
     /**
      * This method shift updates the reverse complement bin for a kmer
     */
-   static uint64_t shift_update_rc_bin(uint64_t& rc_bin, char& c_left, char& c_right);
+    static uint_fast32_t shift_update_rc_bin(uint_fast32_t& rc_bin, uint_fast8_t& left, uint_fast8_t& right);
 
     /**
     * This function shift updates a bin for an amino kmer
     */
-    static uint64_t shift_update_amino_bin(uint64_t& bin, kmerAmino_t& kmer, char& c_right);
+    static uint_fast32_t shift_update_amino_bin(uint_fast32_t& bin, kmerAmino_t& kmer, uint_fast8_t& right);
 
     /**
      *  This method computes the bin of a given kmer(slower than shift update)
@@ -206,14 +206,14 @@ public:
      * @return uint64_t The bin
      */
      
-    static uint64_t compute_bin(const kmer_t& kmer);
+    static uint_fast32_t compute_bin(const kmer_t& kmer);
 
     /**
      *  This function computes the bin of a given amino kmer(slower than shift update)
      * @param kmer The target kmer
      * @return uint64_t The bin
      */
-    static uint64_t compute_amino_bin(const kmerAmino_t& kmer);
+    static uint_fast32_t compute_amino_bin(const kmerAmino_t& kmer);
 
     /**
      * This function hashes a base k-mer and stores it in the corresponding hash table

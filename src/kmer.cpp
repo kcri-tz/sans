@@ -21,27 +21,27 @@ void kmer::init(const size2K_t& length) {
  * This function shifts a k-mer appending a new character to the right.
  *
  * @param kmer bit sequence
+ * @param uint_fast8_t right character in binary-code
+ */
+void kmer::shift(kmer_t& kmer, const uint_fast8_t& right) {
+    kmer <<= 02u;    // shift all current bits to the left by two positions
+    kmer |= right;    // encode the new rightmost character
+    kmer &= mask;    // set all bits to zero that exceed the k-mer length
+}
+
+/**
+ * This function shifts a k-mer appending a new character to the right.
+ *
+ * @param kmer bit sequence
  * @param chr right character
  */
-void kmer::shift(kmer_t& kmer, const char& chr) {
+void kmer::shift(kmer_t& kmer, const char& c_right) {
     kmer <<= 02u;    // shift all current bits to the left by two positions
-    kmer |= char_to_bits(chr);    // encode the new rightmost character
+    kmer |= char_to_bits(c_right);    // encode the new rightmost character
     kmer &= mask;    // set all bits to zero that exceed the k-mer length
 }
 
-char kmer::shift_right(kmer_t& kmer, char& c) {
-    uint64_t left = 2*kmer.test(2*k-1)+kmer.test(2*k-2);    // old leftmost character
-    char c_left;
 
-    uint64_t right = char_to_bits(c);    // new rightmost character
-
-    kmer <<= 02u;    // shift all current bits to the left by two positions
-    kmer |= right;    // encode the new character within the rightmost two bits
-    kmer &= mask;    // set all bits to zero that exceed the k-mer length
-
-    bits_to_char(left, c_left);    // return the dropped leftmost character
-    return c_left;
-}
 
 /**
  * This function unshifts a k-mer returning the character on the right.

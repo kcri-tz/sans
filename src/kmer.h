@@ -45,16 +45,16 @@ class kmer {
      * @param kmer bit sequence
      * @param chr right character
      */
-    static void shift(kmer_t& kmer, const char& chr);
+    static void shift(kmer_t& kmer, const uint8_t& right);
 
-    /**
-     * This function shifts a k-mer adding a new character to the right.
-     *
-     * @param kmer bit sequence
-     * @param c right character
-     * @return left character
-     */
-    static char shift_right(kmer_t& kmer, char& c);
+
+   /**
+    * This function shifts a k-mer appending a new character to the right.
+    *
+    * @param kmer bit sequence
+    * @param chr right character
+    */
+   static void shift(kmer_t& kmer, const char& c_right);
 
     /**
      * This function unshifts a k-mer returning the character on the right.

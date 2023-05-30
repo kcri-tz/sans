@@ -328,10 +328,8 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
  * This method shift-updates the bin of a kmer
  */
 
-uint64_t graph::shift_update_bin(uint_fast32_t& bin, char& c_left, char& c_right)
+uint_fast32_t graph::shift_update_bin(uint_fast32_t& bin, uint_fast8_t& left, uint_fast8_t& right)
 {
-    uint64_t left = util::char_to_bits(c_left);
-    uint64_t right = util::char_to_bits(c_right);
         return (8 * table_count // Bias
             + 4 * (bin - period[2*kmer::k-1] * (left / 2) - (left % 2) * period[2*kmer::k - 2]) // Shift
             + period[1] * (right / 2) + period[0] * (right % 2)) // Update   
@@ -341,11 +339,8 @@ uint64_t graph::shift_update_bin(uint_fast32_t& bin, char& c_left, char& c_right
 /**
  * This method shift updates the reverse complement bin of a kmer
  */
-uint64_t graph::shift_update_rc_bin(uint_fast32_t& rc_bin, char& c_left, char& c_right)
-{
-    uint64_t left = util::char_to_bits(c_left);
-    uint64_t right = util::char_to_bits(c_right);
-    
+uint_fast32_t graph::shift_update_rc_bin(uint_fast32_t& rc_bin, uint_fast8_t& left, uint_fast8_t& right)
+{   
     // Remove
     rc_bin += 8 * table_count - period[1] * (!(left / 2 )) - period[0] * (!(left % 2 ));
     // First shift
@@ -364,30 +359,24 @@ uint64_t graph::shift_update_rc_bin(uint_fast32_t& rc_bin, char& c_left, char& c
 /**
  * This method shift-updates the bin of an amino kmer
  */
-uint64_t graph::shift_update_amino_bin(uint_fast32_t& bin, kmerAmino_t& kmer, char& c_right)
+uint_fast32_t graph::shift_update_amino_bin(uint_fast32_t& bin, kmerAmino_t& kmer, uint_fast8_t& right)
 {
-    #if (maxK <= 12) // This is not a real shift update due to performance of the build in mod
-        return  kmer % table_count; 
-    #else
-        // update the binning carry (solution of the shift-update-carry equation)
-        uint64_t right = util::amino_char_to_bits(c_right); // Transcode the new character to bits
-        
-        // shift
-        bin = 160 * table_count + // Bias 
-                    32 * (bin // Shift
-                    - kmer.test(5*kmerAmino::k - 1) * period[5*kmerAmino::k - 1]
-                    - kmer.test(5*kmerAmino::k - 2) * period[5*kmerAmino::k - 2]
-                    - kmer.test(5*kmerAmino::k - 3) * period[5*kmerAmino::k - 3]
-                    - kmer.test(5*kmerAmino::k - 4) * period[5*kmerAmino::k - 4]
-                    - kmer.test(5*kmerAmino::k - 5) * period[5*kmerAmino::k - 5]);
-        // update
-        for(int i = 4; i>=0; i--){
-            bin += period[i] * ((right >> i) & 0b1u);
-        }
-        // mod
-        bin %= table_count;
-        return bin;
-    #endif
+    // update the binning carry (solution of the shift-update-carry equation)
+    // shift
+    bin = 160 * table_count + // Bias 
+                32 * (bin // Shift
+                - kmer.test(5*kmerAmino::k - 1) * period[5*kmerAmino::k - 1]
+                - kmer.test(5*kmerAmino::k - 2) * period[5*kmerAmino::k - 2]
+                - kmer.test(5*kmerAmino::k - 3) * period[5*kmerAmino::k - 3]
+                - kmer.test(5*kmerAmino::k - 4) * period[5*kmerAmino::k - 4]
+                - kmer.test(5*kmerAmino::k - 5) * period[5*kmerAmino::k - 5]);
+    // update
+    for(int i = 4; i>=0; i--){
+        bin += period[i] * ((right >> i) & 0b1u);
+    }
+    // mod
+    bin %= table_count;
+    return bin;
 }
 
 /**
@@ -414,7 +403,7 @@ uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 }
 #endif
 
-#if makX <= 12
+#if maxK <= 12
     uint_fast32_t graph::compute_amino_bin(const kmerAmino_t& kmer)
     {
         return kmer % table_count;
@@ -425,10 +414,10 @@ uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 	    uint_fast32_t carry = 1;
 	    uint_fast32_t rest = 0;
 
-	    if (kmer[0]){rest++;} // Test the last bit
+	    if (kmer.test(0)){rest++;} // Test the last bit
 	    for (uint_fast32_t it=1; it < 5* kmerAmino::k; it--){
 	        carry = (2*carry) % table_count;
-	        if (kmer[it]){rest += carry;}
+	        if (kmer.test(it)){rest += carry;}
 	    }
 	    return rest % table_count;
     }
@@ -536,14 +525,15 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
 
     uint_fast32_t bin = 0; // current hash_map vector index
     uint_fast32_t rc_bin = 0; // current reverse hash_map vector index
-    uint_fast32_t amino_bin = 0; 
 
     uint64_t pos;    // current position in the string, from 0 to length
 
     kmer_t kmer;    // create a new empty bit sequence for the k-mer
     kmer_t rcmer; // create a bit sequence for the reverse complement
 
-    char left;  // The character that is shifted out 
+
+    uint_fast8_t left;  // The character that is shifted out 
+    uint_fast8_t right; // The binary code of the character that is shifted in
 
     #if maxK > 32
     if (!isAmino){
@@ -557,8 +547,8 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
     uint64_t begin = 0;
     
     next_kmer:
-    pos = begin;
 
+    pos = begin;
     for (; pos < str.length(); ++pos) {    // collect the bases from the string
         if (!isAllowedChar(pos, str)) {
             begin = pos+1;    // str = str.substr(pos+1, string::npos);
@@ -566,37 +556,47 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
         }
         // DNA processing 
         if (!isAmino) {
-            left = kmer::shift_right(kmer, str[pos]);    // shift each base into the bit sequence
+            right = util::char_to_bits(str[pos]);
             #if maxK <= 32
-                bin = kmer % table_count; // Simple update of the forward complement bin
-            #else
-                bin = shift_update_bin(bin, left, str[pos]); // Shift update the forward complement bin
-            #endif
+                kmer::shift(kmer, right); // shift each base into the bit sequence
+                rcmer = kmer;
 
-            // Reverse complement handling
-            rcmer = kmer;
-	        if (reverse){
-                kmer::reverse_complement(rcmer); // invert the k-mer
-                #if maxK <= 32
+                bin = kmer % table_count; // update the forward bin
+	            if (reverse){
+                    kmer::reverse_complement(rcmer); // invert the k-mer
                     rc_bin = rcmer % table_count;
-                #else
-                    rc_bin = shift_update_rc_bin(rc_bin, left, str[pos]);  // Update the reverse complement table index
-                #endif
-            }
-            // The current word is a k-mer
+                }
+            #else
+                left = 2*kmer.test(2*kmer::k-1)+kmer.test(2*kmer::k-2); // old leftmost character
+                bin = shift_update_bin(bin, left, right); // Shift update the forward complement bin
+                
+                kmer::shift(kmer, right); // shift each base into the bit sequence
+                rcmer = kmer;
+                if (reverse){
+                    kmer::reverse_complement(rcmer);
+                    rc_bin = shift_update_rc_bin(rc_bin, left, right);  // Update the reverse complement table index
+                }
+            #endif
+             // If the current word is a k-mer
             if (pos+1 - begin >= kmer::k) {
                 rcmer < kmer ? emplace_kmer(T, rc_bin, rcmer, color) : emplace_kmer(T, bin, kmer, color);
             }
         
         // Amino processing
         } else {
-            amino_bin = shift_update_amino_bin(amino_bin, kmerAmino, str[pos]);
-            kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
+            right = util::amino_char_to_bits(str[pos]);
+            #if maxK <= 12
+                kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
+                bin = kmerAmino % table_count;
+            #else
+                bin = shift_update_amino_bin(bin, kmerAmino, right);
+                kmerAmino::shift_right(kmerAmino, str[pos]);
+            #endif
             // The current word is a k-mer
             if (pos+1 - begin >= kmerAmino::k) {
                 // shift update the bin
                 // Insert the k-mer into its table
-                emplace_kmer_amino(T, amino_bin, kmerAmino, color);  // update the k-mer with the current color
+                emplace_kmer_amino(T, bin, kmerAmino, color);  // update the k-mer with the current color
             }
         }
     }
@@ -663,9 +663,8 @@ next_kmer:
                 }
             }
         } else {
-            shift_update_amino_bin(amino_bin, kmerAmino, str[pos]);
             kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
-
+            bin = compute_amino_bin(kmerAmino);
             if (pos+1 - begin >= kmerAmino::k) {
                 if (sequence_order.size() == m) {
                     value_order_Amino.erase(*sequence_order_Amino.begin());    // remove k-mer outside the window
