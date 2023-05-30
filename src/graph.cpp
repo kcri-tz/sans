@@ -27,7 +27,7 @@ vector<hash_map<kmer_t, color_t>> graph::kmer_table;
 /**
  * This is a vecotr of spinlocks protecting the hash maps 
  */
-vector<mutex> graph::lock;
+vector<spinlock> graph::lock;
 
 /**
  * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
@@ -149,8 +149,8 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
 
-        // Init the mutex lock vector
-	    lock = vector<mutex> (table_count);
+        // Init the lock vector
+	    lock = vector<spinlock> (table_count);
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 32)     
@@ -176,7 +176,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
         // Init the mutex lock vector
-        lock = vector<mutex> (table_count);
+        lock = vector<spinlock> (table_count);
 
         // Precompute the period for fast shift update kmer binning in bitset representation 
         #if (maxK > 12)     
@@ -437,7 +437,7 @@ uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 */
 void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<mutex> lg(lock[bin]); 
+    std::lock_guard<spinlock> lg(lock[bin]); 
     kmer_table[bin][kmer].set(color);
 }
 
@@ -450,7 +450,7 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
  */
 void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<mutex> lg(lock[bin]);
+    std::lock_guard<spinlock> lg(lock[bin]);
     kmer_tableAmino[bin][kmer].set(color);
 }
 
