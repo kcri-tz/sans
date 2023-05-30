@@ -56,7 +56,7 @@ class kmer {
     * @param kmer bit sequence
     * @param chr right character
     */
-   static void shift(kmer_t& kmer, char& c_right);
+    static void shift(kmer_t& kmer, char& c_right);
 
     /**
      * This function unshifts a k-mer returning the character on the right.
