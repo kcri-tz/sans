@@ -437,8 +437,9 @@ uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 */
 void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color)
 {
-    std::lock_guard<spinlock> lg(lock[bin]); 
+    lock[bin].lock(); 
     kmer_table[bin][kmer].set(color);
+    lock[bin].unlock();
 }
 
 

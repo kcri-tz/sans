@@ -35,16 +35,6 @@ template <typename T>
 #include "kmerAmino.h"
 
 
-/**
-#if maxK > 12 // store k-mers in a bitset, allows larger k-mers
-    typedef kmerAminoXX kmerAmino;
-    typedef bitset<5*maxK> kmerAmino_t;
-#else // store k-mer bits in an integer, optimizes performance
-    typedef kmerAmino12 kmerAmino;
-    typedef uint64_t kmerAmino_t;
-#endif
-*/
-
 
 #include "color.h"
 
