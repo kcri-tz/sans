@@ -141,28 +141,30 @@ int main(int argc, char* argv[]) {
     // kmer args --
     bool userKmer = false; // is k-mer default or custom
     uint64_t kmer = 31;    // length of k-mers
-    uint64_t window = 1;    // number of k-mers
+    uint64_t window = 1;    // number of k-mers in a minimizer window
 
     // kmer preprocessing and filtering
     bool reverse = true;    // consider reverse complement k-mers
     uint64_t iupac = 1;    // allow extended iupac characters
     int quality = 1;    // min. coverage threshold for k-mers (if individual q values per file are given, this is the maximum among all)
 
-    // split args
-    uint64_t top = -1;    // maximal number of splits to compute
-    bool dyn_top = false; // use multiplicity of inputs as maximal number of splits
-    auto mean = util::geometric_mean2;    // weight function
-
-    // parallel hashing
-    uint64_t threads = thread::hardware_concurrency(); // The number of threads to run on (default is number of virtual cores including smt)
-
-    // amino acid processing
+    // amino processing
     bool amino = false;      // input files are amino acid sequences
     bool shouldTranslate = false;   // translate input files
     uint64_t code = 1;
 
-    // bootsrapping
+    // split processing
+    auto mean = util::geometric_mean2;    // weight function
     string filter;    // filter function
+
+    // output limiter
+    uint64_t top = -1;    // maximal number of splits to compute
+    bool dyn_top = false; // use multiplicity of inputs as maximal number of splits
+
+    // parallel hashing
+    uint64_t threads = thread::hardware_concurrency(); // The number of threads to run on (default is #cores including smt / ht)
+
+    // bootsrapping
     string consensus_filter; // filter function for filtering after bootstrapping
 	uint32_t bootstrap_no=0; // = no bootstrapping
 
@@ -173,7 +175,6 @@ int main(int argc, char* argv[]) {
      * [argument parser]
      * - parse the command line arguments and update the meta variables accordingly
      */
-
 
     // this lambda function throws an error, if a dependent argument is NULL
     auto catch_missing_dependent_args = [] (auto arg, string parent)
@@ -419,7 +420,7 @@ int main(int argc, char* argv[]) {
 
 
     /**
-     * [Restriction check]
+     *  [restriction check]
      * - Check if the given argument configuration does violate any run restrictions
      */ 
     if (input.empty() && graph.empty() && splits.empty()) {
@@ -495,9 +496,9 @@ int main(int argc, char* argv[]) {
 	}
 
 
-    /*[Processing setup]
+    /*[processing setup]
     *
-    * Prepare the processing based on the input (DNA / Amnio)
+    * prepare the processing based on the input
     */
 
     // enable translation
@@ -512,7 +513,7 @@ int main(int argc, char* argv[]) {
 
 
     /**
-     * [Indexing]
+     *  [indexing]
      * - Collect all target file names and locations
      * - Check whether the given files exist or not
      */ 
@@ -636,8 +637,9 @@ int main(int argc, char* argv[]) {
 
 
     /**
-     * --- Indexing CDBG input --- 
-     * - Collect all target sequence names from the Bifrost CDBG
+     * --- [indexing CDBG input] --- 
+     * - Collect all target sequence names from the Bifrost-CDBG
+     * - // TODO diabled due to bugs
      */ 
 
 #ifdef useBF
@@ -685,7 +687,7 @@ int main(int argc, char* argv[]) {
 
 
     /**
-     * --- Post indexing check ---
+     *   [post indexing check]
      * - Update and check validity of input dependent meta variables
      */ 
 
@@ -707,8 +709,8 @@ int main(int argc, char* argv[]) {
 
 
     /**
-     * [Input processing]
-     * - Transcribe each given input to the graph
+     * [input processing]
+     * - transcribe each given input to the graph
      */ 
 
     chrono::high_resolution_clock::time_point begin = chrono::high_resolution_clock::now();    // time measurement
@@ -719,8 +721,8 @@ int main(int argc, char* argv[]) {
     graph::init(top, amino, q_table, quality, threads); // initialize the toplist size and the allowed characters
 
     /**
-     *  --- Split processing ---
-     *  - Transcibe all splits from the input split file
+     *  ---> Split processing
+     *  - transcibe all splits from the input split file
      */
 
     // iterate splits and add them to the toplist
@@ -755,9 +757,9 @@ int main(int argc, char* argv[]) {
     }
 
     /**
-     * --- Sequence processing ---
-     * - Translate all given sequence k-mers
-     * - Transcribe all given sequence k-mers to the graph
+     * ---> sequence processing ---
+     * - translate all given sequence k-mers
+     * - transcribe all given sequence k-mers to the graph
      */ 
     
 
@@ -865,13 +867,14 @@ int main(int argc, char* argv[]) {
     }
 
     /**
-     * --- Bifrost CDBG processing ---
-     * - Iterate all colored k-mers from a CDBG
-     * - Compute the splits created by the CDBG k-mers given the graphs colore k-mer collection
-     * (Has to be executed after sequence processing)
+     * ---> bifrost CDBG processing ---
+     * - iterate all colored k-mers from a CDBG
+     * - compute the splits created by the CDBG k-mers given the graphs colore k-mer collection
+     * (has to be executed after sequence processing)
+     * // Todo: Bug
      */ 
 
-double min_value = numeric_limits<double>::min(); // Current minimal weight represented in the top list
+double min_value = numeric_limits<double>::min(); // current minimal weight represented in the top list
 #ifdef useBF
     if (!graph.empty()) {
         if (verbose) {
@@ -911,12 +914,12 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         }
     }
 #endif
-    /**
-     * [Output]
-     * - Compute the weighted splits of the k-mers that are left in the graph
-     * - Apply the target filter method
-     * - Write to output
-     */ 
+
+    /*
+    * [graph prossing]
+    * - collect all colors and kmers into the color table
+    * - weight the colors based on the weight function and the kmers that support them
+    */
 
     // function to map color position to file name
     std::function<string(const uint64_t&)> map=[=](uint64_t i) {
@@ -929,13 +932,23 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
         cout << "Processing splits..." << flush;
     }
     graph::add_weights(mean, min_value, verbose);  // accumulate split weights
+
+
+
+    /* [split processing]
+     * - compute the splits
+     */ 
+
 	graph::compile_split_list(mean, min_value);
 	
 
+
+    /*
+    * [bootstrap handling]
+    */
+
 	// for bootstrapping: hash_map for each original split with zero counts
 	hash_map<color_t, uint32_t> support_values;
-	
-
 	if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
 		
 	// NO BOOTSTRAPPING
@@ -1032,7 +1045,7 @@ double min_value = numeric_limits<double>::min(); // Current minimal weight repr
 	}
 
     /**
-     * --- Write to output ---
+     * [write to output]
      */ 
 
     if (verbose) {

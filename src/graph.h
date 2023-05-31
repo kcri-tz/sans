@@ -6,7 +6,6 @@
 #include <vector>
 
 #include <thread>
-#include <mutex>
 #include <atomic>
 
 #include <iomanip>
@@ -147,7 +146,7 @@ private:
 
 public:
      
-    // [Temporary: Test]
+    // Debug print
     static void showTableSizes();
 
 	/**
