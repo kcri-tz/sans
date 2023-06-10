@@ -32,7 +32,10 @@ ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-SANS: start makefile obj/main.o done
+ALL: start SANS done
+
+SANS: makefile obj/main.o
+	@ ( if [ -f main.o ] ; then $(MV) ; fi )
 	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer.o obj/kmerAmino.o obj/color.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
 
 
@@ -69,14 +72,13 @@ obj/gzstream.o: makefile src/gz/gzstream.C src/gz/gzstream.h
 start:
 	@echo "";
 	@echo "   ________________________________";
-	@echo "     <<< BUILDING SANS SERIF >>>   ";
+	@echo "     <<< BUILDING SANS AMBAGES >>>   ";
 	@echo "   ________________________________";
 	@echo "";
-	$(MK)
+	@$(MK)
 
 # Print info when done
 done:
-	$(MV)
 	@echo "";
 	@echo "   _______________";
 	@echo "    <<< Done! >>> ";

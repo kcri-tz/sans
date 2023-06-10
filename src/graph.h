@@ -145,9 +145,6 @@ private:
     static vector<hash_map<kmerAmino_t, uint64_t>> quality_mapAmino;
 
 public:
-     
-    // Debug print
-    static void showTableSizes();
 
 	/**
 	* This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.

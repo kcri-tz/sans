@@ -88,20 +88,6 @@ vector<char> graph::allowedChars;
 function<void(uint64_t& T, uint_fast32_t& bin, const kmer_t&, uint64_t&)> graph::emplace_kmer;
 function<void(uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, uint64_t&)> graph::emplace_kmer_amino;
 
-// [DEBUG:]
-void graph::showTableSizes(){
-    cout << "[DEBUG::Table_Sizes]" << endl;
-    if(!isAmino){    
-        for (auto table: kmer_table){cout << table.size() << " , ";}
-        cout << endl;
-    }
-    else
-    {
-        for (auto table: kmer_tableAmino){cout << table.size() << " , ";}
-	cout << endl;
-    }	    
-}
-
 /**
  * This is a comparison function extending std::bitset.
  */ 
