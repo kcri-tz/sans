@@ -12,19 +12,23 @@ BF = -lpthread
 # GZ STREAM LIB
 CFLAGS = gcc -O3 -march=native
 
+# Directories
+SRCDIR		:= src
+BUILDDIR 	:= obj
+
 # Wrap Windows / Unix commands
 ifeq ($(OS), Windows_NT)
-	TD = obj
-	MK = rmdir /s /q obj && mkdir obj
-	RM = rmdir /s /q obj
-	MV = cmd /C move *.o obj
-	CP = cp makefile obj
+	TD = $(BUILDDIR)
+	MK = rmdir /s /q $(BUILDDIR) && mkdir $(BUILDDIR)
+	RM = rmdir /s /q $(BUILDDIR)
+	MV = cmd /C move *.o $(BUILDDIR)
+	CP = cp makefile $(BUILDDIR)
 else
-	TD = obj/
-	MK = mkdir -p obj/
-	RM = rm -rf obj/
-	MV = mv *.o obj/
-	CP = cp makefile obj/makefile
+	TD = $(BUILDDIR)/
+	MK = mkdir -p $(BUILDDIR)/
+	RM = rm -rf $(BUILDDIR)/
+	MV = mv *.o $(BUILDDIR)/
+	CP = cp makefile $(BUILDDIR)/makefile
 endif
 
 
@@ -32,39 +36,37 @@ ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-ALL: start SANS done
+ALL: makefile start SANS done
 
-SANS: makefile obj/main.o
-	@ ( if [ -f main.o ] ; then $(MV) ; fi )
-	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer.o obj/kmerAmino.o obj/color.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
+SANS: makefile $(BUILDDIR)/main.o
+	$(CC) -o SANS $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o -lz $(BF)
 
+$(BUILDDIR)/main.o: makefile $(SRCDIR)/main.cpp $(SRCDIR)/main.h $(BUILDDIR)/translator.o $(BUILDDIR)/graph.o $(BUILDDIR)/util.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o
+	$(CC) -c $(SRCDIR)/main.cpp -o $(BUILDDIR)/main.o
 
-obj/main.o: makefile src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
-	$(CC) -c src/main.cpp
+$(BUILDDIR)/graph.o: makefile $(SRCDIR)/graph.cpp $(SRCDIR)/graph.h $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o
+	$(CC) -c $(SRCDIR)/graph.cpp -o $(BUILDDIR)/graph.o
 
-obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer.o obj/kmerAmino.o obj/color.o
-	$(CC) -c src/graph.cpp
+$(BUILDDIR)/kmer.o: makefile $(SRCDIR)/kmer.cpp $(SRCDIR)/kmer.h
+	$(CC) -c $(SRCDIR)/kmer.cpp -o $(BUILDDIR)/kmer.o
 
-obj/kmer.o: makefile src/kmer.cpp src/kmer.h
-	$(CC) -c src/kmer.cpp
+$(BUILDDIR)/kmerAmino.o: makefile $(SRCDIR)/kmerAmino.cpp $(SRCDIR)/kmerAmino.h $(BUILDDIR)/util.o
+	$(CC) -c $(SRCDIR)/kmerAmino.cpp -o $(BUILDDIR)/kmerAmino.o
 
-obj/kmerAmino.o: makefile src/kmerAmino.cpp src/kmerAmino.h obj/util.o
-	$(CC) -c src/kmerAmino.cpp
+$(BUILDDIR)/color.o: makefile $(SRCDIR)/color.cpp $(SRCDIR)/color.h
+	$(CC) -c $(SRCDIR)/color.cpp -o $(BUILDDIR)/color.o
 
-obj/color.o: makefile src/color.cpp src/color.h
-	$(CC) -c src/color.cpp
+$(BUILDDIR)/util.o: $(SRCDIR)/util.cpp $(SRCDIR)/util.h
+	$(CC) -c $(SRCDIR)/util.cpp -o $(BUILDDIR)/util.o
 
-obj/util.o: makefile src/util.cpp src/util.h
-	$(CC) -c src/util.cpp
+$(BUILDDIR)/translator.o: $(SRCDIR)/translator.cpp $(SRCDIR)/translator.h $(SRCDIR)/gc.h
+	$(CC) -c $(SRCDIR)/translator.cpp -o $(BUILDDIR)/translator.o
 
-obj/translator.o:  makefile src/translator.cpp src/translator.h src/gc.h
-	$(CC) -c src/translator.cpp
+$(BUILDDIR)/cleanliness.o: $(SRCDIR)/cleanliness.cpp $(SRCDIR)/cleanliness.h
+	$(CC) -c $(SRCDIR)/cleanliness.cpp -o $(BUILDDIR)/cleanliness.o
 
-obj/cleanliness.o: makefile src/cleanliness.cpp src/cleanliness.h
-	$(CC) -c src/cleanliness.cpp
-
-obj/gzstream.o: makefile src/gz/gzstream.C src/gz/gzstream.h	
-	$(CFLAGS) -c src/gz/gzstream.C
+$(BUILDDIR)/gzstream.o: $(SRCDIR)/gz/gzstream.C $(SRCDIR)/gz/gzstream.h	
+	$(CFLAGS) -c $(SRCDIR)/gz/gzstream.C  -o $(BUILDDIR)/gzstream.o
 
 # [Internal rules]
 
@@ -85,6 +87,8 @@ done:
 	@echo "   _______________";
 	@echo "";
 
+
+# [Remove current build files]
 
 .PHONY: clean
 
