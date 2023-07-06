@@ -211,8 +211,6 @@ int main(int argc, char* argv[]) {
             input = argv[++i];    // Input file: list of sequence files, one per line
         }
         else if (strcmp(argv[i], "-g") == 0 || strcmp(argv[i], "--graph") == 0) {
-            cout << "Error: Graph support is currently disabled, due to a bug" << endl;
-            return 0;
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             graph = argv[++i];    // Graph file: load a Bifrost graph, file name prefix
             #ifndef useBF
@@ -644,9 +642,9 @@ int main(int argc, char* argv[]) {
 
 #ifdef useBF
     // load an existing Bifrost graph
-    ColoredCDBG<> cdbg(kmer);
+    ColoredCDBG<> cdbg;
     if (!graph.empty()) {
-        if (cdbg.read(graph + ".gfa", graph + ".color.bfg", 1, verbose)) { // Allow parallel reading with new t parameter.
+        if (cdbg.read(graph + ".gfa", graph + ".color.bfg", threads, verbose)) { // Allow parallel reading with new t parameter.
 
         } else {
             cerr << "Error: could not load Bifrost graph" << endl;
@@ -883,7 +881,6 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         uint64_t cur = 0, progress;
         uint64_t max = cdbg.size();
 
-	cout << "CDBG COLORS: " << cdbg.getNbColors() << endl;
         for (auto& unitig : cdbg) {
             if (verbose) {
                 cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
@@ -907,7 +904,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
                 string kmer_sequence = sequence.substr(i, kmer::k); // the k-mer sequence
                 color_t color = 0;
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){ // iterate the unitig colors
-                    color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
+                    color.set(name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
 		}
                 graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
 	   }

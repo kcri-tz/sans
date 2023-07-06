@@ -1,13 +1,13 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
 CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
-BF = -lpthread
+XX = -lpthread -lz
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
 
 ## IF BIFROST LIBRARY SHOULD BE USED
 # CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
-# BF = -lbifrost -lpthread
+# XX = -lbifrost -lpthread -lz
 
 # GZ STREAM LIB
 CFLAGS = gcc -O3 -march=native
@@ -39,7 +39,7 @@ endif
 ALL: makefile start SANS done
 
 SANS: makefile $(BUILDDIR)/main.o
-	$(CC) -o SANS $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o -lz $(BF)
+	$(CC) -o SANS $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(XX)
 
 $(BUILDDIR)/main.o: makefile $(SRCDIR)/main.cpp $(SRCDIR)/main.h $(BUILDDIR)/translator.o $(BUILDDIR)/graph.o $(BUILDDIR)/util.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o
 	$(CC) -c $(SRCDIR)/main.cpp -o $(BUILDDIR)/main.o
