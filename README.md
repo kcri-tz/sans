@@ -1,7 +1,7 @@
 # SANS ambages
 
 **Symmetric Alignment-free phylogeNomic Splits**  
-***--- phylogenomics with abundance-filter, multi-threading and bootstrapping on amino-acid or genomic sequences***
+***--- phylogenomics with Abundance-filter, Multi-threading and Bootstrapping on Amino-acid or GEnomic Sequences***
 
 * Reference-free
 * Alignment-free
@@ -370,6 +370,7 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 
 * The sparse-map library is licensed under the [MIT license](https://github.com/Tessil/sparse-map/blob/master/LICENSE).
 * The Bifrost library is licensed under the [BSD-2 license](https://github.com/pmelsted/bifrost/blob/master/LICENSE).
+* SANS uses gzstream, licensed under the [LGPL license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/src/gz/COPYING.LIB)
 * SANS is licensed under the [GNU general public license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/LICENSE).
 
 <img src="https://piwik.cebitec.uni-bielefeld.de/matomo.php?idsite=12&rec=1&action_name=VisitGitLab&url=https://gitlab.ub.uni-bielefeld.de/gi/sans" style="border:0;" alt="" />
