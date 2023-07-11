@@ -1,14 +1,15 @@
-# SANS *serif*
+# SANS ambages
 
 **Symmetric Alignment-free phylogeNomic Splits**  
-***--- Space and time Efficient Re-Implementation including Filters***
+***--- phylogenomics with abundance-filter, multi-threading and bootstrapping on amino-acid or genomic sequences***
 
 * Reference-free
 * Alignment-free
 * Input: assembled genomes / reads, or coding sequences / amino acid sequences
 * Output: phylogenetic splits or tree
+* **NEW:** Abundance-filter
 * **NEW:** Bootstrapping
-
+* **NEW:** Multi-threading
 
 ### Dos and Don'ts
 
@@ -157,6 +158,9 @@ Usage: SANS [PARAMETERS]
 
     -b, --bootstrap	 Perform bootstrapping with the specified number of replicates
                    	 Default: no bootstrapping
+
+    -T --threads     Number of threads to create
+                     Default: As many as cores (including virtual)
 
     -v, --verbose 	 Print information messages during execution
 
