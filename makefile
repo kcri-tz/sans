@@ -68,6 +68,7 @@ $(BUILDDIR)/cleanliness.o: $(SRCDIR)/cleanliness.cpp $(SRCDIR)/cleanliness.h
 $(BUILDDIR)/gzstream.o: $(SRCDIR)/gz/gzstream.C $(SRCDIR)/gz/gzstream.h	
 	$(CFLAGS) -c $(SRCDIR)/gz/gzstream.C  -o $(BUILDDIR)/gzstream.o
 
+
 # [Internal rules]
 
 # Print info at compile start
