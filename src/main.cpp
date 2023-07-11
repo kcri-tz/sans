@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 
     auto show_help_page = [](){
         cout << endl;
-        cout << "SANS serif | version " << SANS_VERSION << endl;
+        cout << "SANS ambages | version " << SANS_VERSION << endl;
         cout << "Usage: SANS [PARAMETERS]" << endl;
         cout << endl;
         cout << "  Input arguments:" << endl;
@@ -86,23 +86,23 @@ int main(int argc, char* argv[]) {
         cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
         cout << "                  \t Implies --norev and a default k of 10" << endl;
         cout << endl;
-        cout << "    -c, --code   \t Translate DNA: --input provides coding sequences" << endl;
-        cout << "                 \t Implies --norev and a default k of 10" << endl;
-        cout << "                 \t optional: ID of the genetic code to be used" << endl;
-        cout << "                 \t Default: 1" << endl;
-        cout << "                 \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
-        cout << "                 \t (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)" << endl;
+        cout << "    -c, --code    \t Translate DNA: --input provides coding sequences" << endl;
+        cout << "                  \t Implies --norev and a default k of 10" << endl;
+        cout << "                  \t optional: ID of the genetic code to be used" << endl;
+        cout << "                  \t Default: 1" << endl;
+        cout << "                  \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
+        cout << "                  \t (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)" << endl;
         cout << endl;
-        cout << "    -M, --maxN \t Compare number of input genomes to compile paramter DmaxN" << endl;
-        cout << "               \t Add path/to/makefile (default is makefile in current working directory)." << endl;
+        cout << "    -M, --maxN    \t Compare number of input genomes to compile paramter DmaxN" << endl;
+        cout << "                  \t Add path/to/makefile (default is makefile in current working directory)." << endl;
         cout << endl;
         cout << "    -b, --bootstrap \t Perform bootstrapping with the specified number of replicates" << endl;
         cout << "                    \t No filtering on original splits - only on bootstrap replicates" << endl;
-        cout << "               \t Default: no bootstrapping" << endl;
+        cout << "                    \t Default: no bootstrapping" << endl;
         cout << endl;
         cout << "    -C, --consensus\t Apply final filter w.r.t. support values" << endl;
-        cout << "               \t Default: same filter as --filter w.r.t. weights" << endl;
-		cout << "               \t See --filter for available filters" << endl;
+        cout << "                  \t Default: same filter as --filter w.r.t. weights" << endl;
+	cout << "                  \t See --filter for available filters" << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
