@@ -1,14 +1,15 @@
-# SANS *serif*
+# SANS ambages
 
 **Symmetric Alignment-free phylogeNomic Splits**  
-***--- Space and time Efficient Re-Implementation including Filters***
+***--- phylogenomics with Abundance-filter, Multi-threading and Bootstrapping on Amino-acid or GEnomic Sequences***
 
 * Reference-free
 * Alignment-free
 * Input: assembled genomes / reads, or coding sequences / amino acid sequences
 * Output: phylogenetic splits or tree
-* **NEW:** Low coverage k-mers can be discarded
-
+* **NEW:** Abundance-filter
+* **NEW:** Bootstrapping
+* **NEW:** Multi-threading
 
 ### Dos and Don'ts
 
@@ -154,6 +155,12 @@ Usage: SANS [PARAMETERS]
 
     -M, --maxN    	 Compare number of input genomes to compile paramter DmaxN
                   	 Add path/to/makefile (default is makefile in current working directory).
+
+    -b, --bootstrap	 Perform bootstrapping with the specified number of replicates
+                   	 Default: no bootstrapping
+
+    -T --threads     Number of threads to create
+                     Default: As many as cores (including virtual)
 
     -v, --verbose 	 Print information messages during execution
 
@@ -363,6 +370,7 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 
 * The sparse-map library is licensed under the [MIT license](https://github.com/Tessil/sparse-map/blob/master/LICENSE).
 * The Bifrost library is licensed under the [BSD-2 license](https://github.com/pmelsted/bifrost/blob/master/LICENSE).
+* SANS uses gzstream, licensed under the [LGPL license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/src/gz/COPYING.LIB)
 * SANS is licensed under the [GNU general public license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/LICENSE).
 
 <img src="https://piwik.cebitec.uni-bielefeld.de/matomo.php?idsite=12&rec=1&action_name=VisitGitLab&url=https://gitlab.ub.uni-bielefeld.de/gi/sans" style="border:0;" alt="" />

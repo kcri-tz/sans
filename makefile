@@ -1,117 +1,104 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
-#CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=32 -std=c++14
 # Zwets: replace -march=native by -mtune=native (compatible with CPU)
 # Zwets: we set maxN for up to 180 sequences
+#CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 CC = g++ -O3 -mtune=native -DmaxK=32 -DmaxN=180 -std=c++14
+XX = -lpthread -lz
 
 ## IF DEBUG
 # CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
 
 ## IF BIFROST LIBRARY SHOULD BE USED
 # CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
-# BF = -lbifrost -lpthread
+# XX = -lbifrost -lpthread -lz
 
 # GZ STREAM LIB
 # Zwets: native tune but not arch
 # CFLAGS = gcc -O3 -march=native
 CFLAGS = gcc -O3 -mtune=native
 
+# Directories
+SRCDIR		:= src
+BUILDDIR 	:= obj
+
 # Wrap Windows / Unix commands
 ifeq ($(OS), Windows_NT)
-	TD = obj
-	MK = rmdir /s /q obj && mkdir obj
-	RM = rmdir /s /q obj
-	MV = cmd /C move *.o obj
-	CP = cp makefile obj
-
+	TD = $(BUILDDIR)
+	MK = rmdir /s /q $(BUILDDIR) && mkdir $(BUILDDIR)
+	RM = rmdir /s /q $(BUILDDIR)
+	MV = cmd /C move *.o $(BUILDDIR)
+	CP = cp makefile $(BUILDDIR)
 else
-	TD = obj/
-	MK = mkdir -p obj/
-	RM = rm -rf obj/
-	MV = mv *.o obj/
-	CP = cp makefile obj/makefile
-	
-
+	TD = $(BUILDDIR)/
+	MK = mkdir -p $(BUILDDIR)/
+	RM = rm -rf $(BUILDDIR)/
+	MV = mv *.o $(BUILDDIR)/
+	CP = cp makefile $(BUILDDIR)/makefile
 endif
+
 
 ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-SANS:  start obj/ makefile obj/main.o done
-	$(CC) -o SANS obj/main.o obj/graph.o obj/kmer32.o obj/kmerXX.o obj/kmerAminoXX.o obj/kmerAmino12.o obj/color64.o obj/colorXX.o obj/util.o obj/translator.o obj/cleanliness.o obj/gzstream.o -lz $(BF)
+ALL: makefile start SANS done
 
-obj/main.o: makefile src/main.cpp src/main.h obj/translator.o obj/graph.o obj/util.o obj/cleanliness.o obj/gzstream.o
-	$(CC) -c src/main.cpp
-	@$(MV)
+SANS: makefile $(BUILDDIR)/main.o
+	$(CC) -o SANS $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(XX)
 
-obj/graph.o: makefile src/graph.cpp src/graph.h obj/kmer32.o obj/kmerXX.o obj/kmerAmino12.o obj/kmerAminoXX.o obj/color64.o obj/colorXX.o
-	$(CC) -c src/graph.cpp
-	@$(MV)
+$(BUILDDIR)/main.o: makefile $(SRCDIR)/main.cpp $(SRCDIR)/main.h $(BUILDDIR)/translator.o $(BUILDDIR)/graph.o $(BUILDDIR)/util.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o
+	$(CC) -c $(SRCDIR)/main.cpp -o $(BUILDDIR)/main.o
 
-obj/kmer32.o: src/kmer32.cpp src/kmer32.h
-	$(CC) -c src/kmer32.cpp
-	@$(MV)
+$(BUILDDIR)/graph.o: makefile $(SRCDIR)/graph.cpp $(SRCDIR)/graph.h $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o
+	$(CC) -c $(SRCDIR)/graph.cpp -o $(BUILDDIR)/graph.o
 
-obj/kmerXX.o:  makefile src/kmerXX.cpp src/kmerXX.h
-	$(CC) -c src/kmerXX.cpp
-	@$(MV)
+$(BUILDDIR)/kmer.o: makefile $(SRCDIR)/kmer.cpp $(SRCDIR)/kmer.h
+	$(CC) -c $(SRCDIR)/kmer.cpp -o $(BUILDDIR)/kmer.o
 
-obj/kmerAmino12.o: src/kmerAmino12.cpp src/kmerAmino12.h obj/util.o
-	$(CC) -c src/kmerAmino12.cpp
-	@$(MV)
+$(BUILDDIR)/kmerAmino.o: makefile $(SRCDIR)/kmerAmino.cpp $(SRCDIR)/kmerAmino.h $(BUILDDIR)/util.o
+	$(CC) -c $(SRCDIR)/kmerAmino.cpp -o $(BUILDDIR)/kmerAmino.o
 
-obj/kmerAminoXX.o: makefile src/kmerAminoXX.cpp src/kmerAminoXX.h obj/util.o
-	$(CC) -c src/kmerAminoXX.cpp
-	@$(MV)
+$(BUILDDIR)/color.o: makefile $(SRCDIR)/color.cpp $(SRCDIR)/color.h
+	$(CC) -c $(SRCDIR)/color.cpp -o $(BUILDDIR)/color.o
 
-obj/color64.o: src/color64.cpp src/color64.h
-	$(CC) -c src/color64.cpp
-	@$(MV)
+$(BUILDDIR)/util.o: $(SRCDIR)/util.cpp $(SRCDIR)/util.h
+	$(CC) -c $(SRCDIR)/util.cpp -o $(BUILDDIR)/util.o
 
-obj/colorXX.o: makefile src/colorXX.cpp src/colorXX.h
-	$(CC) -c src/colorXX.cpp
-	@$(MV)
+$(BUILDDIR)/translator.o: $(SRCDIR)/translator.cpp $(SRCDIR)/translator.h $(SRCDIR)/gc.h
+	$(CC) -c $(SRCDIR)/translator.cpp -o $(BUILDDIR)/translator.o
 
-obj/util.o: src/util.cpp src/util.h
-	$(CC) -c src/util.cpp
-	@$(MV)
+$(BUILDDIR)/cleanliness.o: $(SRCDIR)/cleanliness.cpp $(SRCDIR)/cleanliness.h
+	$(CC) -c $(SRCDIR)/cleanliness.cpp -o $(BUILDDIR)/cleanliness.o
 
-obj/translator.o: src/translator.cpp src/translator.h src/gc.h
-	$(CC) -c src/translator.cpp
-	@$(MV)
+$(BUILDDIR)/gzstream.o: $(SRCDIR)/gz/gzstream.C $(SRCDIR)/gz/gzstream.h	
+	$(CFLAGS) -c $(SRCDIR)/gz/gzstream.C  -o $(BUILDDIR)/gzstream.o
 
-obj/cleanliness.o: src/cleanliness.cpp src/cleanliness.h
-	$(CC) -c src/cleanliness.cpp
-	@$(MV)
-
-obj/gzstream.o: src/gz/gzstream.C src/gz/gzstream.h	
-	$(CFLAGS) -c src/gz/gzstream.C
-	@$(MV)
 
 # [Internal rules]
-
-# Creating the object folder
-obj/:
-	@$(MK)
 
 # Print info at compile start
 start:
 	@echo "";
-	@echo "   ________________________________ \n";
-	@echo "     <<< BUILDING SANS SERIF >>>  \n";
+	@echo "   ________________________________";
+	@echo "     <<< BUILDING SANS AMBAGES >>>   ";
 	@echo "   ________________________________";
 	@echo "";
+	@$(MK)
 
 # Print info when done
 done:
 	@echo "";
-	@echo "   _______________ \n";
-	@echo "    <<< Done! >>> \n";
+	@echo "   _______________";
+	@echo "    <<< Done! >>> ";
 	@echo "   _______________";
 	@echo "";
 
+
+# [Remove current build files]
+
 .PHONY: clean
+
+# Remove build files
 clean:
 	$(RM)
 
