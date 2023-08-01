@@ -159,6 +159,10 @@ Usage: SANS [PARAMETERS]
     -b, --bootstrap	 Perform bootstrapping with the specified number of replicates
                    	 Default: no bootstrapping
 
+    -C, --consensus	 Apply final filter w.r.t. support values
+                  	 Default: same filter as --filter w.r.t. weights
+                  	 See --filter for available filters
+
     -T --threads     Number of threads to create
                      Default: As many as cores (including virtual)
 
