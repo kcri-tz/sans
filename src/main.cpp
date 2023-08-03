@@ -421,10 +421,17 @@ int main(int argc, char* argv[]) {
      *  [restriction check]
      * - Check if the given argument configuration does violate any run restrictions
      */ 
-    if (input.empty() && graph.empty() && splits.empty()) {
+    if (input.empty() && !splits.empty()) // Input file is required for correct split loading
+    {
+        cerr << "Error: missing argument --input <file_name> is required for split loading" << endl;
+        return 1;
+    }
+    
+    if (input.empty() && graph.empty()) {
         cerr << "Error: missing argument: --input <file_name> or --graph <file_name>" << endl;
         return 1;
     }
+
     if (!input.empty() && !graph.empty() && !splits.empty()) {
         cerr << "Error: too many input arguments: --input, --graph, and --splits" << endl;
         return 1;
@@ -741,9 +748,8 @@ int main(int argc, char* argv[]) {
             curr = line.find('\t', next);
             string name = line.substr(next, curr-next);
             if (name_table.find(name) == name_table.end()) { // check if the splits genome names are already indexed
-                vector<string> file_vec;
-                name_table[name] = num++;
-                denom_names.push_back(name);
+                cerr << "Error: unlisted file " << name << " in split file" << endl;
+                return 1; 
             }
             color.set(name_table[name]);
             next = curr + 1;
