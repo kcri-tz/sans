@@ -157,12 +157,10 @@ Usage: SANS [PARAMETERS]
                   	 Add path/to/makefile (default is makefile in current working directory).
 
     -b, --bootstrap	 Perform bootstrapping with the specified number of replicates
-                   	 Default: no bootstrapping
-
-    -C, --consensus	 Apply final filter w.r.t. support values
-                  	 Default: same filter as --filter w.r.t. weights
-                  	 See --filter for available filters
-
+ 
+    -C, --consensus Apply final filter w.r.t. support values
+                    else: final filter w.r.t. split weights
+                    optional: specify separate filter (see --filter for available filters.)
     -T --threads     Number of threads to create
                      Default: As many as cores (including virtual)
 
