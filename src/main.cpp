@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 
     auto show_help_page = [](){
         cout << endl;
-        cout << "SANS serif | version " << SANS_VERSION << endl;
+        cout << "SANS ambages | version " << SANS_VERSION << endl;
         cout << "Usage: SANS [PARAMETERS]" << endl;
         cout << endl;
         cout << "  Input arguments:" << endl;
@@ -86,23 +86,23 @@ int main(int argc, char* argv[]) {
         cout << "    -a, --amino   \t Consider amino acids: --input provides amino acid sequences" << endl;
         cout << "                  \t Implies --norev and a default k of 10" << endl;
         cout << endl;
-        cout << "    -c, --code   \t Translate DNA: --input provides coding sequences" << endl;
-        cout << "                 \t Implies --norev and a default k of 10" << endl;
-        cout << "                 \t optional: ID of the genetic code to be used" << endl;
-        cout << "                 \t Default: 1" << endl;
-        cout << "                 \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
-        cout << "                 \t (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)" << endl;
+        cout << "    -c, --code    \t Translate DNA: --input provides coding sequences" << endl;
+        cout << "                  \t Implies --norev and a default k of 10" << endl;
+        cout << "                  \t optional: ID of the genetic code to be used" << endl;
+        cout << "                  \t Default: 1" << endl;
+        cout << "                  \t Use 11 for Bacterial, Archaeal, and Plant Plastid Code" << endl;
+        cout << "                  \t (See https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for details.)" << endl;
         cout << endl;
-        cout << "    -M, --maxN \t Compare number of input genomes to compile paramter DmaxN" << endl;
-        cout << "               \t Add path/to/makefile (default is makefile in current working directory)." << endl;
+        cout << "    -M, --maxN    \t Compare number of input genomes to compile paramter DmaxN" << endl;
+        cout << "                  \t Add path/to/makefile (default is makefile in current working directory)." << endl;
         cout << endl;
         cout << "    -b, --bootstrap \t Perform bootstrapping with the specified number of replicates" << endl;
         cout << "                    \t No filtering on original splits - only on bootstrap replicates" << endl;
-        cout << "               \t Default: no bootstrapping" << endl;
+        cout << "                    \t Default: no bootstrapping" << endl;
         cout << endl;
         cout << "    -C, --consensus\t Apply final filter w.r.t. support values" << endl;
-        cout << "               \t Default: same filter as --filter w.r.t. weights" << endl;
-		cout << "               \t See --filter for available filters" << endl;
+        cout << "                  \t Default: same filter as --filter w.r.t. weights" << endl;
+	cout << "                  \t See --filter for available filters" << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
@@ -211,8 +211,6 @@ int main(int argc, char* argv[]) {
             input = argv[++i];    // Input file: list of sequence files, one per line
         }
         else if (strcmp(argv[i], "-g") == 0 || strcmp(argv[i], "--graph") == 0) {
-            cout << "Error: Graph support is currently disabled, due to a bug" << endl;
-            return 0;
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             graph = argv[++i];    // Graph file: load a Bifrost graph, file name prefix
             #ifndef useBF
@@ -423,10 +421,17 @@ int main(int argc, char* argv[]) {
      *  [restriction check]
      * - Check if the given argument configuration does violate any run restrictions
      */ 
-    if (input.empty() && graph.empty() && splits.empty()) {
+    if (input.empty() && !splits.empty()) // Input file is required for correct split loading
+    {
+        cerr << "Error: missing argument --input <file_name> is required for split loading" << endl;
+        return 1;
+    }
+    
+    if (input.empty() && graph.empty()) {
         cerr << "Error: missing argument: --input <file_name> or --graph <file_name>" << endl;
         return 1;
     }
+
     if (!input.empty() && !graph.empty() && !splits.empty()) {
         cerr << "Error: too many input arguments: --input, --graph, and --splits" << endl;
         return 1;
@@ -644,9 +649,9 @@ int main(int argc, char* argv[]) {
 
 #ifdef useBF
     // load an existing Bifrost graph
-    ColoredCDBG<> cdbg(kmer);
+    ColoredCDBG<> cdbg;
     if (!graph.empty()) {
-        if (cdbg.read(graph + ".gfa", graph + ".color.bfg", 1, verbose)) { // Allow parallel reading with new t parameter.
+        if (cdbg.read(graph + ".gfa", graph + ".color.bfg", threads, verbose)) { // Allow parallel reading with new t parameter.
 
         } else {
             cerr << "Error: could not load Bifrost graph" << endl;
@@ -743,9 +748,8 @@ int main(int argc, char* argv[]) {
             curr = line.find('\t', next);
             string name = line.substr(next, curr-next);
             if (name_table.find(name) == name_table.end()) { // check if the splits genome names are already indexed
-                vector<string> file_vec;
-                name_table[name] = num++;
-                denom_names.push_back(name);
+                cerr << "Error: unlisted file " << name << " in split file" << endl;
+                return 1; 
             }
             color.set(name_table[name]);
             next = curr + 1;
@@ -883,7 +887,6 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         uint64_t cur = 0, progress;
         uint64_t max = cdbg.size();
 
-	cout << "CDBG COLORS: " << cdbg.getNbColors() << endl;
         for (auto& unitig : cdbg) {
             if (verbose) {
                 cout << "\33[2K\r" << "Processed " << cur << " unitigs (" << 100*cur/max << "%) " << flush;
@@ -907,7 +910,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
                 string kmer_sequence = sequence.substr(i, kmer::k); // the k-mer sequence
                 color_t color = 0;
                 for (auto uc_it=uc_kmers[i].begin(unitig_map); uc_it != uc_kmers[i].end(); ++uc_it){ // iterate the unitig colors
-                    color::set(color, name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
+                    color.set(name_table[cdbg.getColorName(uc_it.getColorID())]); // set the k-mer color
 		}
                 graph::add_cdbg_colored_kmer(mean, kmer_sequence, color, min_value);
 	   }
