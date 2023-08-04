@@ -2,7 +2,7 @@
 # Zwets: replace -march=native by -mtune=native (compatible with CPU)
 # Zwets: we set maxN for up to 180 sequences
 #CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
-CC = g++ -O3 -mtune=native -DmaxK=32 -DmaxN=180 -std=c++14
+CC = g++ -O3 -mtune=native -DmaxK=32 -DmaxN=200 -std=c++14
 XX = -lpthread -lz
 
 ## IF DEBUG
