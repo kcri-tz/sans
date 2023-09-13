@@ -58,7 +58,8 @@ However, there are some **optional** features:
 ## Compilation
 
 ```
-cd <SANS directory>
+git clone https://gitlab.ub.uni-bielefeld.de/gi/sans.git
+cd sans
 make
 ```
 
