@@ -720,6 +720,7 @@ int main(int argc, char* argv[]) {
     // check if the number of gernomes exceeds the maximal storable color set
     if (num > maxN) {
         cerr << "Error: number of input genomes ("<<num<<") exceeds -DmaxN=" << maxN << endl;
+        cerr << "Solution: Modify -DmaxN in makefile, run make, run SANS; or use SANS-autoN.sh." << endl;
         return 1;
     }
 
