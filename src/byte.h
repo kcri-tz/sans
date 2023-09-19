@@ -11,6 +11,12 @@
     #error "BIT_LENGTH is not defined (byte.h)"
 #endif
 
+#if __GNUC__ <= 8 // workaround for call to non-constexpr function error
+    #define _constexpr 
+#else
+    #define _constexpr constexpr
+#endif
+
 #if BIT_LENGTH <= 8
     #define STORAGE_BITS 8
     typedef uint_least8_t STORAGE_TYPE;
@@ -504,7 +510,7 @@ class CLASS_NAME {
  // ########################## SET& COMPARISON OPERATORS ########################## //
 
  #if defined(SET_ELEMENT_COMPARATORS)
-    constexpr bool operator<(const CLASS_NAME& other) const noexcept {
+   _constexpr bool operator<(const CLASS_NAME& other) const noexcept {
         if (*this == other) return false;
        { INDEX_TYPE x = (*this).popcnt(); INDEX_TYPE y = other.popcnt(); if (x != y)  return x < y; }
        { INDEX_TYPE x = (*this).tzcnt();  INDEX_TYPE y = other.tzcnt();  if (x != y)  return x < y;
@@ -512,7 +518,7 @@ class CLASS_NAME {
                do { X.reset(x);    x = X.tzcnt();    Y.reset(y);    y = Y.tzcnt(); }
                                                                       while (x == y); return x < y; }
     }
-    constexpr bool operator<=(const CLASS_NAME& other) const noexcept {
+   _constexpr bool operator<=(const CLASS_NAME& other) const noexcept {
         if (*this == other) return true;
        { INDEX_TYPE x = (*this).popcnt(); INDEX_TYPE y = other.popcnt(); if (x != y)  return x < y; }
        { INDEX_TYPE x = (*this).tzcnt();  INDEX_TYPE y = other.tzcnt();  if (x != y)  return x < y;
@@ -520,7 +526,7 @@ class CLASS_NAME {
                do { X.reset(x);    x = X.tzcnt();    Y.reset(y);    y = Y.tzcnt(); }
                                                                       while (x == y); return x < y; }
     }
-    constexpr bool operator>(const CLASS_NAME& other) const noexcept {
+   _constexpr bool operator>(const CLASS_NAME& other) const noexcept {
         if (*this == other) return false;
        { INDEX_TYPE x = (*this).popcnt(); INDEX_TYPE y = other.popcnt(); if (x != y)  return x > y; }
        { INDEX_TYPE x = (*this).tzcnt();  INDEX_TYPE y = other.tzcnt();  if (x != y)  return x > y;
@@ -528,7 +534,7 @@ class CLASS_NAME {
                do { X.reset(x);    x = X.tzcnt();    Y.reset(y);    y = Y.tzcnt(); }
                                                                       while (x == y); return x > y; }
     }
-    constexpr bool operator>=(const CLASS_NAME& other) const noexcept {
+   _constexpr bool operator>=(const CLASS_NAME& other) const noexcept {
         if (*this == other) return true;
        { INDEX_TYPE x = (*this).popcnt(); INDEX_TYPE y = other.popcnt(); if (x != y)  return x > y; }
        { INDEX_TYPE x = (*this).tzcnt();  INDEX_TYPE y = other.tzcnt();  if (x != y)  return x > y;

@@ -111,7 +111,7 @@ private:
     /**
      * This vector holds the carries of 2**i % table_count for fast distribution of bitset represented kmers
      */
-    static vector<uint64_t> period;
+    static vector<uint_fast32_t> period;
     /**
      * This is a vector of hash tables mapping k-mers to colors [O(1)].
      */
@@ -409,7 +409,7 @@ protected:
      * @param kmer bit sequence
      * @param color color flag
      */
-    static function<void(uint64_t& T, uint64_t& bin, const kmer_t&, uint64_t&)> emplace_kmer;
+    static function<void(uint64_t& T, uint_fast32_t& bin, const kmer_t&, uint64_t&)> emplace_kmer;
 
     /**
      * This function qualifies a k-mer and places it into the hash table.
@@ -417,7 +417,7 @@ protected:
      * @param kmer bit sequence
      * @param color color flag
      */
-    static function<void(uint64_t& T, uint64_t& bin, const kmerAmino_t&, uint64_t&)> emplace_kmer_amino;
+    static function<void(uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, uint64_t&)> emplace_kmer_amino;
 
     /**
      * This function tests if a split is compatible with an existing set of splits.

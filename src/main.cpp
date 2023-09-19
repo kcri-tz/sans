@@ -470,6 +470,7 @@ int main(int argc, char* argv[]) {
     }
     if (kmer > maxK && splits.empty()) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
+        cerr << "Solution: Modify -DmaxK in makefile, run make, run SANS." << endl;
         return 1;
     }
     if (!newick.empty() && filter != "strict" && filter.find("tree") == -1 && consensus_filter.empty()) {
@@ -720,6 +721,7 @@ int main(int argc, char* argv[]) {
     // check if the number of gernomes exceeds the maximal storable color set
     if (num > maxN) {
         cerr << "Error: number of input genomes ("<<num<<") exceeds -DmaxN=" << maxN << endl;
+        cerr << "Solution: Modify -DmaxN in makefile, run make, run SANS; or use SANS-autoN.sh." << endl;
         return 1;
     }
 

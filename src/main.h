@@ -5,7 +5,6 @@
 #include <thread>
 #include <regex>
 #include <mutex>
-#include <omp.h>
 
 #include "util.h"
 #include "translator.h"
