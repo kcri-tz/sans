@@ -209,8 +209,7 @@ See usage information (`SANS --help`) for further options.
    ../../SANS -i list.txt -o weakly.splits -f weakly -k 11 -v 
    
    # generate PDF (if SplitsTree installed)
-   ../../scripts/sans2nexus.py weakly.splits list.txt > weakly.nexus
-   ../../scripts/nexus2nexus2pdf.py weakly.nexus
+   ../../scripts/sans2pdf.py weakly.splits list.txt 
    ```
 
 ## Performance evaluation on predicted open reading frames
