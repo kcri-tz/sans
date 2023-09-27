@@ -137,7 +137,9 @@ To visualize the splits, we recommend the tool [SplitsTree](https://uni-tuebinge
 **Bootstrapping**
 To assess the robustness of reconstructed splits with respect to noise in the input data, bootstrap replicates can be constructed by randomly varying the observed *k*-mer content. To compare the originally determined splits to, e.g., 1000 bootstrap replicates, use `-b 1000`. An additional output file `<split-file>.bootstrap` containing the bootstrap support values will be created. To include them in the nexus file for visualization, use `scripts/sans2conf_nexus.py <split-file> <split-file>.bootstrap <list> > <nexus-file>`.
 
-To generate a consensus tree from bootstrapped trees, use `-f tree -b 1000 -C`. See usage information (`SANS --help`) for further options.
+To generate a consensus tree from bootstrapped trees, use `-f tree -b 1000 -C`. 
+To generate a consensus network from bootstrapped trees, use `-f tree -b 1000 -C weakly`. 
+See usage information (`SANS --help`) for further options.
 
 
 
@@ -178,10 +180,17 @@ To generate a consensus tree from bootstrapped trees, use `-f tree -b 1000 -C`. 
 
    # generate PDF (if SplitsTree installed)
    ../../scripts/sans2pdf.py WG_weakly.splits WG_list.txt
+   (../../scripts/sans2pdf.py CDS_weakly.splits CDS_list.txt)
       
    # filter for tree
    ../../SANS -i WG_list.txt -s WG_weakly.splits -N WG.new -f strict
    (../../SANS -i CDS_list.txt -s CDS_weakly.splits -N CDS.new -f strict)
+   
+   # generate consensus network from bootstrapped trees
+   ../../SANS -i WG_list.txt -f strict -b 1000 -C weakly -o WG_weakly.consensus.splits -v
+   ../../scripts/sans2pdf.py WG_weakly.consensus.splits WG/list.txt
+   (../../SANS -i CDS_list.txt -f strict -b 1000 -C weakly -o CDS_weakly.consensus.splits -v)
+   (../../scripts/sans2pdf.py CDS_weakly.consensus.splits CDS_list.txt)
 
    ```
    
