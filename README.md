@@ -212,6 +212,9 @@ See usage information (`SANS --help`) for further options.
    ../../scripts/sans2pdf.py weakly.splits list.txt 
    ```
 
+   <img src="example_data/prasinoviruses/weakly.splits.nexus.png" style="border:0;" alt="Example network"/>
+
+   
 ## Performance evaluation on predicted open reading frames
 SANS-serif can predict phylogenies based on amino acid sequences as input. Processing coding sequences is faster than processing whole genome data. Experiments show that the reconstruction quality is comparable. 
 
