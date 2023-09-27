@@ -194,6 +194,8 @@ See usage information (`SANS --help`) for further options.
 
    ```
    
+   <img src="example_data/drosophila/CDS_weakly.consensus.splits.png" style="border:0;" alt="Example network"/>
+
    
 3. **Virus example data**
    ```
