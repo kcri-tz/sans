@@ -188,13 +188,13 @@ See usage information (`SANS --help`) for further options.
    
    # generate consensus network from bootstrapped trees
    ../../SANS -i WG_list.txt -f strict -b 1000 -C weakly -o WG_weakly.consensus.splits -v
-   ../../scripts/sans2pdf.py WG_weakly.consensus.splits WG/list.txt
+   ../../scripts/sans2pdf.py WG_consensus.splits WG/list.txt
    (../../SANS -i CDS_list.txt -f strict -b 1000 -C weakly -o CDS_weakly.consensus.splits -v)
-   (../../scripts/sans2pdf.py CDS_weakly.consensus.splits CDS_list.txt)
+   (../../scripts/sans2pdf.py CDS_consensus.splits CDS_list.txt)
 
    ```
    
-   <img src="example_data/drosophila/CDS_weakly.consensus.splits.png" style="border:0;" alt="Example network"/>
+   <img src="example_data/drosophila/WG_consensus.splits.png" style="border:0;" alt="Example network"/>
 
    
 3. **Virus example data**
