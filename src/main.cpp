@@ -223,10 +223,18 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             output = argv[++i];    // Output file: list of splits, sorted by weight desc.
+            if (!util::path_exist(output)){
+				cerr << "Error: output folder does not exist: "<< output << endl;
+                return 1;
+			}
         }
         else if (strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--newick") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             newick = argv[++i];    // Output newick file
+            if (!util::path_exist(newick)){
+				cerr << "Error: output folder does not exist: "<< newick << endl;
+                return 1;
+			}
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {            
             catch_missing_dependent_args(argv[i + 1], argv[i]);
@@ -242,14 +250,17 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
-            catch_failed_stoi_cast(argv[i + 1], argv[i]);
-            i++;
-            string top_str = argv[i];
-            top = stoi(top_str); // Number of splits (default: all)
-
-            if (top_str[top_str.size() - 1] == 'n'){ // Dynamic split num (default: false)
-                dyn_top = true;
-            }
+			if (strcmp(argv[i+1],"all") != 0){ // if user selects "-t all", do nothing
+				catch_failed_stoi_cast(argv[i + 1], argv[i]);
+				i++;
+				string top_str = argv[i];
+				top = stoi(top_str); // Number of splits (default: all)
+				if (top_str[top_str.size() - 1] == 'n'){ // Dynamic split num (default: false)
+					dyn_top = true;
+				}
+			}else{
+				i++;				
+			}
         }
         else if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--mean") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
@@ -506,6 +517,10 @@ int main(int argc, char* argv[]) {
         cerr << "Note: Newick output from a list of splits, some taxa could be missing" << endl;
         cerr << "      --input can be used to provide the original list of taxa" << endl;
     }
+    if (input.empty() && bootstrap_no>0){
+        cerr << "Error: Bootstrapping can only be applied with given sequence data (--input)" << endl;
+		return 1;
+	}
     if (bootstrap_no>0 && filter.empty()){
         cerr << "Error: Bootstrapping can only be applied when a filter is selected (--filter)" << endl;
 		return 1;
@@ -679,6 +694,7 @@ int main(int argc, char* argv[]) {
 		kmer = cdbg.getK();
 	 	if (kmer > maxK) {
                 cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
+				cerr << "Solution: modify -DmaxN in makefile, run make, run SANS." << maxK << endl;
                 return 1;
             }
             cerr << "Warning: setting k-mer length to match the given Bifrost graph. New lenght: " << kmer << endl;
@@ -721,14 +737,22 @@ int main(int argc, char* argv[]) {
     // check if the number of gernomes exceeds the maximal storable color set
     if (num > maxN) {
         cerr << "Error: number of input genomes ("<<num<<") exceeds -DmaxN=" << maxN << endl;
-        cerr << "Solution: Modify -DmaxN in makefile, run make, run SANS; or use SANS-autoN.sh." << endl;
+        cerr << "Solution: modify -DmaxN in makefile, run make, run SANS; or use SANS-autoN.sh." << endl;
         return 1;
     }
+    if (maxN-num>=100) {
+		cout << "Warning: number of input genomes ("<<num<<") much lower than -DmaxN=" << maxN << endl;
+		cout << "Recommendation: modify -DmaxN in makefile, run make, run SANS; or use SANS-autoN.sh." << endl;
+	}
+
 
     // Set dynamic top by filenum
     if (dyn_top){
         top = top * num;
     }
+	if(verbose){
+		cout<<"Restricting output to "<<top<<" splits."<< endl;
+	}
 
 
     /**
