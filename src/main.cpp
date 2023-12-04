@@ -734,7 +734,7 @@ int main(int argc, char* argv[]) {
        util::check_n(num,path);
 	}
 
-    // check if the number of gernomes exceeds the maximal storable color set
+    // check if the number of genomes exceeds the maximal storable color set
     if (num > maxN) {
         cerr << "Error: number of input genomes ("<<num<<") exceeds -DmaxN=" << maxN << endl;
         cerr << "Solution: modify -DmaxN in makefile, run make, run SANS; or use SANS-autoN.sh." << endl;
@@ -828,7 +828,7 @@ int main(int argc, char* argv[]) {
                 for (string file_name: target_files){
             
                     char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
-                    strcpy(c_name, (folder + file_name).c_str()); // Transcire to char array
+                    strcpy(c_name, (folder + file_name).c_str()); // Transcribe to char array
 
                     igzstream file(c_name, ios::in);    // input file stream
                     if (verbose) {
