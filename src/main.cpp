@@ -1,7 +1,7 @@
 #include "main.h"
 #include <regex>
 // gzstream imports
-#include <cstring>
+#include <cstring> // TODO needed here? (its in the main.h aswell)
 #include "gz/gzstream.h"
 
 
@@ -127,6 +127,7 @@ int main(int argc, char* argv[]) {
     string splits;    // name of splits file
     string output;    // name of output file
     string newick;    // name of newick output file // Todo
+    string nexus;   // name of nexus output file // TODO
     string translate; // name of translate file
 
     // input
@@ -168,6 +169,9 @@ int main(int argc, char* argv[]) {
 
     // qol
     bool verbose = false;    // print messages during execution
+
+    // nexus
+    bool nexus_wanted = false;
 
     /**
      * [argument parser]
@@ -235,6 +239,15 @@ int main(int argc, char* argv[]) {
 				cerr << "Error: output folder does not exist: "<< newick << endl;
                 return 1;
 			}
+        }
+        else if (strcmp(argv[i], "-X") == 0 || strcmp(argv[i], "--nexus") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            nexus = argv[++i];    // Nexus output file
+            nexus_wanted = true;
+            if (!util::path_exist(nexus)){
+                cerr << "Error: output folder does not exist: "<< nexus << endl;
+                return 1;
+            }
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {            
             catch_missing_dependent_args(argv[i + 1], argv[i]);
@@ -475,8 +488,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (output.empty() && newick.empty()) {
-        cerr << "Error: missing argument: --output <file_name> or --newick <file_name>" << endl;
+    if (output.empty() && newick.empty() && nexus.empty()) {
+        cerr << "Error: missing argument: --output <file_name> or --newick <file_name> or --nexus <file_name>" << endl;
         return 1;
     }
     if (kmer > maxK && splits.empty()) {
@@ -676,7 +689,7 @@ int main(int argc, char* argv[]) {
     /**
      * --- [indexing CDBG input] --- 
      * - Collect all target sequence names from the Bifrost-CDBG
-     * - // TODO diabled due to bugs
+     * - // TODO disabled due to bugs
      */ 
 
 #ifdef useBF
@@ -1096,6 +1109,13 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
     if (verbose) {
         cout << "\33[2K\r" << "Please wait..." << flush << endl;
     }
+
+    // TODO testing, default value for output??
+    // what does it do if only newick is given?
+    if (output.empty()){
+        output = "./example_data/testsans";
+    }
+
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());
 	ofstream file_bootstrap;
@@ -1103,42 +1123,92 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
     if (bootstrap_no>0){
 		file_bootstrap.open(output+".bootstrap");    // output file stream
 	}
+
+    ofstream file_nexus; // output for nexus file
+    ostream stream_nexus(file_nexus.rdbuf());
+    if(nexus_wanted){
+        file_nexus.open(nexus);
+        // nexus format stuff
+        stream_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=" << denom_file_count << ";\nTAXLABELS" ;
+        for(int i; i < denom_file_count; ++i){
+            string taxa = denom_names[i].substr(0, denom_names[i].find_last_of(".")); // cutting off file extension
+            stream_nexus << "\n[" << i+1 << "] '" << taxa << "'"; // TODO \t or ' ' ?
+        }
+        stream_nexus << "\n;\nEND; [TAXA]\n";
+        stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nMATRIX";
+    }
+
     uint64_t pos = 0;
     //cleanliness.setFilteredCount(graph::split_list.size());
     color_t split_color;
+
+    int split_num = 0; // number of split
+    int split_size; // #taxa in split
+    string split_comp = ""; // save split components/taxa
+
     for (auto& split : graph::split_list) {
+
+        if(nexus_wanted){ // nexus
+            ++split_num;
+            split_size = 0; // reset split size
+            split_comp = ""; // reset split components
+        }
+
         double weight = split.first;
         split_color = split.second;
        // cleanliness.setSmallestWeight(weight, split.second);
         stream << weight;    // weight of the split
-        if (bootstrap_no>0){
-			stream_bootstrap << ((1.0*support_values[split.second])/bootstrap_no);
-// 			stream_bootstrap << support_values[split.second];
-		}
+        if (bootstrap_no>0) {
+            stream_bootstrap << ((1.0 * support_values[split.second]) / bootstrap_no);
+            // stream_bootstrap << support_values[split.second];
+        }
         for (uint64_t i = 0; i < num; ++i) {
+            // TODO isn't num = denom_names.size() = denom_file_count ??
             if (split_color.test(pos)) {
-                if (i < denom_names.size())
-                    stream << '\t' << denom_names[i];    // name of the file
-                    if(bootstrap_no>0){
-						stream_bootstrap << '\t' << denom_names[i];    // name of the file
-					}
+                if (i < denom_names.size()) {
+                    stream << '\t' << denom_names[i]; // name of the file
+                    if (bootstrap_no > 0) {
+                        stream_bootstrap << '\t' << denom_names[i]; // name of the file
+                    }
+
+                    if(nexus_wanted){ // nexus
+                        ++split_size;
+                        if(split_size > 1){ // " " only if not first value
+                            split_comp += " "+ to_string(i+1);
+                        } else {
+                            split_comp += to_string(i+1);
+                        }
+                    }
+
+                }
             }
             split_color >>= 01u;
         }
+
+        if(nexus_wanted){
+            stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t" << weight << "\t" << split_comp << ",";
+        }
+
         stream << endl;
 		if(bootstrap_no>0){
 			stream_bootstrap<<endl;
 		}
     }
 
-    
-    
+    if (nexus_wanted){ // nexus
+        stream_nexus << "\n;\nEND; [Splits]\n";
+        stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=none;\nexclude no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
+    }
+
     //cleanliness.calculateWeightBeforeCounter();
 
     file.close();
 	if(bootstrap_no>0){
 		file_bootstrap.close();
 	}
+    if(nexus_wanted){
+        file_nexus.close();
+    }
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
 
