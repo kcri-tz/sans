@@ -1,10 +1,7 @@
 #include "main.h"
 #include <regex>
 // gzstream imports
-#include <cstring> // TODO needed here? (its in the main.h aswell)
 #include "gz/gzstream.h"
-
-
 
 /**
  * This is the entry point of the program.
@@ -1110,14 +1107,9 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         cout << "\33[2K\r" << "Please wait..." << flush << endl;
     }
 
-    // TODO testing, default value for output??
-    // what does it do if only newick is given?
-    if (output.empty()){
-        output = "./example_data/testsans";
-    }
-
     ofstream file(output);    // output file stream
     ostream stream(file.rdbuf());
+
 	ofstream file_bootstrap;
 	ostream stream_bootstrap(file_bootstrap.rdbuf());
     if (bootstrap_no>0){
@@ -1163,7 +1155,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
             // stream_bootstrap << support_values[split.second];
         }
         for (uint64_t i = 0; i < num; ++i) {
-            // TODO isn't num = denom_names.size() = denom_file_count ??
+            /// num = denom_names.size() != denom_file_count
             if (split_color.test(pos)) {
                 if (i < denom_names.size()) {
                     stream << '\t' << denom_names[i]; // name of the file
@@ -1208,6 +1200,9 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	}
     if(nexus_wanted){
         file_nexus.close();
+        // TODO find the right path for SplitsTree
+
+        nexus_color::mod_via_splitstree(nexus, verbose); //
     }
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement

@@ -9,6 +9,7 @@
 #include "util.h"
 #include "translator.h"
 #include "cleanliness.h"
+#include "nexus_color.h"
 
 #ifdef useBF
     #include <bifrost/CompactedDBG.hpp>
