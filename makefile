@@ -39,7 +39,7 @@ endif
 ALL: makefile start SANS done
 
 SANS: makefile $(BUILDDIR)/main.o
-	$(CC) -o SANS $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(XX)
+	$(CC) -o SANS $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(BUILDDIR)/nexus_color.o $(XX)
 
 $(BUILDDIR)/main.o: makefile $(SRCDIR)/main.cpp $(SRCDIR)/main.h $(BUILDDIR)/translator.o $(BUILDDIR)/graph.o $(BUILDDIR)/util.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o
 	$(CC) -c $(SRCDIR)/main.cpp -o $(BUILDDIR)/main.o
@@ -55,6 +55,9 @@ $(BUILDDIR)/kmerAmino.o: makefile $(SRCDIR)/kmerAmino.cpp $(SRCDIR)/kmerAmino.h 
 
 $(BUILDDIR)/color.o: makefile $(SRCDIR)/color.cpp $(SRCDIR)/color.h
 	$(CC) -c $(SRCDIR)/color.cpp -o $(BUILDDIR)/color.o
+	
+$(BUILDDIR)/nexus_color.o: makefile $(SRCDIR)/nexus_color.cpp $(SRCDIR)/nexus_color.h
+	$(CC) -c $(SRCDIR)/nexus_color.cpp -o $(BUILDDIR)/nexus_color.o
 
 $(BUILDDIR)/util.o: $(SRCDIR)/util.cpp $(SRCDIR)/util.h
 	$(CC) -c $(SRCDIR)/util.cpp -o $(BUILDDIR)/util.o
