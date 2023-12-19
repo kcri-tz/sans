@@ -764,6 +764,10 @@ int main(int argc, char* argv[]) {
 		cout<<"Restricting output to "<<top<<" splits."<< endl;
 	}
 
+    // Give warning if number of splits is high
+    if(nexus_wanted && top > 70){ //TODO
+        cerr << "Warning: Creating a nexus file without filter and " << top << " splits takes time.\n" ;
+    }
 
     /**
      * [input processing]
@@ -1189,7 +1193,15 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
     if (nexus_wanted){ // nexus
         stream_nexus << "\n;\nEND; [Splits]\n";
-        stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=none;\nexclude no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
+
+        // TODO use filter if wanted only for nexus
+        // filter = strict (=greedy),  weakly (=greedyWC), tree (=?greedy)
+        string fltr = "none"; // filter used for SplitsTree
+        if(filter.empty()){
+           cerr <<  "Warning: No filter given, network might take time and look muddled\n";
+        }
+        stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=";
+        stream_nexus << fltr << ";\nexclude no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
     }
 
     //cleanliness.calculateWeightBeforeCounter();
@@ -1201,7 +1213,6 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
     if(nexus_wanted){
         file_nexus.close();
         // TODO find the right path for SplitsTree
-
         nexus_color::mod_via_splitstree(nexus, verbose); //
     }
 
@@ -1240,7 +1251,7 @@ void apply_filter(string filter, string newick, std::function<string(const uint6
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream
 					ostream stream(file.rdbuf());
-					stream << graph::filter_strict(map, split_list, support_values, bootstrap_no, verbose);    // filter and output
+					stream << graph::filter_strict(map, split_list, support_values, bootstrap_no, verbose); // filter and output
 					file.close();
 				} else {
 					graph::filter_strict(split_list, verbose);
