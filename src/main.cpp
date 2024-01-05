@@ -775,7 +775,7 @@ int main(int argc, char* argv[]) {
     if (dyn_top){
         top = top * num;
     }
-	if(verbose){
+	if(top>-1 && verbose){
 		cout<<"Restricting output to "<<top<<" splits."<< endl;
 	}
 
