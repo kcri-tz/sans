@@ -11,11 +11,22 @@
  * Help
  * - Set up project (in clion, makefile)
  * - Makefile correct?
- * - How to find the path to splitstree / oder angeben lassen? 
+ * - How to find the path to splitstree / require in PATH?
  * - Splitstree: zu viele splits werden nicht gezeichnet
  *      Warnung ausgegeben
  *      Mgl für Filter einbauen, der nur für nexus datei angewandt wird?
+ * - Export Graphics from splitstree? -> -pdf -p
 */
+
+// nexus datei ohne network erstellen und das nur erstellen lassen, wenn gewünscht,
+// oder wenn pdf gewünscht
+
+//für pdf -p -pdf (dann auch nur pdf, nexus wieder löschen)
+
+// 2 dateien: taxa -> kategorie, kategorie -> farbe
+// beides nach einem parameter (-l, --label oder so)
+// farbliche labels gehen nur wenn pdf oder nexus gewünscht
+// evtl nexus nur das einfache, wenn nexus und pdf gewünscht
 
 
 /*
@@ -31,8 +42,10 @@
  *  save modified file
  *  C) !check if complete!
  *  only have nexus output if desired (add flag nexus = true)
- * - num = denom_names.size() != denom_file_count (können mehrere files für eine sequenz sein)
-
+ *
+ * num = denom_names.size() != denom_file_count (können mehrere files für eine sequenz sein)
+ * DOCH s. main 683
+ *
  * pimpnexus.py
  * ~/sans/example_data$ python3 ../scripts/pimpnexus.py ./test.nex ./color_file  > ./testpimped.nex
  *
@@ -41,11 +54,17 @@
  *  -> add bootstrapping confidence values to nexus file CONFIDENCE=YES
  **/
 
-void nexus_color::mod_via_splitstree(const string& nexus_file, bool verbose, const string splitstree_path){
+bool program_in_path(const string& programName) {
+    string command = "which " + programName;
+    // Run command and check result
+    int result = system(command.c_str());
+    // If result is 0, the program is in PATH
+    return result == 0;
+}
+
+void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf, bool verbose, const string splitstree_path){
     // = "../splitstree4/SplitsTree"
-    // TODO adjust paths of Splitstree, nexus_file !!
-    //  (check if nexus_file path actually needs to be adjusted, it seems to work somehow??)
-    //  if verbose: print some info
+    // TODO give option to give path tp splitstree
 
     // temporary file for splitstree commands
     const char* temp = "./temp_splitstree_commands";
@@ -55,7 +74,9 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, bool verbose, con
         // Writing commands for splitstree TODO full path
         temp_file << "begin SplitsTree;\nEXECUTE FILE=" << nexus_file << endl;
         temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
-        //temp_file << "EXPORTGRAPHICS format=JPG file=" << image_file << "REPLACE=yes\n";
+        if(!pdf.empty()){ // TODO check if filename existent and replace or not
+            temp_file << "EXPORTGRAPHICS format=PDF file=" << pdf << " REPLACE=yes\n";
+        }
         temp_file << "QUIT\nend;";
         temp_file.close();
 
@@ -66,9 +87,12 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, bool verbose, con
         const char* splitstree_command = command.c_str();
         int result = system(splitstree_command); // executing command
         if(result == 0){
-            if(verbose) cout << "Added network to nexus file\n";
+            if(verbose) cout << "Network created\n";
         } else {
             cerr << "Error while running Splitstree " << splitstree_path << endl;
+            if (!program_in_path(splitstree_path)) {
+                cerr << splitstree_path << " is not in the PATH." << endl;
+            }
         }
         remove(temp);
     } else { // TODO
@@ -76,9 +100,63 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, bool verbose, con
     }
 }
 
+
+/// in construction ///
 void nexus_color::color_nexus(string color_file, string nexus_file){
     // TODO ask for color file/families in the beginning? (so adding another variable?)
-    //  ask for that later? separate script?
+    //  separate script?
+    bool translate = false;
+    bool vertices = false;
+
+    ifstream plain_nexus(nexus_file);
+    ofstream colored_nexus("col_"+nexus_file);
+
+    if(!plain_nexus.is_open()){
+        cerr << "Error opening nexus file to modify with color.\n";
+    }
+    if(!colored_nexus.is_open()){
+        cerr << "Error creating colored nexus file.\n";
+    }
+
+    //vector<string> lines;
+    string line;
+    // TODO read and save color mapping
+    // read nexus data
+    while (getline(plain_nexus, line)) {
+
+        // BEGIN network; ... TRANSLATE [number][taxname]
+        // -> match color via taxname to number
+        // -> VERTICES [number] [vertice] <bg=...> <fg=...>
+
+        // TODO case-insensitive search
+        // identify block
+        if(line.find("TRANSLATE") != string::npos){// starting point of: [number] [taxname]
+            translate = true;
+        }
+        if (line.find("VERTICES") != string::npos) {// starting point of vertices
+            vertices = true;
+        }
+        if(line.find(";") != string::npos){// end of any block
+            translate = false;
+            vertices = false;
+        }
+
+        // work with found blocks
+        if(translate){
+            // TODO match color -> number
+        }
+        if(vertices){
+            // adding color
+            //string color = "bg="+bg1+" "+bg2+" "+bg3 +" fg="+fg1+" "+fg2+" "+fg3+",\n";
+            //line += color;
+        }
+
+        colored_nexus << line;
+    }
+
+    plain_nexus.close();
+    colored_nexus.close();
+
 
     // receive file taxa <-> color
     // read file nexus with already added network via splitstree

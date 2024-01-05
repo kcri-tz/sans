@@ -46,6 +46,11 @@ int main(int argc, char* argv[]) {
         cout << "    -N, --newick  \t Output Newick file" << endl;
         cout << "                  \t (only applicable in combination with -f strict or n-tree)" << endl;
         cout << endl;
+        cout << "    -X, --nexus  \t Output Nexus file" << endl;
+        cout << endl;
+        cout << "    -p, --pdf  \t Output network as PDF file" << endl;
+        cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
+        cout << endl;
         cout << "    (at least --output or --newick must be provided, or both)" << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
@@ -125,6 +130,7 @@ int main(int argc, char* argv[]) {
     string output;    // name of output file
     string newick;    // name of newick output file // Todo
     string nexus;   // name of nexus output file // TODO
+    string pdf;
     string translate; // name of translate file
 
     // input
@@ -167,8 +173,10 @@ int main(int argc, char* argv[]) {
     // qol
     bool verbose = false;    // print messages during execution
 
-    // nexus
+    // simple nexus, colored nexus, pdf
     bool nexus_wanted = false;
+    bool c_nexus_wanted = false;
+    bool pdf_wanted = false;
 
     /**
      * [argument parser]
@@ -331,6 +339,15 @@ int main(int argc, char* argv[]) {
             catch_failed_stoi_cast(argv[i + 1], argv[i]);
             quality = stoi(argv[++i]);    // Discard k-mers below a min. coverage threshold
         }
+        else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--pdf") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            pdf = argv[++i];    // PDF output file
+            pdf_wanted = true;    // Output of tree as pdf
+            if (!util::path_exist(pdf)){
+                cerr << "Error: output folder does not exist: "<< nexus << endl;
+                return 1;
+            }
+        }
         else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--norev") == 0) {
             reverse = false;    // Do not consider reverse complement k-mers
         }
@@ -485,8 +502,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (output.empty() && newick.empty() && nexus.empty()) {
-        cerr << "Error: missing argument: --output <file_name> or --newick <file_name> or --nexus <file_name>" << endl;
+    if (output.empty() && newick.empty() && nexus.empty() && pdf.empty()) {
+        cerr << "Error: missing argument: --output <file_name> or --newick <file_name> or --nexus <file_name> or --pdf <file_name>" << endl;
         return 1;
     }
     if (kmer > maxK && splits.empty()) {
@@ -539,8 +556,6 @@ int main(int argc, char* argv[]) {
         cerr << "Error: Filter on bootstrap values (--consensus) can only be chosen in combination with bootstrapping (--boostrapping)" << endl;
 		return 1;
 	}
-
-	
 
 
     /*[processing setup]
@@ -680,7 +695,7 @@ int main(int argc, char* argv[]) {
         quality=max_q;
         if(max_q==min_q){q_table.clear();} // all q_values the same (=quality)
     }
-    int denom_file_count = denom_names.size(); 
+    int denom_file_count = denom_names.size();
 
 
     /**
@@ -1122,7 +1137,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
     ofstream file_nexus; // output for nexus file
     ostream stream_nexus(file_nexus.rdbuf());
-    if(nexus_wanted){
+
+    if(nexus_wanted || pdf_wanted){
+        if(nexus.empty()){
+            nexus = pdf + ".nex";
+        }
         file_nexus.open(nexus);
         // nexus format stuff
         stream_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=" << denom_file_count << ";\nTAXLABELS" ;
@@ -1144,7 +1163,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
     for (auto& split : graph::split_list) {
 
-        if(nexus_wanted){ // nexus
+        if(nexus_wanted || pdf_wanted){ // nexus
             ++split_num;
             split_size = 0; // reset split size
             split_comp = ""; // reset split components
@@ -1167,7 +1186,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
                         stream_bootstrap << '\t' << denom_names[i]; // name of the file
                     }
 
-                    if(nexus_wanted){ // nexus
+                    if(nexus_wanted || pdf_wanted){ // nexus
                         ++split_size;
                         if(split_size > 1){ // " " only if not first value
                             split_comp += " "+ to_string(i+1);
@@ -1181,7 +1200,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
             split_color >>= 01u;
         }
 
-        if(nexus_wanted){
+        if(nexus_wanted || pdf_wanted){
             stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t" << weight << "\t" << split_comp << ",";
         }
 
@@ -1191,13 +1210,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		}
     }
 
-    if (nexus_wanted){ // nexus
+    if (nexus_wanted || pdf_wanted){ // nexus
         stream_nexus << "\n;\nEND; [Splits]\n";
-
-        // TODO use filter if wanted only for nexus
         // filter = strict (=greedy),  weakly (=greedyWC), tree (=?greedy)
         string fltr = "none"; // filter used for SplitsTree
-        if(filter.empty()){
+        if(filter.empty() && top > 35){
            cerr <<  "Warning: No filter given, network might take time and look muddled\n";
         }
         stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=";
@@ -1210,10 +1227,16 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	if(bootstrap_no>0){
 		file_bootstrap.close();
 	}
-    if(nexus_wanted){
+    if(nexus_wanted || pdf_wanted){
         file_nexus.close();
-        // TODO find the right path for SplitsTree
-        nexus_color::mod_via_splitstree(nexus, verbose); //
+        // Only modify file using SplitsTree if pdf or colored tree wanted
+        if(c_nexus_wanted || pdf_wanted){
+            nexus_color::mod_via_splitstree(nexus, pdf, verbose);
+        }
+        // Delete nexus file if only pdf wanted
+        if(!nexus_wanted && !c_nexus_wanted){
+            remove(nexus.c_str());
+        }
     }
 
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
