@@ -5,51 +5,26 @@
  * 1. Create nexus file with necessary data TODO Add confidences
  * 2. Run splitstree to add network info TODO splitstree problems if too many splits
  * 3. Modify latest file with colors (see B) )
- */
-
-/**
- * Help
- * - Set up project (in clion, makefile)
- * - Makefile correct?
- * - How to find the path to splitstree / require in PATH?
+ *
+ * TODO at the moment:
+ *  B) translate python script to add color (pimpnexus)
+ *  A) add confidence values
+ *
  * - Splitstree: zu viele splits werden nicht gezeichnet
- *      Warnung ausgegeben
- *      Mgl für Filter einbauen, der nur für nexus datei angewandt wird?
- * - Export Graphics from splitstree? -> -pdf -p
+ *    Warnung ausgegeben
+ *    Mgl für Filter einbauen, der nur für nexus datei angewandt wird?
 */
-
-// nexus datei ohne network erstellen und das nur erstellen lassen, wenn gewünscht,
-// oder wenn pdf gewünscht
-
-//für pdf -p -pdf (dann auch nur pdf, nexus wieder löschen)
 
 // 2 dateien: taxa -> kategorie, kategorie -> farbe
 // beides nach einem parameter (-l, --label oder so)
 // farbliche labels gehen nur wenn pdf oder nexus gewünscht
 // evtl nexus nur das einfache, wenn nexus und pdf gewünscht
 
-
-/*
- * TODO at the moment:
- *  B) translate python script to add color (pimpnexus)
- *  D) check if makefile is correct
- *  E) Splitstree: zu viele splits werden nicht gezeichnet
- *      Bei nexus Ausgabe automatisch (-f strict fordern) #splits limitieren?
- *      **Bsp an Roland**
- *
- *  A) !check if working!
- *  open my nexus output with splitstree
- *  save modified file
- *  C) !check if complete!
- *  only have nexus output if desired (add flag nexus = true)
- *
- * num = denom_names.size() != denom_file_count (können mehrere files für eine sequenz sein)
+/* num = denom_names.size() != denom_file_count (können mehrere files für eine sequenz sein)
  * DOCH s. main 683
  *
  * pimpnexus.py
- * ~/sans/example_data$ python3 ../scripts/pimpnexus.py ./test.nex ./color_file  > ./testpimped.nex
  *
- * sans2nexus.px
  * sans2conf_nexus.py
  *  -> add bootstrapping confidence values to nexus file CONFIDENCE=YES
  **/
@@ -62,16 +37,45 @@ bool program_in_path(const string& programName) {
     return result == 0;
 }
 
+/** TODO !!TEST!!
+ * Creates a map of a given tab separated file with two fields (key,value) per line.
+ * Also creates map with the given values as keys for further usage.
+ * @param map The dictionary consistent of the provided (key,value) pairs.
+ * @param filename The input file to read from.
+ * @param value_map The dictionary with the provided values as keys.
+ */
+void create_maps(unordered_map<string, string>& map, const string& filename, unordered_map<string, string>& value_map){
+
+    string line;
+    ifstream infile(filename);
+    if(!infile.is_open()){
+        cerr << "Error reading provided file " << filename << endl;
+        return;
+    }
+    while (getline(infile, line)){
+        // String stream to split and read line
+        istringstream iss(line);
+        string key, value; // two fields, tab separated
+        if (getline(iss, key, '\t') && getline(iss, value)) {
+            // Store fields in dictionary
+            map[key] = value;
+            value_map[value] = "";
+        }
+    }
+    infile.close();
+
+}
+
 void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf, bool verbose, const string splitstree_path){
     // = "../splitstree4/SplitsTree"
-    // TODO give option to give path tp splitstree
+    // TODO give option to give path to splitstree
 
     // temporary file for splitstree commands
     const char* temp = "./temp_splitstree_commands";
     ofstream temp_file(temp);
     if (temp_file.is_open()) {
 
-        // Writing commands for splitstree TODO full path
+        // Writing commands for splitstree
         temp_file << "begin SplitsTree;\nEXECUTE FILE=" << nexus_file << endl;
         temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
         if(!pdf.empty()){ // TODO check if filename existent and replace or not
@@ -100,14 +104,37 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf
     }
 }
 
-
 /// in construction ///
-void nexus_color::color_nexus(string color_file, string nexus_file){
-    // TODO ask for color file/families in the beginning? (so adding another variable?)
-    //  separate script?
+void nexus_color::color_nexus(const string& nexus_file, const string& tax_fam_file, const string& fam_clr_file){
+    // TODO ask for color file/families in the beginning
+    // 2 dateien: taxa -> kategorie, kategorie -> farbe
+    // beides nach einem parameter (-l, --label oder so)
+    // TODO if only taxa -> family given, choose colors myself, otherwise use given colors
     bool translate = false;
     bool vertices = false;
+    //vector<string> lines;
+    string line;
 
+    // TODO read and save tax/fam/color mapping
+    //  (tax, clr) (via (tax, fam) -> (fam, clr))
+    //  with color either given or self-calculated
+    unordered_map<string, string> tax_fam_map;
+    unordered_map<string, string> fam_clr_map;
+    if(!tax_fam_file.empty()){
+        create_maps(tax_fam_map, tax_fam_file, fam_clr_map);
+    } else {
+        cerr << "Please provide a file containing [taxname] \\t [group]\n";
+        return;
+    }
+    // Reading and saving fam -> col mapping if given
+    if(!fam_clr_file.empty()){
+        // TODO add colors to fam_clr_map
+        //  and check if provided fams stimmen überein
+    } else {
+        // TODO create colors according to #families
+    }
+
+    line = "";
     ifstream plain_nexus(nexus_file);
     ofstream colored_nexus("col_"+nexus_file);
 
@@ -118,15 +145,23 @@ void nexus_color::color_nexus(string color_file, string nexus_file){
         cerr << "Error creating colored nexus file.\n";
     }
 
-    //vector<string> lines;
-    string line;
-    // TODO read and save color mapping
     // read nexus data
     while (getline(plain_nexus, line)) {
 
-        // BEGIN network; ... TRANSLATE [number][taxname]
-        // -> match color via taxname to number
-        // -> VERTICES [number] [vertice] <bg=...> <fg=...>
+        // work with found blocks
+        if(translate){
+            // (number, taxname)
+            // TODO match color -> number
+            // BEGIN network; ... TRANSLATE [number][taxname]
+            // -> match color via taxname to number
+            // -> VERTICES [number] [vertice] <bg=...> <fg=...>
+
+        }
+        if(vertices){
+            // adding color
+            //string color = "bg="+bg1+" "+bg2+" "+bg3 +" fg="+fg1+" "+fg2+" "+fg3+",\n";
+            //line += color;
+        }
 
         // TODO case-insensitive search
         // identify block
@@ -139,16 +174,6 @@ void nexus_color::color_nexus(string color_file, string nexus_file){
         if(line.find(";") != string::npos){// end of any block
             translate = false;
             vertices = false;
-        }
-
-        // work with found blocks
-        if(translate){
-            // TODO match color -> number
-        }
-        if(vertices){
-            // adding color
-            //string color = "bg="+bg1+" "+bg2+" "+bg3 +" fg="+fg1+" "+fg2+" "+fg3+",\n";
-            //line += color;
         }
 
         colored_nexus << line;

@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     string splits;    // name of splits file
     string output;    // name of output file
     string newick;    // name of newick output file // Todo
-    string nexus;   // name of nexus output file // TODO
+    string nexus;   // name of nexus output file
     string pdf;
     string translate; // name of translate file
 
