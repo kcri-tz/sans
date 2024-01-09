@@ -130,7 +130,9 @@ int main(int argc, char* argv[]) {
     string output;    // name of output file
     string newick;    // name of newick output file // Todo
     string nexus;   // name of nexus output file
-    string pdf;
+    string pdf;     // name of PDF output file
+    string groups; // name of input file giving groups/family
+    string coloring; // name of input file for using specified color
     string translate; // name of translate file
 
     // input
@@ -253,6 +255,18 @@ int main(int argc, char* argv[]) {
                 cerr << "Error: output folder does not exist: "<< nexus << endl;
                 return 1;
             }
+        }
+        else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--label") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            c_nexus_wanted = true;
+            groups = argv[++i];
+            // TODO optional scnd argument for specified coloring
+            ifstream file_stream(groups);
+            if (!file_stream.good()) { // catch unreadable file
+                cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << groups << ">" << "\u001b[0m" << endl;
+                file_stream.close();
+                return 1;
+            } else { file_stream.close();}
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {            
             catch_missing_dependent_args(argv[i + 1], argv[i]);
@@ -519,7 +533,10 @@ int main(int argc, char* argv[]) {
         cerr << "Error: Newick output only applicable in combination with -C strict or -C n-tree." << endl;
         return 1;
     }
-
+    if (c_nexus_wanted && !nexus_wanted && !pdf_wanted){
+        cerr << "Error: Labeled (colored) nexus output only applicable in combination with -X <filename> or -p <filename>." << endl;
+        return 1;
+    }
     if (amino && quality > 1) {
         cerr << "Error: using --qualify with --amino is (currently) not supported" << endl;
         cerr << "       Please send us a message if you have this special use case" << endl;
@@ -1014,7 +1031,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
      */ 
 
 	graph::compile_split_list(mean, min_value);
-	
+
 
 
     /*
@@ -1139,7 +1156,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
     ostream stream_nexus(file_nexus.rdbuf());
 
     if(nexus_wanted || pdf_wanted){
-        if(nexus.empty()){
+        if(nexus.empty()){ // temporarily name nexus file to create pdf with it
             nexus = pdf + ".nex";
         }
         file_nexus.open(nexus);
@@ -1232,6 +1249,9 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         // Only modify file using SplitsTree if pdf or colored tree wanted
         if(c_nexus_wanted || pdf_wanted){
             nexus_color::mod_via_splitstree(nexus, pdf, verbose);
+            if(c_nexus_wanted){
+                nexus_color::color_nexus(nexus, groups);
+            }
         }
         // Delete nexus file if only pdf wanted
         if(!nexus_wanted && !c_nexus_wanted){

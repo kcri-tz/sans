@@ -49,7 +49,7 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
     string line;
     ifstream infile(filename);
     if(!infile.is_open()){
-        cerr << "Error reading provided file " << filename << endl;
+        cerr << "Error: Could not read input file " << filename << endl;
         return;
     }
     while (getline(infile, line)){
@@ -120,12 +120,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_fam_fi
     //  with color either given or self-calculated
     unordered_map<string, string> tax_fam_map;
     unordered_map<string, string> fam_clr_map;
-    if(!tax_fam_file.empty()){
-        create_maps(tax_fam_map, tax_fam_file, fam_clr_map);
-    } else {
-        cerr << "Please provide a file containing [taxname] \\t [group]\n";
-        return;
-    }
+    create_maps(tax_fam_map, tax_fam_file, fam_clr_map);
     // Reading and saving fam -> col mapping if given
     if(!fam_clr_file.empty()){
         // TODO add colors to fam_clr_map
