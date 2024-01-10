@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
     string newick;    // name of newick output file // Todo
     string nexus;   // name of nexus output file
     string pdf;     // name of PDF output file
-    string groups; // name of input file giving groups/family
+    string groups; // name of input file giving groups
     string coloring; // name of input file for using specified color
     string translate; // name of translate file
 
@@ -260,7 +260,13 @@ int main(int argc, char* argv[]) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             c_nexus_wanted = true;
             groups = argv[++i];
-            // TODO optional scnd argument for specified coloring
+
+            // TODO !!TEST!!
+            // optional scnd argument for specified coloring
+            if (argv[i+1] != NULL && string(argv[i+1]).rfind("-", 0) != 0){
+                coloring = argv[++i];
+                cout << "Color file " << coloring << endl;
+            }
             ifstream file_stream(groups);
             if (!file_stream.good()) { // catch unreadable file
                 cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << groups << ">" << "\u001b[0m" << endl;
@@ -536,6 +542,12 @@ int main(int argc, char* argv[]) {
     if (c_nexus_wanted && !nexus_wanted && !pdf_wanted){
         cerr << "Error: Labeled (colored) nexus output only applicable in combination with -X <filename> or -p <filename>." << endl;
         return 1;
+    }
+    if (c_nexus_wanted || pdf_wanted){
+        const string splitstree_path = "SplitsTree";
+        if (!nexus_color::program_in_path(splitstree_path)) {
+            cerr << splitstree_path << " is not in the PATH." << endl;
+        }
     }
     if (amino && quality > 1) {
         cerr << "Error: using --qualify with --amino is (currently) not supported" << endl;
@@ -1250,7 +1262,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         if(c_nexus_wanted || pdf_wanted){
             nexus_color::mod_via_splitstree(nexus, pdf, verbose);
             if(c_nexus_wanted){
-                nexus_color::color_nexus(nexus, groups);
+                nexus_color::color_nexus(nexus, groups, coloring);
             }
         }
         // Delete nexus file if only pdf wanted

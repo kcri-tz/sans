@@ -1,50 +1,33 @@
 #include "nexus_color.h"
 
-/**
- * Plan:
- * 1. Create nexus file with necessary data TODO Add confidences
- * 2. Run splitstree to add network info TODO splitstree problems if too many splits
- * 3. Modify latest file with colors (see B) )
- *
- * TODO at the moment:
- *  B) translate python script to add color (pimpnexus)
- *  A) add confidence values
- *
- * - Splitstree: zu viele splits werden nicht gezeichnet
- *    Warnung ausgegeben
- *    Mgl für Filter einbauen, der nur für nexus datei angewandt wird?
-*/
+struct rgb_color {
+    int r, g, b;
+};
 
-// 2 dateien: taxa -> kategorie, kategorie -> farbe
-// beides nach einem parameter (-l, --label oder so)
-// farbliche labels gehen nur wenn pdf oder nexus gewünscht
-// evtl nexus nur das einfache, wenn nexus und pdf gewünscht
 
-/* num = denom_names.size() != denom_file_count (können mehrere files für eine sequenz sein)
- * DOCH s. main 683
- *
- * pimpnexus.py
- *
- * sans2conf_nexus.py
- *  -> add bootstrapping confidence values to nexus file CONFIDENCE=YES
- **/
+bool nexus_color::program_in_path(const string& programName) {
+    // suppress output of this command depending on system
+    #ifdef _WIN32
+    #define DEV_NULL "nul"
+    #else
+    #define DEV_NULL "/dev/null"
+    #endif
 
-bool program_in_path(const string& programName) {
-    string command = "which " + programName;
+    string command = "which " + programName + " > " + string(DEV_NULL);
     // Run command and check result
     int result = system(command.c_str());
     // If result is 0, the program is in PATH
     return result == 0;
 }
 
-/** TODO !!TEST!!
+/**
  * Creates a map of a given tab separated file with two fields (key,value) per line.
  * Also creates map with the given values as keys for further usage.
  * @param map The dictionary consistent of the provided (key,value) pairs.
  * @param filename The input file to read from.
  * @param value_map The dictionary with the provided values as keys.
  */
-void create_maps(unordered_map<string, string>& map, const string& filename, unordered_map<string, string>& value_map){
+void create_maps(unordered_map<string, string>& map, const string& filename, unordered_map<string, rgb_color>& value_map){
 
     string line;
     ifstream infile(filename);
@@ -59,17 +42,18 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
         if (getline(iss, key, '\t') && getline(iss, value)) {
             // Store fields in dictionary
             map[key] = value;
-            value_map[value] = "";
+            value_map[value]; // TODO add empty color?
         }
     }
     infile.close();
-
 }
 
 void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf, bool verbose, const string splitstree_path){
     // = "../splitstree4/SplitsTree"
-    // TODO give option to give path to splitstree
-
+    if (!program_in_path(splitstree_path)) {
+        cerr << splitstree_path << " is not in the PATH." << endl;
+        return;
+    }
     // temporary file for splitstree commands
     const char* temp = "./temp_splitstree_commands";
     ofstream temp_file(temp);
@@ -94,9 +78,6 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf
             if(verbose) cout << "Network created\n";
         } else {
             cerr << "Error while running Splitstree " << splitstree_path << endl;
-            if (!program_in_path(splitstree_path)) {
-                cerr << splitstree_path << " is not in the PATH." << endl;
-            }
         }
         remove(temp);
     } else { // TODO
@@ -105,28 +86,57 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf
 }
 
 /// in construction ///
-void nexus_color::color_nexus(const string& nexus_file, const string& tax_fam_file, const string& fam_clr_file){
-    // TODO ask for color file/families in the beginning
-    // 2 dateien: taxa -> kategorie, kategorie -> farbe
-    // beides nach einem parameter (-l, --label oder so)
-    // TODO if only taxa -> family given, choose colors myself, otherwise use given colors
+void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_file, const string& grp_clr_file){
+
     bool translate = false;
     bool vertices = false;
     //vector<string> lines;
     string line;
 
-    // TODO read and save tax/fam/color mapping
-    //  (tax, clr) (via (tax, fam) -> (fam, clr))
+    // TODO read and save tax/grp/color mapping (tax, clr) (via (tax, grp) -> (grp, clr))
     //  with color either given or self-calculated
-    unordered_map<string, string> tax_fam_map;
-    unordered_map<string, string> fam_clr_map;
-    create_maps(tax_fam_map, tax_fam_file, fam_clr_map);
-    // Reading and saving fam -> col mapping if given
-    if(!fam_clr_file.empty()){
-        // TODO add colors to fam_clr_map
-        //  and check if provided fams stimmen überein
+    unordered_map<string, string> tax_grp_map;
+    unordered_map<string, rgb_color> grp_clr_map;
+    // Reading and saving taxa -> grp mapping
+    create_maps(tax_grp_map, tax_grp_file, grp_clr_map);
+
+    // (Reading &) Saving grp -> col mapping
+    if(!grp_clr_file.empty()){
+        // add colors to grp_clr_map
+        string grp_clr;
+        ifstream infile(grp_clr_file);
+        if(!infile.is_open()){
+            cerr << "Error: Could not read input file " << grp_clr_file << endl;
+            return;
+        }
+        while (getline(infile, grp_clr)){
+            // String stream to split and read line
+            istringstream iss(grp_clr);
+            string grp, clr; // two fields, tab separated
+            if (getline(iss, grp, '\t') && getline(iss, clr)) {
+
+                // check if clr is proper rgb value
+                istringstream rgb(clr);
+                int r, g, b;
+                // check if only int given and values are in range 0-255
+                if(rgb >> r >> g >> b && r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255){
+                    rgb_color color;
+                    color.r = r;
+                    color.g = g;
+                    color.b = b;
+
+                    grp_clr_map[grp] = color;
+                } else {
+                    cerr << "Warning: Invalid color (rgb value) given: " << grp << "  " << clr << endl;
+                }
+            }
+        }
+        infile.close();
+
     } else {
-        // TODO create colors according to #families
+        // TODO create colors according to #grpilies
+        //  either use color palette (e.g. colorBrewer) or golden ratio
+        grp_clr_map.size();
     }
 
     line = "";
@@ -135,9 +145,11 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_fam_fi
 
     if(!plain_nexus.is_open()){
         cerr << "Error opening nexus file to modify with color.\n";
+        return;
     }
     if(!colored_nexus.is_open()){
         cerr << "Error creating colored nexus file.\n";
+        return;
     }
 
     // read nexus data
@@ -176,7 +188,6 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_fam_fi
 
     plain_nexus.close();
     colored_nexus.close();
-
 
     // receive file taxa <-> color
     // read file nexus with already added network via splitstree
