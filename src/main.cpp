@@ -1179,6 +1179,8 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
             stream_nexus << "\n[" << i+1 << "] '" << taxa << "'"; // TODO \t or ' ' ?
         }
         stream_nexus << "\n;\nEND; [TAXA]\n";
+        // TODO confidence values
+        // stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nFORMAT CONFIDENCES=YES;\nMATRIX";
         stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nMATRIX";
     }
 

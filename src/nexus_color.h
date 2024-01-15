@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <cctype>
+#include <algorithm>
 #include <unordered_map>
 
 using namespace std;

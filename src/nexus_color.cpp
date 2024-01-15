@@ -93,8 +93,8 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     //vector<string> lines;
     string line;
 
-    // TODO read and save tax/grp/color mapping (tax, clr) (via (tax, grp) -> (grp, clr))
-    //  with color either given or self-calculated
+    //  TODO self-calculated color
+
     unordered_map<string, string> tax_grp_map;
     unordered_map<string, rgb_color> grp_clr_map;
     // Reading and saving taxa -> grp mapping
@@ -141,53 +141,93 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
     line = "";
     ifstream plain_nexus(nexus_file);
-    ofstream colored_nexus("col_"+nexus_file);
+
+    // naming output file TODO handle filepath for windeows and unix \\ / and such
+    size_t lastSlash = nexus_file.find_last_of("/\\");
+    string filename;
+    if (lastSlash != std::string::npos) {
+        string path = nexus_file.substr(0, lastSlash + 1);
+        filename = nexus_file.substr(lastSlash + 1);
+        filename = path + "clrd_" + filename;
+    } else {
+        filename = "clrd_" + nexus_file;
+    }
+    // colored nexus output file
+//    ofstream colored_nexus(filename.c_str());
 
     if(!plain_nexus.is_open()){
         cerr << "Error opening nexus file to modify with color.\n";
         return;
     }
+    /*
     if(!colored_nexus.is_open()){
-        cerr << "Error creating colored nexus file.\n";
+        cerr << "Error creating colored nexus file " << filename << endl;
         return;
     }
+
+    colored_nexus.close();
+    remove(filename.c_str());
+    cout << "Created and removed file " << filename << endl;
+     */
+
+    // map containing number -> color to color vertices
+    unordered_map<int, rgb_color> no_clr_map;
 
     // read nexus data
     while (getline(plain_nexus, line)) {
 
         // work with found blocks
         if(translate){
-            // (number, taxname)
-            // TODO match color -> number
-            // BEGIN network; ... TRANSLATE [number][taxname]
-            // -> match color via taxname to number
-            // -> VERTICES [number] [vertice] <bg=...> <fg=...>
+
+            // String stream to split and read line
+            istringstream iss(line);
+            string no, taxname; // number taxname of node
+            if (getline(iss, no, ' ') && getline(iss, taxname)) {
+
+                // removing quotes and comma
+                taxname.erase(remove_if(taxname.begin(), taxname.end(),
+                                        [](char c) { return (c == '\'' || c == ','); }), taxname.end());
+                // get color via taxname -> group -> color
+                rgb_color clr = grp_clr_map[tax_grp_map[taxname]];
+                no_clr_map[stoi(no)] = clr;
+
+            } else {
+                cerr << "Error reading TRANSLATE block in nexus file. ";
+            }
 
         }
         if(vertices){
+            // TODO add color information to line
+            // -> VERTICES [number] [vertice] <bg=...> <fg=...>
+
             // adding color
             //string color = "bg="+bg1+" "+bg2+" "+bg3 +" fg="+fg1+" "+fg2+" "+fg3+",\n";
             //line += color;
         }
 
-        // TODO case-insensitive search
         // identify block
-        if(line.find("TRANSLATE") != string::npos){// starting point of: [number] [taxname]
+        if(line.find("TRANSLATE") != string::npos || line.find("Translate") != string::npos || line.find("translate") != string::npos){// starting point of: [number] [taxname]
             translate = true;
+
+            cout << line << endl;
         }
-        if (line.find("VERTICES") != string::npos) {// starting point of vertices
+        if (line.find("VERTICES") != string::npos || line.find("Vertices") != string::npos || line.find("vertices") != string::npos) {// starting point of vertices
             vertices = true;
+
+            cout << line << endl;
         }
         if(line.find(";") != string::npos){// end of any block
             translate = false;
             vertices = false;
+
+            cout << line << endl;
         }
 
-        colored_nexus << line;
+        // colored_nexus << line << endl;
     }
 
     plain_nexus.close();
-    colored_nexus.close();
+    // colored_nexus.close();
 
     // receive file taxa <-> color
     // read file nexus with already added network via splitstree
