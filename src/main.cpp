@@ -47,9 +47,11 @@ int main(int argc, char* argv[]) {
         cout << "                  \t (only applicable in combination with -f strict or n-tree)" << endl;
         cout << endl;
         cout << "    -X, --nexus  \t Output Nexus file" << endl;
+        cout << "                  \t (Warning: Already existent files will be overwritten)" << endl;
         cout << endl;
         cout << "    -p, --pdf  \t Output network as PDF file" << endl;
         cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
+        cout << "                  \t (Warning: Already existent files will be overwritten)" << endl;
         cout << endl;
         cout << "    (at least --output or --newick must be provided, or both)" << endl;
         cout << endl;
@@ -265,7 +267,6 @@ int main(int argc, char* argv[]) {
             // optional scnd argument for specified coloring
             if (argv[i+1] != NULL && string(argv[i+1]).rfind("-", 0) != 0){
                 coloring = argv[++i];
-                cout << "Color file " << coloring << endl;
             }
             ifstream file_stream(groups);
             if (!file_stream.good()) { // catch unreadable file

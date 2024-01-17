@@ -2,6 +2,10 @@
 
 struct rgb_color {
     int r, g, b;
+
+    bool is_white(){
+        return (r == 0) && (g == 0) && (b == 0);
+    }
 };
 
 
@@ -22,7 +26,7 @@ bool nexus_color::program_in_path(const string& programName) {
 
 /**
  * Creates a map of a given tab separated file with two fields (key,value) per line.
- * Also creates map with the given values as keys for further usage.
+ * Also creates another map with the given values as keys for further usage.
  * @param map The dictionary consistent of the provided (key,value) pairs.
  * @param filename The input file to read from.
  * @param value_map The dictionary with the provided values as keys.
@@ -48,6 +52,50 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
     infile.close();
 }
 
+// Using the golden ratio to create distinct hsv colors and then convert them to rgb
+vector<rgb_color> create_colors(int n) { // !not my function!
+    vector<rgb_color> colors;
+
+    // Golden ratio to ensure visual distinctiveness
+    const double goldenRatioConjugate = 0.618033988749895;
+    double hue = 0.0;
+
+    for (int i = 0; i < n; ++i) {
+        // Convert HSV to RGB
+        double saturation = 0.7;
+        double value = 0.9;
+
+        int hi = static_cast<int>(std::floor(hue * 6.0));
+        double f = hue * 6.0 - hi;
+        double p = value * (1.0 - saturation);
+        double q = value * (1.0 - f * saturation);
+        double t = value * (1.0 - (1.0 - f) * saturation);
+
+        int r, g, b;
+        switch (hi % 6) {
+            case 0: r = value * 255; g = t * 255; b = p * 255; break;
+            case 1: r = q * 255; g = value * 255; b = p * 255; break;
+            case 2: r = p * 255; g = value * 255; b = t * 255; break;
+            case 3: r = p * 255; g = q * 255; b = value * 255; break;
+            case 4: r = t * 255; g = p * 255; b = value * 255; break;
+            case 5: r = value * 255; g = p * 255; b = q * 255; break;
+        }
+
+        rgb_color color;
+        color.r = r;
+        color.g = g;
+        color.b = b;
+        colors.push_back(color);
+
+        // Increment hue using golden ratio
+        hue += goldenRatioConjugate;
+        hue = fmod(hue, 1.0);
+    }
+
+    return colors;
+}
+
+
 void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf, bool verbose, const string splitstree_path){
     // = "../splitstree4/SplitsTree"
     if (!program_in_path(splitstree_path)) {
@@ -62,7 +110,7 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf
         // Writing commands for splitstree
         temp_file << "begin SplitsTree;\nEXECUTE FILE=" << nexus_file << endl;
         temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
-        if(!pdf.empty()){ // TODO check if filename existent and replace or not
+        if(!pdf.empty()){
             temp_file << "EXPORTGRAPHICS format=PDF file=" << pdf << " REPLACE=yes\n";
         }
         temp_file << "QUIT\nend;";
@@ -85,7 +133,7 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf
     }
 }
 
-/// in construction ///
+
 void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_file, const string& grp_clr_file){
 
     bool translate = false;
@@ -93,10 +141,10 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     //vector<string> lines;
     string line;
 
-    //  TODO self-calculated color
+    unordered_map<string, string> tax_grp_map; // map containing taxname -> group
+    unordered_map<string, rgb_color> grp_clr_map; // map conatining group -> color
+    unordered_map<int, rgb_color> no_clr_map; // map containing number -> color to color vertices
 
-    unordered_map<string, string> tax_grp_map;
-    unordered_map<string, rgb_color> grp_clr_map;
     // Reading and saving taxa -> grp mapping
     create_maps(tax_grp_map, tax_grp_file, grp_clr_map);
 
@@ -115,10 +163,9 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             string grp, clr; // two fields, tab separated
             if (getline(iss, grp, '\t') && getline(iss, clr)) {
 
-                // check if clr is proper rgb value
                 istringstream rgb(clr);
                 int r, g, b;
-                // check if only int given and values are in range 0-255
+                // check if clr is proper rgb value: only ints and in range 0-255
                 if(rgb >> r >> g >> b && r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255){
                     rgb_color color;
                     color.r = r;
@@ -133,19 +180,26 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         }
         infile.close();
 
-    } else {
-        // TODO create colors according to #grpilies
-        //  either use color palette (e.g. colorBrewer) or golden ratio
-        grp_clr_map.size();
+    } else { // create colors if they are not given
+
+        int no_grps = grp_clr_map.size(); // number of groups
+        vector<rgb_color> colors = create_colors(no_grps);
+
+        int i = 0;
+        for(auto& vertex : grp_clr_map){
+            vertex.second = colors[i];
+            ++i;
+        }
     }
 
     line = "";
     ifstream plain_nexus(nexus_file);
 
     // naming output file TODO handle filepath for windeows and unix \\ / and such
+    // TODO auslagern in fkt
     size_t lastSlash = nexus_file.find_last_of("/\\");
     string filename;
-    if (lastSlash != std::string::npos) {
+    if (lastSlash != string::npos) {
         string path = nexus_file.substr(0, lastSlash + 1);
         filename = nexus_file.substr(lastSlash + 1);
         filename = path + "clrd_" + filename;
@@ -153,35 +207,31 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         filename = "clrd_" + nexus_file;
     }
     // colored nexus output file
-//    ofstream colored_nexus(filename.c_str());
+    ofstream colored_nexus(filename.c_str());
 
     if(!plain_nexus.is_open()){
         cerr << "Error opening nexus file to modify with color.\n";
         return;
     }
-    /*
     if(!colored_nexus.is_open()){
         cerr << "Error creating colored nexus file " << filename << endl;
         return;
     }
 
-    colored_nexus.close();
-    remove(filename.c_str());
-    cout << "Created and removed file " << filename << endl;
-     */
-
-    // map containing number -> color to color vertices
-    unordered_map<int, rgb_color> no_clr_map;
 
     // read nexus data
     while (getline(plain_nexus, line)) {
 
+        // end of any block
+        if(line.find(";") != string::npos){
+            translate = false;
+            vertices = false;
+        }
+
         // work with found blocks
         if(translate){
-
-            // String stream to split and read line
             istringstream iss(line);
-            string no, taxname; // number taxname of node
+            string no, taxname; // number, taxname of node
             if (getline(iss, no, ' ') && getline(iss, taxname)) {
 
                 // removing quotes and comma
@@ -192,47 +242,64 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                 no_clr_map[stoi(no)] = clr;
 
             } else {
-                cerr << "Error reading TRANSLATE block in nexus file. ";
+                cerr << "Error reading TRANSLATE block in nexus file.\n";
+                cerr << "Problematic line: " << line << endl;
             }
 
         }
-        if(vertices){
-            // TODO add color information to line
-            // -> VERTICES [number] [vertice] <bg=...> <fg=...>
+        if(vertices) {
+            // variables to save info contained for the vertex
+            istringstream iss(line);
+            int vertex_no;
+            double x, y;
+            char c_w, c_h, c_s, s, eq;
+            int w, h;
+            string rest;
+            int size = 8; // TODO anpassen ?
+            // splitting line into its components: [no.] [x] [y] w=[..] h=[..] s=n,
+            if (iss >> vertex_no >> x >> y >> c_w >> eq >> w >> c_h >> eq >> h >> c_s >> eq >> s >> rest) {
 
-            // adding color
-            //string color = "bg="+bg1+" "+bg2+" "+bg3 +" fg="+fg1+" "+fg2+" "+fg3+",\n";
-            //line += color;
+                if (no_clr_map.find(vertex_no) != no_clr_map.end()){ // only color vertex if leaf
+
+                    if(rest == ","){ // if last char is ',' add color
+                        rgb_color clr = no_clr_map[vertex_no]; // get defined color for vertex
+                        int bg_r, bg_g, bg_b;
+                        // add color information to line
+                        ostringstream oss;
+                        if(clr.is_white()){ // if color is white, turn outline black
+                            bg_r = bg_g = bg_b = 255;
+                        } else {
+                            bg_b = clr.b;
+                            bg_g = clr.g;
+                            bg_r = clr.r;
+                        }
+                        oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<<bg_r<<" "<<bg_g<<" "<<bg_b<<",";
+                        line = oss.str();
+
+                    } else { /* if already colored do not change */ }
+
+                } else {
+                    // TODO check what it does for lines that should not be colored
+                }
+            } else {
+                // TODO
+                cout << "Problems reading vertex: " << line << endl;
+            }
         }
 
         // identify block
         if(line.find("TRANSLATE") != string::npos || line.find("Translate") != string::npos || line.find("translate") != string::npos){// starting point of: [number] [taxname]
             translate = true;
-
-            cout << line << endl;
         }
         if (line.find("VERTICES") != string::npos || line.find("Vertices") != string::npos || line.find("vertices") != string::npos) {// starting point of vertices
             vertices = true;
-
-            cout << line << endl;
-        }
-        if(line.find(";") != string::npos){// end of any block
-            translate = false;
-            vertices = false;
-
-            cout << line << endl;
         }
 
-        // colored_nexus << line << endl;
+        colored_nexus << line << endl;
     }
 
     plain_nexus.close();
-    // colored_nexus.close();
-
-    // receive file taxa <-> color
-    // read file nexus with already added network via splitstree
-    // map color <-> taxa <-> node
-    // add color at respective nodes
+    colored_nexus.close();
 
     // special treatment if nodes would have multiple colors
     //      (draw two dots? other shape? different inner/outer color?)
