@@ -654,9 +654,12 @@ int main(int argc, char* argv[]) {
             // check files
 			if (splits.empty()){
 					for(string file_name: target_files){
-						ifstream file_stream = ifstream(folder+file_name);
+						if(file_name[0]!='/'){ //no absolute path?
+							file_name=folder+file_name;
+						}
+						ifstream file_stream = ifstream(file_name);
 						if (!file_stream.good()) { // catch unreadable file
-							cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
+							cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << file_name << ">" << "\u001b[0m" << endl;
 							file_stream.close();
 							return 1;
 						}
@@ -827,13 +830,16 @@ int main(int argc, char* argv[]) {
                 vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
             
                 for (string file_name: target_files){
-            
-                    char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
-                    strcpy(c_name, (folder + file_name).c_str()); // Transcire to char array
+					if(file_name[0]!='/'){ //no absolute path?
+						file_name=folder+file_name;
+					}
+
+                    char c_name[(file_name).length()]; // Create char array for c compatibilty
+                    strcpy(c_name, (file_name).c_str()); // Transcire to char array
 
                     igzstream file(c_name, ios::in);    // input file stream
                     if (verbose) {
-                        cout << "\33[2K\r" << folder+file_name;
+                        cout << "\33[2K\r" << file_name;
 						if (q_table.size()>0) {
 							cout <<" q="<<q_table[i];
 						}
