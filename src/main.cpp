@@ -608,7 +608,6 @@ int main(int argc, char* argv[]) {
 
                 string denom = line.substr(0, line.find_first_of(" ")); // get the dataset-id
                 denom_names.push_back(denom); // add id to denominators
-                num ++;
 				name_table[denom] = num;
 				
                 line = line.substr(line.find_first_of(":") + 2, line.npos); // cut off the dataset-id
@@ -620,6 +619,7 @@ int main(int argc, char* argv[]) {
                     if (file_name.length() == 0){continue;} // skip empty file name
                     else {target_files.push_back(file_name); name_table[file_name] = num;} // add the file name to target files and name table
 				}
+                num ++;
             }
 
             else{ // parse file list format
@@ -1036,7 +1036,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         std::mutex count_mutex;
         auto index_lambda_bootstrap = [&] () {std::lock_guard<mutex> lg(index_mutex); return index++;};
 		
-        auto lambda_bootstrap_count = [&] (multiset<pair<double, color_t>, greater<>> split_list_bs, hash_map<color_t, uint32_t>& support_values) { std::lock_guard<mutex> lg(count_mutex); for (auto& it : split_list_bs){color_t colors = it.second;support_values[colors]++;}};
+        auto lambda_bootstrap_count = [&] (multimap_<double, color_t> split_list_bs, hash_map<color_t, uint32_t>& support_values) { std::lock_guard<mutex> lg(count_mutex); for (auto& it : split_list_bs){color_t colors = it.second;support_values[colors]++;}};
 
         auto lambda_bootstrap = [&] (uint64_t T, uint64_t max){ // This lambda expression wraps the sequence-kmer hashing
 			uint64_t i = index_lambda_bootstrap();
@@ -1047,7 +1047,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 				}
 				
 				// create bootstrap replicate
-				multiset<pair<double, color_t>, greater<>>  split_list_bs = graph::bootstrap(mean);
+				multimap_<double, color_t>  split_list_bs = graph::bootstrap(mean);
 				apply_filter(filter,"", map, split_list_bs,verbose);
 				
 				// count conserved splits
@@ -1075,7 +1075,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		}else{
 			// filter original splits by bootstrap value
 			// compose a corresponding split list
-			multiset<pair<double, color_t>, greater<>> split_list_conf;
+			multimap_<double, color_t> split_list_conf;
 			for (auto& it : graph::split_list){
 				double conf=(1.0*support_values[it.second])/bootstrap_no;
 				color_t colors = it.second;
@@ -1170,11 +1170,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
  * @param verbose print progress
  * 
  */
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool verbose){
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, bool verbose){
 	apply_filter(filter, newick, map, split_list, nullptr, 0, verbose);
 }
 
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool verbose){
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool verbose){
 
 		if (!filter.empty()) {    // apply filter
 

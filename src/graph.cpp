@@ -75,7 +75,7 @@ vector<hash_map<kmerAmino_t, uint64_t>> graph::quality_mapAmino;
  */
 // https://itecnote.com/tecnote/c-sorting-multimap-with-both-keys-and-values/
 // This is necessairy to create a sorted output
-multiset<pair<double, color_t>, greater<>> graph::split_list;
+multimap_<double, color_t> graph::split_list;
 
 /**
 * These are the allowed chars.
@@ -1256,7 +1256,7 @@ void graph::compile_split_list(double mean(uint32_t&, uint32_t&), double min_val
  * @param mean weight function
  * @return the new list of splits of length at least t ordered by weight as usual
  */
-multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
+multimap_<double, color_t> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 
 	uint64_t max = 0;
 	
@@ -1269,7 +1269,7 @@ multiset<pair<double, color_t>, greater<>> graph::bootstrap(double mean(uint32_t
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
-	multiset<pair<double, color_t>, greater<>> sl;
+	multimap_<double, color_t> sl;
 	double min_value=0;
 
 	// perform n time max trials, each succeeds 1/max
@@ -1334,7 +1334,7 @@ void graph::add_split(double& weight, color_t& color) {
  * @param color split colors
  * @param split_list list of splits
  */
-void graph::add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>& split_list) {
+void graph::add_split(double& weight, color_t& color, multimap_<double, color_t>& split_list) {
     split_list.emplace(weight, color);    // insert it at the correct position ordered by weight
     if (split_list.size() > t) {
         split_list.erase(--split_list.end());    // if the top list exceeds its limit, erase the last entry
@@ -1358,11 +1358,11 @@ void graph::add_split(double& weight, color_t& color, multiset<pair<double, colo
  * @param verbose print progress
  */
 
-void graph::filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+void graph::filter_strict(multimap_<double, color_t>& split_list, bool& verbose) {
     filter_strict(nullptr, split_list, nullptr, 0, verbose);
 }
 
-string graph::filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
+string graph::filter_strict(std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
@@ -1396,7 +1396,7 @@ loop:
  * @param split_list list of splits to be filtered
  * @param verbose print progress
  */
-void graph::filter_weakly(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+void graph::filter_weakly(multimap_<double, color_t>& split_list, bool& verbose) {
     auto network = vector<color_t>();    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
@@ -1429,11 +1429,11 @@ loop:
  * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @param verbose print progress
  */
-void graph::filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose) {
+void graph::filter_n_tree(uint64_t n, multimap_<double, color_t>& split_list, bool& verbose) {
     filter_n_tree(n, nullptr, split_list, nullptr, 0, verbose);
 }
 
-string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
+string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
