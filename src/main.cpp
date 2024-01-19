@@ -609,7 +609,8 @@ int main(int argc, char* argv[]) {
                 string denom = line.substr(0, line.find_first_of(" ")); // get the dataset-id
                 denom_names.push_back(denom); // add id to denominators
                 num ++;
-
+				name_table[denom] = num;
+				
                 line = line.substr(line.find_first_of(":") + 2, line.npos); // cut off the dataset-id
 
                 std::smatch matches; // Match files
@@ -618,7 +619,7 @@ int main(int argc, char* argv[]) {
                     line=matches.suffix().str(); // update the line
                     if (file_name.length() == 0){continue;} // skip empty file name
                     else {target_files.push_back(file_name); name_table[file_name] = num;} // add the file name to target files and name table
-                    }
+				}
             }
 
             else{ // parse file list format
@@ -750,7 +751,7 @@ int main(int argc, char* argv[]) {
     if (dyn_top){
         top = top * num;
     }
-	if(top>-1 && verbose){
+	if(verbose){
 		cout<<"Restricting output to "<<top<<" splits."<< endl;
 	}
 
