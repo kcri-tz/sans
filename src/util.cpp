@@ -8,18 +8,17 @@
  * @param n number of input genomes
  * @return nothing
  */ 
-void util::check_n(uint64_t& n, string& path) {
+void util::check_n(uint64_t& n, string& path, const uint64_t& max_N) {
 	bool recompile = false;
-	if (n>maxN) {
+	if (n>max_N) {
 		cout << "Recompilation with DmaxN>=" << n << " necessary! (See " << path << "_autoN.)" << endl;
 		recompile = true;
-	}
-	if (maxN-n>=100) {
+	} else if (max_N-n>=100) {
 		cout << "Recompilation with DmaxN=" << n << " recommended. (See " << path << "_autoN.)" << endl;
 		recompile = true;
 	}
 	if (recompile) {
-		cout << "DmaxN\t" << maxN << endl;
+		cout << "DmaxN\t" << max_N << endl;
 		cout << "num\t" << n << endl;
 		
 		// open new makefile

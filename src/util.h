@@ -30,7 +30,7 @@ public:
 	* @param n number of input genomes
 	* @return nothing
 	*/ 
-	static void check_n(uint64_t& n, string &path);
+	static void check_n(uint64_t& n, string &path, const uint64_t& max_N);
 
 
     /**

@@ -698,7 +698,7 @@ int main(int argc, char* argv[]) {
 		kmer = cdbg.getK();
 	 	if (kmer > maxK) {
                 cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
-				cerr << "Solution: modify -DmaxN in makefile, run make, run SANS." << maxK << endl;
+				cerr << "Solution: modify -DmaxK in makefile, run make, run SANS." << maxK << endl;
                 return 1;
             }
             cerr << "Warning: setting k-mer length to match the given Bifrost graph. New lenght: " << kmer << endl;
@@ -735,7 +735,7 @@ int main(int argc, char* argv[]) {
 
     // check if the number of genomes is reasonably close the maximal storable color set
     if (check_n) {
-       util::check_n(num,path);
+       util::check_n(num,path,maxN);
 	}
 
     // check if the number of gernomes exceeds the maximal storable color set
