@@ -21,8 +21,9 @@ namespace nexus_color{
      * @param nexus_file Path to the initial nexus file
      * @param verbose If info should be printed
      * @param splitstree_path Path to SplitsTree
+      * @param update If the given nexus file needs to be updated (if a network needs to be added)
      */
-    void open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose = false, const string splitstree_path = "SplitsTree");
+    void open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose = false, bool update = true, const string splitstree_path = "SplitsTree");
 
     /**
      * This function adds color values to the nodes of a given nexus file. Already colored nodes

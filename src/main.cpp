@@ -1280,10 +1280,10 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         if(c_nexus_wanted || pdf_wanted){
             nexus_color::open_in_splitstree(nexus, pdf, verbose);
             if(c_nexus_wanted){
+                if(verbose) cout << "Adding color\n";
                 nexus_color::color_nexus(nexus, groups, coloring);
                 if(pdf_wanted){
-                    // TODO when opening colored file in splistree via commands it omits color
-                    //nexus_color::open_in_splitstree(nexus, pdf, verbose);
+                    nexus_color::open_in_splitstree(nexus, pdf, verbose, false);
                 }
             }
         }

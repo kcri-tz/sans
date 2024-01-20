@@ -96,8 +96,16 @@ vector<rgb_color> create_colors(int n) { // !not my function!
 }
 
 
-void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose, const string splitstree_path){
+void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose, bool update, const string splitstree_path){
     // = "../splitstree4/SplitsTree"
+    /*
+     * begin SplitsTree;
+EXECUTE FILE=example_data/pra_test.nex
+EXPORTGRAPHICS format=PDF file=test.pdf REPLACE=yes
+QUIT
+end;
+
+     */
     if (!program_in_path(splitstree_path)) {
         cerr << splitstree_path << " is not in the PATH." << endl;
         return;
@@ -109,10 +117,8 @@ void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf
 
         // Writing commands for splitstree
         temp_file << "begin SplitsTree;\nEXECUTE FILE=" << nexus_file << endl;
-        temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
-        if(!pdf.empty()){
-            temp_file << "EXPORTGRAPHICS format=PDF file=" << pdf << " REPLACE=yes\n";
-        }
+        if(update) temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
+        if(!pdf.empty()) temp_file << "EXPORTGRAPHICS format=PDF file=" << pdf << " REPLACE=yes\n";
         temp_file << "QUIT\nend;";
         temp_file.close();
 
