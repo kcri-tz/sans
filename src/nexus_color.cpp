@@ -96,7 +96,7 @@ vector<rgb_color> create_colors(int n) { // !not my function!
 }
 
 
-void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf, bool verbose, const string splitstree_path){
+void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose, const string splitstree_path){
     // = "../splitstree4/SplitsTree"
     if (!program_in_path(splitstree_path)) {
         cerr << splitstree_path << " is not in the PATH." << endl;
@@ -122,13 +122,11 @@ void nexus_color::mod_via_splitstree(const string& nexus_file, const string& pdf
         string command = splitstree_path + " -g -S -c " + temp;
         const char* splitstree_command = command.c_str();
         int result = system(splitstree_command); // executing command
-        if(result == 0){
-            if(verbose) cout << "Network created\n";
-        } else {
+        if(result != 0){
             cerr << "Error while running Splitstree " << splitstree_path << endl;
         }
         remove(temp);
-    } else { // TODO
+    } else {
         cerr << "Unable to create temp command file for splitstree: " << temp << "\nTherefor unable to add network to nexus file" << endl;
     }
 }
@@ -196,7 +194,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     ifstream plain_nexus(nexus_file);
 
     // naming output file TODO handle filepath for windeows and unix \\ / and such
-    // TODO auslagern in fkt
+    // TODO necessary??
     size_t lastSlash = nexus_file.find_last_of("/\\");
     string filename;
     if (lastSlash != string::npos) {
@@ -206,6 +204,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     } else {
         filename = "clrd_" + nexus_file;
     }
+
     // colored nexus output file
     ofstream colored_nexus(filename.c_str());
 
@@ -301,6 +300,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     plain_nexus.close();
     colored_nexus.close();
 
+    std::rename(filename.c_str(), nexus_file.c_str());
     // special treatment if nodes would have multiple colors
     //      (draw two dots? other shape? different inner/outer color?)
     // nice-to-have: color for colorblind, or diff shape

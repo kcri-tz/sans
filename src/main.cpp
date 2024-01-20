@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
         cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
         cout << "                  \t (Warning: Already existent files will be overwritten)" << endl;
         cout << endl;
-        cout << "    (at least --output or --newick must be provided, or both)" << endl;
+        cout << "    (at least --output, --newick, --nexus or --pdf must be provided)" << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
@@ -106,6 +106,9 @@ int main(int argc, char* argv[]) {
         cout << "                  \t else: final filter w.r.t. split weights" << endl;
         cout << "                  \t optional: specify separate filter (see --filter for available filters.)" << endl;
         cout << endl;
+        cout << "    -l, --label\t Label taxa with given groups" << endl;
+        cout << "                  \t required: tab separated file with taxname and group" << endl;
+        cout << "                  \t optional: additional tab separated file with group and color (rgb value)" << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -T, --threads \t The number of threads to spawn (default is all)" << endl;
@@ -263,7 +266,6 @@ int main(int argc, char* argv[]) {
             c_nexus_wanted = true;
             groups = argv[++i];
 
-            // TODO !!TEST!!
             // optional scnd argument for specified coloring
             if (argv[i+1] != NULL && string(argv[i+1]).rfind("-", 0) != 0){
                 coloring = argv[++i];
@@ -1189,8 +1191,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         }
         stream_nexus << "\n;\nEND; [TAXA]\n";
         // TODO confidence values
-        // stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nFORMAT CONFIDENCES=YES;\nMATRIX";
-        stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nMATRIX";
+        if(bootstrap_no>0){
+            stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nFORMAT CONFIDENCES=YES;\nMATRIX";
+        } else {
+            stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nMATRIX";
+        }
     }
 
     uint64_t pos = 0;
@@ -1218,7 +1223,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
             // stream_bootstrap << support_values[split.second];
         }
         for (uint64_t i = 0; i < num; ++i) {
-            /// num = denom_names.size() != denom_file_count
+
             if (split_color.test(pos)) {
                 if (i < denom_names.size()) {
                     stream << '\t' << denom_names[i]; // name of the file
@@ -1228,11 +1233,8 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
                     if(nexus_wanted || pdf_wanted){ // nexus
                         ++split_size;
-                        if(split_size > 1){ // " " only if not first value
-                            split_comp += " "+ to_string(i+1);
-                        } else {
-                            split_comp += to_string(i+1);
-                        }
+                        if(split_size > 1) split_comp += " "; // " " only if not first value
+                        split_comp += to_string(i+1);
                     }
 
                 }
@@ -1241,7 +1243,12 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         }
 
         if(nexus_wanted || pdf_wanted){
-            stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t" << weight << "\t" << split_comp << ",";
+            if(bootstrap_no>0){
+                stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t";
+                stream_nexus << weight << "\t" << ((1.0 * support_values[split.second]) / bootstrap_no) << "\t" << split_comp << ",";
+            } else {
+                stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t" << weight << "\t" << split_comp << ",";
+            }
         }
 
         stream << endl;
@@ -1269,15 +1276,19 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	}
     if(nexus_wanted || pdf_wanted){
         file_nexus.close();
-        // Only modify file using SplitsTree if pdf or colored tree wanted
+        // Only modify file using SplitsTree if pdf or coloring  wanted
         if(c_nexus_wanted || pdf_wanted){
-            nexus_color::mod_via_splitstree(nexus, pdf, verbose);
+            nexus_color::open_in_splitstree(nexus, pdf, verbose);
             if(c_nexus_wanted){
                 nexus_color::color_nexus(nexus, groups, coloring);
+                if(pdf_wanted){
+                    // TODO when opening colored file in splistree via commands it omits color
+                    //nexus_color::open_in_splitstree(nexus, pdf, verbose);
+                }
             }
         }
         // Delete nexus file if only pdf wanted
-        if(!nexus_wanted && !c_nexus_wanted){
+        if(!nexus_wanted){
             remove(nexus.c_str());
         }
     }
