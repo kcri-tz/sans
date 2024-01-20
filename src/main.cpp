@@ -663,8 +663,8 @@ int main(int argc, char* argv[]) {
 
                 string denom = line.substr(0, line.find_first_of(" ")); // get the dataset-id
                 denom_names.push_back(denom); // add id to denominators
-                num ++;
-
+				name_table[denom] = num;
+				
                 line = line.substr(line.find_first_of(":") + 2, line.npos); // cut off the dataset-id
 
                 std::smatch matches; // Match files
@@ -673,7 +673,8 @@ int main(int argc, char* argv[]) {
                     line=matches.suffix().str(); // update the line
                     if (file_name.length() == 0){continue;} // skip empty file name
                     else {target_files.push_back(file_name); name_table[file_name] = num;} // add the file name to target files and name table
-                    }
+				}
+                num ++;
             }
 
             else{ // parse file list format
@@ -708,9 +709,12 @@ int main(int argc, char* argv[]) {
             // check files
 			if (splits.empty()){
 					for(string file_name: target_files){
-						ifstream file_stream = ifstream(folder+file_name);
+						if(file_name[0]!='/'){ //no absolute path?
+							file_name=folder+file_name;
+						}
+						ifstream file_stream = ifstream(file_name);
 						if (!file_stream.good()) { // catch unreadable file
-							cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << folder+file_name << ">" << "\u001b[0m" << endl;
+							cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << file_name << ">" << "\u001b[0m" << endl;
 							file_stream.close();
 							return 1;
 						}
@@ -749,7 +753,7 @@ int main(int argc, char* argv[]) {
 		kmer = cdbg.getK();
 	 	if (kmer > maxK) {
                 cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
-				cerr << "Solution: modify -DmaxN in makefile, run make, run SANS." << maxK << endl;
+				cerr << "Solution: modify -DmaxK in makefile, run make, run SANS." << maxK << endl;
                 return 1;
             }
             cerr << "Warning: setting k-mer length to match the given Bifrost graph. New lenght: " << kmer << endl;
@@ -786,7 +790,7 @@ int main(int argc, char* argv[]) {
 
     // check if the number of genomes is reasonably close the maximal storable color set
     if (check_n) {
-       util::check_n(num,path);
+       util::check_n(num,path,maxN);
 	}
 
     // check if the number of genomes exceeds the maximal storable color set
@@ -805,7 +809,7 @@ int main(int argc, char* argv[]) {
     if (dyn_top){
         top = top * num;
     }
-	if(top>-1 && verbose){
+	if(verbose){
 		cout<<"Restricting output to "<<top<<" splits."<< endl;
 	}
 
@@ -885,13 +889,17 @@ int main(int argc, char* argv[]) {
                 vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
             
                 for (string file_name: target_files){
-            
-                    char c_name[(folder + file_name).length()]; // Create char array for c compatibilty
-                    strcpy(c_name, (folder + file_name).c_str()); // Transcribe to char array
+
+					if(file_name[0]!='/'){ //no absolute path?
+						file_name=folder+file_name;
+					}
+
+                    char c_name[(file_name).length()]; // Create char array for c compatibilty
+                    strcpy(c_name, (file_name).c_str()); // Transcire to char array
 
                     igzstream file(c_name, ios::in);    // input file stream
                     if (verbose) {
-                        cout << "\33[2K\r" << folder+file_name;
+                        cout << "\33[2K\r" << file_name;
 						if (q_table.size()>0) {
 							cout <<" q="<<q_table[i];
 						}
@@ -1088,7 +1096,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         std::mutex count_mutex;
         auto index_lambda_bootstrap = [&] () {std::lock_guard<mutex> lg(index_mutex); return index++;};
 		
-        auto lambda_bootstrap_count = [&] (multiset<pair<double, color_t>, greater<>> split_list_bs, hash_map<color_t, uint32_t>& support_values) { std::lock_guard<mutex> lg(count_mutex); for (auto& it : split_list_bs){color_t colors = it.second;support_values[colors]++;}};
+        auto lambda_bootstrap_count = [&] (multimap_<double, color_t> split_list_bs, hash_map<color_t, uint32_t>& support_values) { std::lock_guard<mutex> lg(count_mutex); for (auto& it : split_list_bs){color_t colors = it.second;support_values[colors]++;}};
 
         auto lambda_bootstrap = [&] (uint64_t T, uint64_t max){ // This lambda expression wraps the sequence-kmer hashing
 			uint64_t i = index_lambda_bootstrap();
@@ -1099,7 +1107,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 				}
 				
 				// create bootstrap replicate
-				multiset<pair<double, color_t>, greater<>>  split_list_bs = graph::bootstrap(mean);
+				multimap_<double, color_t>  split_list_bs = graph::bootstrap(mean);
 				apply_filter(filter,"", map, split_list_bs,verbose);
 				
 				// count conserved splits
@@ -1127,7 +1135,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		}else{
 			// filter original splits by bootstrap value
 			// compose a corresponding split list
-			multiset<pair<double, color_t>, greater<>> split_list_conf;
+			multimap_<double, color_t> split_list_conf;
 			for (auto& it : graph::split_list){
 				double conf=(1.0*support_values[it.second])/bootstrap_no;
 				color_t colors = it.second;
@@ -1297,11 +1305,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
  * @param verbose print progress
  * 
  */
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, bool verbose){
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, bool verbose){
 	apply_filter(filter, newick, map, split_list, nullptr, 0, verbose);
 }
 
-void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool verbose){
+void apply_filter(string filter, string newick, std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool verbose){
 
 		if (!filter.empty()) {    // apply filter
 

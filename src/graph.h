@@ -30,6 +30,18 @@ template <typename T>
     // using hash_set = unordered_set<T>;
     using hash_set = tsl::sparse_pg_set<T>;
 
+//stable sorting of split weights
+template <typename K, typename V>
+  struct compare: public function<bool(pair<K,V>, pair<K,V>)> {
+      constexpr bool operator()(const pair<K,V>& x, const pair<K,V>& y) const noexcept {
+          return x.first > y.first || x.first == y.first && x.second < y.second;
+      }
+  };
+template <typename K, typename V>
+  using multimap_ = set<pair<K,V>, compare<K,V>>;
+
+
+
 #include "kmer.h"
 #include "kmerAmino.h"
 
@@ -151,12 +163,12 @@ public:
 	* @param mean weight function
 	* @return the new list of splits of length at least t ordered by weight as usual
 	*/
-	static multiset<pair<double, color_t>, greater<>> bootstrap(double mean(uint32_t&, uint32_t&));
+	static multimap_<double, color_t> bootstrap(double mean(uint32_t&, uint32_t&));
 
     /**
      * This is an ordered tree collecting the splits [O(log n)].
      */
-    static multiset<pair<double, color_t>, greater<>> split_list;
+    static multimap_<double, color_t> split_list;
 
     /**
     * These are the allowed chars.
@@ -331,7 +343,7 @@ public:
 	 * (@param split_list list of splits to add the split to)
      */
     static void add_split(double& weight, color_t& color);
-	static void add_split(double& weight, color_t& color, multiset<pair<double, color_t>, greater<>>& split_list);
+	static void add_split(double& weight, color_t& color, multimap_<double, color_t>& split_list);
 
 
     /**
@@ -356,7 +368,7 @@ public:
      * @param verbose print progress
      * @return the new minimal weight represented in the top list
      */
-    static void filter_strict(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
+    static void filter_strict(multimap_<double, color_t>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight tree compatible subset and returns a newick string.
@@ -367,7 +379,7 @@ public:
 	 * @param bootstrap_no the number of bootstrap replicates for computing the per centage support
      * @param verbose print progress
      */
-	static string filter_strict(std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
+	static string filter_strict(std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight weakly compatible subset.
@@ -375,7 +387,7 @@ public:
      * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static void filter_weakly(multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
+    static void filter_weakly(multimap_<double, color_t>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset.
@@ -384,7 +396,7 @@ public:
      * @param split_list list of splits to be filtered
      * @param verbose print progress
      */
-    static void filter_n_tree(uint64_t n, multiset<pair<double, color_t>, greater<>>& split_list, bool& verbose);
+    static void filter_n_tree(uint64_t n, multimap_<double, color_t>& split_list, bool& verbose);
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset and returns a string with all trees in newick format.
@@ -396,7 +408,7 @@ public:
 	 * @param bootstrap_no the number of bootstrap replicates for computing the per centage support
      * @param verbose print progress
      */
-    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multiset<pair<double, color_t>, greater<>>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
+    static string filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose);
 	
 	
 
