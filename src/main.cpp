@@ -106,8 +106,8 @@ int main(int argc, char* argv[]) {
         cout << "                  \t else: final filter w.r.t. split weights" << endl;
         cout << "                  \t optional: specify separate filter (see --filter for available filters.)" << endl;
         cout << endl;
-        cout << "    -l, --label\t Label taxa with given groups" << endl;
-        cout << "                  \t required: tab separated file with taxname and group" << endl;
+        cout << "    -l, --label\t\t Label taxa with given groups" << endl;
+        cout << "                  \t required: tab separated file with name of taxon and group" << endl;
         cout << "                  \t optional: additional tab separated file with group and color (rgb value)" << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;

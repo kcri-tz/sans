@@ -24,6 +24,24 @@ bool nexus_color::program_in_path(const string& programName) {
     return result == 0;
 }
 
+
+string modified_filename(string file, string front_extension){
+
+    // TODO handle filepath for windows and unix \\ / and such
+    // TODO necessary??
+
+    size_t lastSlash = file.find_last_of("/\\");
+    string filename;
+    if (lastSlash != string::npos) {
+        string path = file.substr(0, lastSlash + 1);
+        filename = file.substr(lastSlash + 1);
+        filename = path + front_extension + filename;
+    } else {
+        filename = front_extension + file;
+    }
+    return filename;
+}
+
 /**
  * Creates a map of a given tab separated file with two fields (key,value) per line.
  * Also creates another map with the given values as keys for further usage.
@@ -62,7 +80,7 @@ vector<rgb_color> create_colors(int n) { // !not my function!
 
     for (int i = 0; i < n; ++i) {
         // Convert HSV to RGB
-        double saturation = 0.7;
+        double saturation = 0.7; //TODO change these too ?
         double value = 0.9;
 
         int hi = static_cast<int>(std::floor(hue * 6.0));
@@ -142,8 +160,12 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
     bool translate = false;
     bool vertices = false;
+    bool vlabels = false;
+    int no_vertices; // number of all vertices in network
+    int no_grps; // number of groups given
+    int size = 8; // size of colored vertex // TODO anpassen ?
+    string line = "";
     //vector<string> lines;
-    string line;
 
     unordered_map<string, string> tax_grp_map; // map containing taxname -> group
     unordered_map<string, rgb_color> grp_clr_map; // map conatining group -> color
@@ -152,6 +174,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     // Reading and saving taxa -> grp mapping
     create_maps(tax_grp_map, tax_grp_file, grp_clr_map);
 
+    // TODO auslagern?
     // (Reading &) Saving grp -> col mapping
     if(!grp_clr_file.empty()){
         // add colors to grp_clr_map
@@ -184,9 +207,11 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         }
         infile.close();
 
+        no_grps = grp_clr_map.size();
+
     } else { // create colors if they are not given
 
-        int no_grps = grp_clr_map.size(); // number of groups
+        no_grps = grp_clr_map.size(); // number of groups
         vector<rgb_color> colors = create_colors(no_grps);
 
         int i = 0;
@@ -196,23 +221,11 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         }
     }
 
-    line = "";
-    ifstream plain_nexus(nexus_file);
+    // naming output file  TODO necessary??
+    string filename = modified_filename(nexus_file, "clrd_");
 
-    // naming output file TODO handle filepath for windeows and unix \\ / and such
-    // TODO necessary??
-    size_t lastSlash = nexus_file.find_last_of("/\\");
-    string filename;
-    if (lastSlash != string::npos) {
-        string path = nexus_file.substr(0, lastSlash + 1);
-        filename = nexus_file.substr(lastSlash + 1);
-        filename = path + "clrd_" + filename;
-    } else {
-        filename = "clrd_" + nexus_file;
-    }
-
-    // colored nexus output file
-    ofstream colored_nexus(filename.c_str());
+    ifstream plain_nexus(nexus_file); // nexus input file
+    ofstream colored_nexus(filename.c_str()); // colored nexus output file
 
     if(!plain_nexus.is_open()){
         cerr << "Error opening nexus file to modify with color.\n";
@@ -229,8 +242,27 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
         // end of any block
         if(line.find(";") != string::npos){
+
+            // TODO check if working
+            if(vertices){
+                // TODO add legend nodes
+                int i = 0;
+                for (auto grp_clr : grp_clr_map) {
+                    ostringstream oss;
+                    ++i;
+                    rgb_color clr = grp_clr.second;
+                    // TODO add y value
+                    // oss << no_vertices+i << "0 "<< ?? <<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<<bg_r<<" "<<bg_g<<" "<<bg_b<<",";
+                    colored_nexus << oss.str() << endl;
+                    // TODO create vlabels here and then just add them later?
+                    //  /replace the vlabels?
+                }
+
+            }
+
             translate = false;
             vertices = false;
+            vlabels = false;
         }
 
         // work with found blocks
@@ -260,7 +292,6 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             char c_w, c_h, c_s, s, eq;
             int w, h;
             string rest;
-            int size = 8; // TODO anpassen ?
             // splitting line into its components: [no.] [x] [y] w=[..] h=[..] s=n,
             if (iss >> vertex_no >> x >> y >> c_w >> eq >> w >> c_h >> eq >> h >> c_s >> eq >> s >> rest) {
 
@@ -290,6 +321,8 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                 // TODO
                 cout << "Problems reading vertex: " << line << endl;
             }
+
+            no_vertices = vertex_no;
         }
 
         // identify block
@@ -298,6 +331,9 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         }
         if (line.find("VERTICES") != string::npos || line.find("Vertices") != string::npos || line.find("vertices") != string::npos) {// starting point of vertices
             vertices = true;
+        }
+        if(line.find("VLABELS") != string::npos){
+            vlabels = true;
         }
 
         colored_nexus << line << endl;
