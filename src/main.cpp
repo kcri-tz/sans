@@ -754,7 +754,7 @@ int main(int argc, char* argv[]) {
     if (dyn_top){
         top = top * num;
     }
-	if(verbose){
+	if(verbose && top>-1){
 		cout<<"Restricting output to "<<top<<" splits."<< endl;
 	}
 
@@ -828,22 +828,27 @@ int main(int argc, char* argv[]) {
             uint64_t i = index_lambda();
             while (i < max) {
                 vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
-            
+				uint64_t file_no=0;
                 for (string file_name: target_files){
 					if(file_name[0]!='/'){ //no absolute path?
 						file_name=folder+file_name;
 					}
 
+					file_no++;
                     char c_name[(file_name).length()]; // Create char array for c compatibilty
                     strcpy(c_name, (file_name).c_str()); // Transcire to char array
 
                     igzstream file(c_name, ios::in);    // input file stream
-                    if (verbose) {
+                    if (verbose) {     // print progress
                         cout << "\33[2K\r" << file_name;
 						if (q_table.size()>0) {
 							cout <<" q="<<q_table[i];
 						}
-						cout << " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
+						cout << " (genome " << i+1 << "/" << denom_file_count;
+						if(target_files.size()>0){
+							cout << "; file " << file_no << "/" << target_files.size();
+						}
+						cout << ")" << endl;
                     }
                     count::deleteCount();
 
