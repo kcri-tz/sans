@@ -75,13 +75,15 @@ vector<rgb_color> create_colors(int n) { // !not my function!
     vector<rgb_color> colors;
 
     // Golden ratio to ensure visual distinctiveness
-    const double goldenRatioConjugate = 0.618033988749895;
+    const double goldenRatioConjugate = 0.618033988749895; // used to create different colors
     double hue = 0.0;
+
+    // TODO probably adjust for better colors
+    double saturation = 0.2; // changed later for distinct colors
+    double value = 1.0;
 
     for (int i = 0; i < n; ++i) {
         // Convert HSV to RGB
-        double saturation = 0.7; //TODO change these too ?
-        double value = 0.9;
 
         int hi = static_cast<int>(std::floor(hue * 6.0));
         double f = hue * 6.0 - hi;
@@ -105,9 +107,14 @@ vector<rgb_color> create_colors(int n) { // !not my function!
         color.b = b;
         colors.push_back(color);
 
-        // Increment hue using golden ratio
+        // Increment hue using golden ratio, change saturation and value
+        double incr = 0.8/double(n);
         hue += goldenRatioConjugate;
         hue = fmod(hue, 1.0);
+        saturation += incr;
+        saturation = std::min(1.0, saturation);  // Ensure saturation doesn't exceed 1.0
+        value -= incr;
+        value = std::max(0.2, value);
     }
 
     return colors;
@@ -205,7 +212,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     int no_vertices = 0; // number of all vertices in network
     int no_grps; // number of groups given
     int size = 10; // size of colored vertex // TODO anpassen ?
-    int textsize = 10; // size of label text
+    int textsize = 15; // size of label text
     double max_x = 0; // max x value of graph nodes
     double min_y = std::numeric_limits<double>::max(); // min y value of graph nodes
     ostringstream legend; // to save info for legend later
@@ -222,7 +229,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     // (Reading &) Saving grp -> col mapping
     reading_grp_clr_file(grp_clr_file, grp_clr_map, no_grps);
 
-    // naming output file  TODO necessary??
+    // naming output file  TODO necessary?? or just temp name again?
     string filename = modified_filename(nexus_file, "clrd_");
 
     ifstream plain_nexus(nexus_file); // nexus input file
@@ -243,7 +250,6 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         // end of any block
         if(line.find(";") != string::npos){
 
-            // TODO check if working
             // if end of vertices (#vertices has been assigned) add nodes at the end for legend
             if(vertices && no_vertices>0){
                 int i = 0;

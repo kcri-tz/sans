@@ -1199,11 +1199,10 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         stream_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=" << denom_file_count << ";\nTAXLABELS" ;
         for(int i; i < denom_file_count; ++i){
             string taxa = denom_names[i].substr(0, denom_names[i].find_last_of(".")); // cutting off file extension
-            stream_nexus << "\n[" << i+1 << "] '" << taxa << "'"; // TODO \t or ' ' ?
+            stream_nexus << "\n[" << i+1 << "] '" << taxa << "'";
         }
         stream_nexus << "\n;\nEND; [TAXA]\n";
-        // TODO confidence values
-        if(bootstrap_no>0){
+        if(bootstrap_no>0){ // confidence values
             stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nFORMAT CONFIDENCES=YES;\nMATRIX";
         } else {
             stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nMATRIX";
