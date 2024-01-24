@@ -811,7 +811,7 @@ int main(int argc, char* argv[]) {
     if (dyn_top){
         top = top * num;
     }
-	if(verbose){
+	if(verbose && top>-1){
 		cout<<"Restricting output to "<<top<<" splits."<< endl;
 	}
 
@@ -884,28 +884,36 @@ int main(int argc, char* argv[]) {
         std::mutex index_mutex;
         auto index_lambda = [&] () { std::lock_guard<mutex> lg(index_mutex); return index++;};
 
-        auto lambda = [&] (uint64_t T, uint64_t max){ // This lambda expression wraps the sequence-kmer hashing
+        auto lambda = [&] (uint64_t T, uint64_t max, const uint64_t total_files){ // This lambda expression wraps the sequence-kmer hashing
             string sequence;    // read in the sequence files and extract the k-mers
             uint64_t i = index_lambda();
             while (i < max) {
                 vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
-            
+				uint64_t file_no=0;
+				for (int g = 0; g<i; g++){
+					file_no+=gen_files[g].size();
+				}
                 for (string file_name: target_files){
 
 					if(file_name[0]!='/'){ //no absolute path?
 						file_name=folder+file_name;
 					}
 
+					file_no++;
                     char c_name[(file_name).length()]; // Create char array for c compatibilty
                     strcpy(c_name, (file_name).c_str()); // Transcire to char array
 
                     igzstream file(c_name, ios::in);    // input file stream
-                    if (verbose) {
+                    if (verbose) {     // print progress
                         cout << "\33[2K\r" << file_name;
 						if (q_table.size()>0) {
 							cout <<" q="<<q_table[i];
 						}
-						cout << " (" << i+1 << "/" << denom_file_count << ")" << endl;    // print progress
+						cout << " (genome " << i+1 << "/" << denom_file_count;
+						if(total_files>max){
+							cout << "; file " << file_no << "/" << total_files;
+						}
+						cout << ")" << endl;
                     }
                     count::deleteCount();
 
@@ -976,8 +984,12 @@ int main(int argc, char* argv[]) {
 
         // Driver code for multithreaded kmer hashing
         const uint64_t MAX = gen_files.size(); // The number of genomes
+		uint64_t total_files = 0; // total number of files
+		for (int g=0;g<MAX;g++){
+			total_files+=gen_files[g].size();
+		}
         vector<thread> thread_holder(threads);
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda, thread_id, MAX);}
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda, thread_id, MAX, total_files);}
         for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
     }
 
