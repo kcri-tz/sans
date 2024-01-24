@@ -823,111 +823,111 @@ int main(int argc, char* argv[]) {
         std::mutex index_mutex;
         auto index_lambda = [&] () { std::lock_guard<mutex> lg(index_mutex); return index++;};
 
-        auto lambda = [&] (uint64_t T, uint64_t max, const uint64_t total_files){ // This lambda expression wraps the sequence-kmer hashing
+        auto lambda = [&] (uint64_t T, vector<uint64_t> genome_ids, vector<uint64_t> file_ids){ // This lambda expression wraps the sequence-kmer hashing
             string sequence;    // read in the sequence files and extract the k-mers
             uint64_t i = index_lambda();
-            while (i < max) {
-                vector<string> target_files = gen_files[i]; // the filenames corresponding to the target  
-				uint64_t file_no=0;
-				for (int g = 0; g<i; g++){
-					file_no+=gen_files[g].size();
+            while (i < genome_ids.size()) {
+				string file_name = gen_files[genome_ids[i]][file_ids[i]]; // the filenames corresponding to the target  
+				if(file_name[0]!='/'){ //no absolute path?
+					file_name=folder+file_name;
 				}
-                for (string file_name: target_files){
-					if(file_name[0]!='/'){ //no absolute path?
-						file_name=folder+file_name;
+				char c_name[(file_name).length()]; // Create char array for c compatibilty
+				strcpy(c_name, (file_name).c_str()); // Transcire to char array
+
+				igzstream file(c_name, ios::in);    // input file stream
+				if (verbose) {     // print progress
+					cout << "\33[2K\r" << file_name;
+					if (q_table.size()>0) {
+						cout <<" q="<<q_table[i];
 					}
+					cout << " (genome " << genome_ids[i]+1 << "/" << denom_file_count;
+					if(genome_ids.size()>gen_files.size()){
+						cout << "; file " << i+1 << "/" << genome_ids.size();
+					}
+					cout << ")" << endl;
+				}
+				count::deleteCount();
 
-					file_no++;
-                    char c_name[(file_name).length()]; // Create char array for c compatibilty
-                    strcpy(c_name, (file_name).c_str()); // Transcire to char array
+				string appendixChars; 
+				string line;    // read the file line by line
+				while (getline(file, line)) {
+					if (line.length() > 0) {
+						if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
+							if (window > 1) {
+								iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
+										: graph::add_minimizers(T, sequence, i, reverse, window);
+							} else {
+								iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
+										: graph::add_kmers(T, sequence, i, reverse);
+							}
 
-                    igzstream file(c_name, ios::in);    // input file stream
-                    if (verbose) {     // print progress
-                        cout << "\33[2K\r" << file_name;
-						if (q_table.size()>0) {
-							cout <<" q="<<q_table[i];
-						}
-						cout << " (genome " << i+1 << "/" << denom_file_count;
-						if(total_files>max){
-							cout << "; file " << file_no << "/" << total_files;
-						}
-						cout << ")" << endl;
-                    }
-                    count::deleteCount();
-
-                    string appendixChars; 
-                    string line;    // read the file line by line
-                    while (getline(file, line)) {
-                        if (line.length() > 0) {
-                            if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
-                                if (window > 1) {
-                                    iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
-                                            : graph::add_minimizers(T, sequence, i, reverse, window);
-                                } else {
-                                    iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
-                                            : graph::add_kmers(T, sequence, i, reverse);
-                                }
-
-                                sequence.clear();
+							sequence.clear();
 
 //                            if (verbose) {
 //                                cout << "\33[2K\r" << line << flush << endl;    // print progress
 //                            }
+						}
+						else if (line[0] == '+') {    // FASTQ quality values -> ignore
+							getline(file, line);
+						}
+						else {
+							transform(line.begin(), line.end(), line.begin(), ::toupper);
+							string newLine = line;
+							if (shouldTranslate) {
+								if (appendixChars.length() >0 ) {
+									newLine= appendixChars + newLine;
+									appendixChars = "";
+								}
+								auto toManyChars = line.length() % 3;
+								if (toManyChars > 0) {
+									appendixChars = newLine.substr(line.length() - toManyChars, toManyChars);
+									newLine = newLine.substr(0, line.length() - toManyChars);
+								}
+
+								newLine = translator::translate(newLine);
 							}
-                            else if (line[0] == '+') {    // FASTQ quality values -> ignore
-                                getline(file, line);
-                            }
-                            else {
-                                transform(line.begin(), line.end(), line.begin(), ::toupper);
-                                string newLine = line;
-                                if (shouldTranslate) {
-                                    if (appendixChars.length() >0 ) {
-                                        newLine= appendixChars + newLine;
-                                        appendixChars = "";
-                                    }
-                                    auto toManyChars = line.length() % 3;
-                                    if (toManyChars > 0) {
-                                        appendixChars = newLine.substr(line.length() - toManyChars, toManyChars);
-                                        newLine = newLine.substr(0, line.length() - toManyChars);
-                                    }
+							sequence += newLine;    // FASTA & FASTQ sequence -> read
+						}
+					}
+				}
+				if (verbose && count::getCount() > 0) {
+					cerr << count::getCount()<< " triplets could not be translated."<< endl;
+				}
+				if (window > 1) {
+					iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
+							: graph::add_minimizers(T, sequence, i, reverse, window);
+				} else {
+					iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
+							: graph::add_kmers(T, sequence, i, reverse);
+				}
+				sequence.clear();
 
-                                    newLine = translator::translate(newLine);
-                                }
-                                sequence += newLine;    // FASTA & FASTQ sequence -> read
-                            }
-                        }
-                    }
-                    if (verbose && count::getCount() > 0) {
-                        cerr << count::getCount()<< " triplets could not be translated."<< endl;
-                    }
-                    if (window > 1) {
-                        iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
-                                : graph::add_minimizers(T, sequence, i, reverse, window);
-                    } else {
-                        iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
-                                : graph::add_kmers(T, sequence, i, reverse);
-                    }
-                    sequence.clear();
-
-                    
-                    if (verbose) {
-                        cout << "\33[2K\r" << flush;
-                    }
-                    file.close();
-                }
+				
+				if (verbose) {
+					cout << "\33[2K\r" << flush;
+				}
+				file.close();
                 graph::clear_thread(T);
                 i = index_lambda();
             }
         }; // End of lambda expression
 
         // Driver code for multithreaded kmer hashing
-        const uint64_t MAX = gen_files.size(); // The number of genomes
-		uint64_t total_files = 0; // total number of files
-		for (int g=0;g<MAX;g++){
-			total_files+=gen_files[g].size();
+//         const uint64_t MAX = gen_files.size(); // The number of genomes
+// 		uint64_t total_files = 0; // total number of files
+// 		for (int g=0;g<MAX;g++){
+// 			total_files+=gen_files[g].size();
+// 		}
+		vector<uint64_t> genome_ids;
+		vector<uint64_t> file_ids;
+		for (int g=0;g<gen_files.size();g++){
+			for (int f=0;f<gen_files[g].size();f++){
+				genome_ids.push_back(g);
+				file_ids.push_back(f);
+			}
 		}
-        vector<thread> thread_holder(threads);
-        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda, thread_id, MAX, total_files);}
+		vector<thread> thread_holder(threads);
+        for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda, thread_id, genome_ids, file_ids);}
         for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
     }
 
