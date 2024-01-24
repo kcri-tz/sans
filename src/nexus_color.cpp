@@ -114,68 +114,8 @@ vector<rgb_color> create_colors(int n) { // !not my function!
 }
 
 
-void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose, bool update, const string splitstree_path){
-    // = "../splitstree4/SplitsTree"
-    /*
-     * begin SplitsTree;
-EXECUTE FILE=example_data/pra_test.nex
-EXPORTGRAPHICS format=PDF file=test.pdf REPLACE=yes
-QUIT
-end;
+void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_color>& grp_clr_map, int& no_grps){
 
-     */
-    if (!program_in_path(splitstree_path)) {
-        cerr << splitstree_path << " is not in the PATH." << endl;
-        return;
-    }
-    // temporary file for splitstree commands
-    const char* temp = "./temp_splitstree_commands";
-    ofstream temp_file(temp);
-    if (temp_file.is_open()) {
-
-        // Writing commands for splitstree
-        temp_file << "begin SplitsTree;\nEXECUTE FILE=" << nexus_file << endl;
-        if(update) temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
-        if(!pdf.empty()) temp_file << "EXPORTGRAPHICS format=PDF file=" << pdf << " REPLACE=yes\n";
-        temp_file << "QUIT\nend;";
-        temp_file.close();
-
-        // Running splitstree
-        if(verbose) cout  << "Running SplitsTree\n";
-        /// .../SplitsTree -g -S -c run_splitstree
-        string command = splitstree_path + " -g -S -c " + temp;
-        const char* splitstree_command = command.c_str();
-        int result = system(splitstree_command); // executing command
-        if(result != 0){
-            cerr << "Error while running Splitstree " << splitstree_path << endl;
-        }
-        remove(temp);
-    } else {
-        cerr << "Unable to create temp command file for splitstree: " << temp << "\nTherefor unable to add network to nexus file" << endl;
-    }
-}
-
-
-void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_file, const string& grp_clr_file){
-
-    bool translate = false;
-    bool vertices = false;
-    bool vlabels = false;
-    int no_vertices; // number of all vertices in network
-    int no_grps; // number of groups given
-    int size = 8; // size of colored vertex // TODO anpassen ?
-    string line = "";
-    //vector<string> lines;
-
-    unordered_map<string, string> tax_grp_map; // map containing taxname -> group
-    unordered_map<string, rgb_color> grp_clr_map; // map conatining group -> color
-    unordered_map<int, rgb_color> no_clr_map; // map containing number -> color to color vertices
-
-    // Reading and saving taxa -> grp mapping
-    create_maps(tax_grp_map, tax_grp_file, grp_clr_map);
-
-    // TODO auslagern?
-    // (Reading &) Saving grp -> col mapping
     if(!grp_clr_file.empty()){
         // add colors to grp_clr_map
         string grp_clr;
@@ -220,13 +160,73 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             ++i;
         }
     }
+}
+
+
+void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose, bool update, const string splitstree_path){
+    // = "../splitstree4/SplitsTree"
+    if (!program_in_path(splitstree_path)) {
+        cerr << splitstree_path << " is not in the PATH." << endl;
+        return;
+    }
+    // temporary file for splitstree commands
+    const char* temp = "./temp_splitstree_commands";
+    ofstream temp_file(temp);
+    if (temp_file.is_open()) {
+
+        // Writing commands for splitstree
+        temp_file << "begin SplitsTree;\nEXECUTE FILE=" << nexus_file << endl;
+        if(update) temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
+        if(!pdf.empty()) temp_file << "EXPORTGRAPHICS format=PDF file=" << pdf << " REPLACE=yes\n";
+        temp_file << "QUIT\nend;";
+        temp_file.close();
+
+        // Running splitstree
+        if(verbose) cout  << "Running SplitsTree\n";
+        /// .../SplitsTree -g -S -c run_splitstree
+        string command = splitstree_path + " -g -c " + temp + " > splitstree.log"; // TODO change Ort for .log
+        const char* splitstree_command = command.c_str();
+        int result = system(splitstree_command); // executing command
+        if(result != 0){
+            cerr << "Error while running Splitstree " << splitstree_path << endl;
+        }
+        remove(temp);
+    } else {
+        cerr << "Unable to create temp command file for splitstree: " << temp << "\nTherefor unable to add network to nexus file" << endl;
+    }
+}
+
+
+void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_file, const string& grp_clr_file){
+
+    bool translate = false;
+    bool vertices = false;
+    bool vlabels = false;
+    int no_vertices = 0; // number of all vertices in network
+    int no_grps; // number of groups given
+    int size = 10; // size of colored vertex // TODO anpassen ?
+    int textsize = 10; // size of label text
+    double max_x = 0; // max x value of graph nodes
+    double min_y = std::numeric_limits<double>::max(); // min y value of graph nodes
+    ostringstream legend; // to save info for legend later
+    string line = "";
+    //vector<string> lines;
+
+    unordered_map<string, string> tax_grp_map; // map containing taxname -> group
+    unordered_map<string, rgb_color> grp_clr_map; // map conatining group -> color
+    unordered_map<int, rgb_color> no_clr_map; // map containing number -> color to color vertices
+
+    // Reading and saving taxa -> grp mapping
+    create_maps(tax_grp_map, tax_grp_file, grp_clr_map);
+
+    // (Reading &) Saving grp -> col mapping
+    reading_grp_clr_file(grp_clr_file, grp_clr_map, no_grps);
 
     // naming output file  TODO necessary??
     string filename = modified_filename(nexus_file, "clrd_");
 
     ifstream plain_nexus(nexus_file); // nexus input file
     ofstream colored_nexus(filename.c_str()); // colored nexus output file
-
     if(!plain_nexus.is_open()){
         cerr << "Error opening nexus file to modify with color.\n";
         return;
@@ -244,20 +244,34 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         if(line.find(";") != string::npos){
 
             // TODO check if working
-            if(vertices){
-                // TODO add legend nodes
+            // if end of vertices (#vertices has been assigned) add nodes at the end for legend
+            if(vertices && no_vertices>0){
                 int i = 0;
-                for (auto grp_clr : grp_clr_map) {
+                for (auto grp_clr : grp_clr_map) { // add node for each group
                     ostringstream oss;
+                    no_vertices += 1;
                     ++i;
-                    rgb_color clr = grp_clr.second;
-                    // TODO add y value
-                    // oss << no_vertices+i << "0 "<< ?? <<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<<bg_r<<" "<<bg_g<<" "<<bg_b<<",";
+                    rgb_color clr = grp_clr.second; // get color of group
+                    // no_clr_map[no_vertices] = clr; // save new node with color with all other clrd nodes
+                    int bg_r, bg_g, bg_b;
+                    if(clr.is_white()){ // if color is white, turn outline black
+                        bg_r = bg_g = bg_b = 255;
+                    } else {
+                        bg_b = clr.b;
+                        bg_g = clr.g;
+                        bg_r = clr.r;
+                    }
+                    oss << no_vertices << " " << (max_x+100) <<" "<< min_y-(i*150) <<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<<bg_r<<" "<<bg_g<<" "<<bg_b<<",";
                     colored_nexus << oss.str() << endl;
-                    // TODO create vlabels here and then just add them later?
-                    //  /replace the vlabels?
-                }
 
+                    // save info for vlabels
+                    legend << no_vertices << " '" << grp_clr.first << "' l=9 x=15 y=5 f='Dialog-PLAIN-" << textsize <<"',\n";
+
+                }
+            }
+            // if end of vlabels add only labels for groups
+            if(vlabels && !vertices){
+                colored_nexus << legend.str();
             }
 
             translate = false;
@@ -266,7 +280,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         }
 
         // work with found blocks
-        if(translate){
+        if(translate){ // map the vertex number to its taxname and then color
             istringstream iss(line);
             string no, taxname; // number, taxname of node
             if (getline(iss, no, ' ') && getline(iss, taxname)) {
@@ -276,7 +290,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                                         [](char c) { return (c == '\'' || c == ','); }), taxname.end());
                 // get color via taxname -> group -> color
                 rgb_color clr = grp_clr_map[tax_grp_map[taxname]];
-                no_clr_map[stoi(no)] = clr;
+                no_clr_map[stoi(no)] = clr; // save node number -> color
 
             } else {
                 cerr << "Error reading TRANSLATE block in nexus file.\n";
@@ -284,7 +298,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             }
 
         }
-        if(vertices) {
+        if(vertices) { // color certain vertices
             // variables to save info contained for the vertex
             istringstream iss(line);
             int vertex_no;
@@ -292,6 +306,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             char c_w, c_h, c_s, s, eq;
             int w, h;
             string rest;
+
             // splitting line into its components: [no.] [x] [y] w=[..] h=[..] s=n,
             if (iss >> vertex_no >> x >> y >> c_w >> eq >> w >> c_h >> eq >> h >> c_s >> eq >> s >> rest) {
 
@@ -314,6 +329,10 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
                     } else { /* if already colored do not change */ }
 
+                    // find 'corner' of graph to put legend later
+                    if(x > max_x) max_x = x;
+                    if(y < min_y) min_y = y;
+
                 } else {
                     // TODO check what it does for lines that should not be colored
                 }
@@ -323,6 +342,9 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             }
 
             no_vertices = vertex_no;
+        }
+        if(vlabels){ // skip these TODO always? never labels nodes?
+            continue;
         }
 
         // identify block
@@ -334,6 +356,20 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         }
         if(line.find("VLABELS") != string::npos){
             vlabels = true;
+        }
+        if(line.find("DIMENSIONS") != string::npos){
+            // change nvertices=xx in DIMENSIONS
+            size_t pos_str = line.find("nvertices=");
+            if(pos_str != string::npos){
+
+                pos_str += string("nvertices=").length();
+                size_t end = line.find(" ", pos_str);
+                // get old number of vertices and add number of labels
+                int nvert = stoi(line.substr(pos_str, end - pos_str));
+                nvert += grp_clr_map.size();
+                // replace with the new number of vertices
+                line.replace(pos_str, end - pos_str, to_string(nvert));
+            }
         }
 
         colored_nexus << line << endl;
