@@ -913,12 +913,7 @@ int main(int argc, char* argv[]) {
         }; // End of lambda expression
 
         // Driver code for multithreaded kmer hashing
-//         const uint64_t MAX = gen_files.size(); // The number of genomes
-// 		uint64_t total_files = 0; // total number of files
-// 		for (int g=0;g<MAX;g++){
-// 			total_files+=gen_files[g].size();
-// 		}
-		vector<uint64_t> genome_ids;
+		vector<uint64_t> genome_ids; //unfold multiple files per genome to two flat lists, one listing the genome ids and one listing the file ids.
 		vector<uint64_t> file_ids;
 		for (int g=0;g<gen_files.size();g++){
 			for (int f=0;f<gen_files[g].size();f++){
