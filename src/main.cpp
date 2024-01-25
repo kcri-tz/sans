@@ -838,7 +838,7 @@ int main(int argc, char* argv[]) {
 				if (verbose) {     // print progress
 					cout << "\33[2K\r" << file_name;
 					if (q_table.size()>0) {
-						cout <<" q="<<q_table[i];
+						cout <<" q="<<q_table[genome_ids[i]];
 					}
 					cout << " (genome " << genome_ids[i]+1 << "/" << denom_file_count;
 					if(genome_ids.size()>gen_files.size()){
@@ -854,11 +854,11 @@ int main(int argc, char* argv[]) {
 					if (line.length() > 0) {
 						if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
 							if (window > 1) {
-								iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
-										: graph::add_minimizers(T, sequence, i, reverse, window);
+								iupac > 1 ? graph::add_minimizers(T, sequence, genome_ids[i], reverse, window, iupac)
+										: graph::add_minimizers(T, sequence, genome_ids[i], reverse, window);
 							} else {
-								iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
-										: graph::add_kmers(T, sequence, i, reverse);
+								iupac > 1 ? graph::add_kmers(T, sequence, genome_ids[i], reverse, iupac)
+										: graph::add_kmers(T, sequence, genome_ids[i], reverse);
 							}
 
 							sequence.clear();
@@ -894,11 +894,11 @@ int main(int argc, char* argv[]) {
 					cerr << count::getCount()<< " triplets could not be translated."<< endl;
 				}
 				if (window > 1) {
-					iupac > 1 ? graph::add_minimizers(T, sequence, i, reverse, window, iupac)
-							: graph::add_minimizers(T, sequence, i, reverse, window);
+					iupac > 1 ? graph::add_minimizers(T, sequence, genome_ids[i], reverse, window, iupac)
+							: graph::add_minimizers(T, sequence, genome_ids[i], reverse, window);
 				} else {
-					iupac > 1 ? graph::add_kmers(T, sequence, i, reverse, iupac)
-							: graph::add_kmers(T, sequence, i, reverse);
+					iupac > 1 ? graph::add_kmers(T, sequence, genome_ids[i], reverse, iupac)
+							: graph::add_kmers(T, sequence, genome_ids[i], reverse);
 				}
 				sequence.clear();
 
