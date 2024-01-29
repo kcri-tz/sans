@@ -76,9 +76,8 @@ vector<rgb_color> create_colors(int n) { // !not my function!
 
     // Golden ratio to ensure visual distinctiveness
     const double goldenRatioConjugate = 0.618033988749895; // used to create different colors
-    double hue = 0.0;
+    double hue = 0.01; // TODO probably adjust for better colors
 
-    // TODO probably adjust for better colors
     double saturation = 0.2; // changed later for distinct colors
     double value = 1.0;
 
@@ -114,7 +113,7 @@ vector<rgb_color> create_colors(int n) { // !not my function!
         saturation += incr;
         saturation = std::min(1.0, saturation);  // Ensure saturation doesn't exceed 1.0
         value -= incr;
-        value = std::max(0.2, value);
+        value = std::max(0.2, value); // Ensure value doesn't fall below 0.2
     }
 
     return colors;
