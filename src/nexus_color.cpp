@@ -64,7 +64,7 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
         if (getline(iss, key, '\t') && getline(iss, value)) {
             // Store fields in dictionary
             map[key] = value;
-            value_map[value]; // TODO add empty color?
+            value_map[value]; // TODO add empty color or white
         }
     }
     infile.close();
@@ -78,8 +78,8 @@ vector<rgb_color> create_colors(int n) { // !not my function!
     const double goldenRatioConjugate = 0.618033988749895; // used to create different colors
     double hue = 0.01; // TODO probably adjust for better colors
 
-    double saturation = 0.2; // changed later for distinct colors
-    double value = 1.0;
+    double saturation = 0.6; // changed later for distinct colors
+    double value = 0.9; // = brightness
 
     for (int i = 0; i < n; ++i) {
         // Convert HSV to RGB
@@ -106,14 +106,14 @@ vector<rgb_color> create_colors(int n) { // !not my function!
         color.b = b;
         colors.push_back(color);
 
-        // Increment hue using golden ratio, change saturation and value
-        double incr = 0.8/double(n);
+        // Increment hue using golden ratio
         hue += goldenRatioConjugate;
         hue = fmod(hue, 1.0);
-        saturation += incr;
-        saturation = std::min(1.0, saturation);  // Ensure saturation doesn't exceed 1.0
-        value -= incr;
-        value = std::max(0.2, value); // Ensure value doesn't fall below 0.2
+        // Gradually decrease saturation and value
+        saturation -= 0.2 / double(n);
+        saturation = std::max(0.2, saturation);
+        value -= 0.2 / double(n);
+        value = std::max(0.6, value);
     }
 
     return colors;
@@ -121,6 +121,8 @@ vector<rgb_color> create_colors(int n) { // !not my function!
 
 
 void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_color>& grp_clr_map, int& no_grps){
+
+    no_grps = grp_clr_map.size(); // number of groups
 
     if(!grp_clr_file.empty()){
         // add colors to grp_clr_map
@@ -153,13 +155,8 @@ void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_
         }
         infile.close();
 
-        no_grps = grp_clr_map.size();
-
     } else { // create colors if they are not given
-
-        no_grps = grp_clr_map.size(); // number of groups
         vector<rgb_color> colors = create_colors(no_grps);
-
         int i = 0;
         for(auto& vertex : grp_clr_map){
             vertex.second = colors[i];
@@ -210,7 +207,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     bool vlabels = false;
     int no_vertices = 0; // number of all vertices in network
     int no_grps; // number of groups given
-    int size = 10; // size of colored vertex // TODO anpassen ?
+    int size = 10; // size of colored vertex
     int textsize = 15; // size of label text
     double max_x = 0; // max x value of graph nodes
     double min_y = std::numeric_limits<double>::max(); // min y value of graph nodes
@@ -228,7 +225,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     // (Reading &) Saving grp -> col mapping
     reading_grp_clr_file(grp_clr_file, grp_clr_map, no_grps);
 
-    // naming output file  TODO necessary?? or just temp name again?
+    // naming output file // TODO evtl temp name again
     string filename = modified_filename(nexus_file, "clrd_");
 
     ifstream plain_nexus(nexus_file); // nexus input file
@@ -254,7 +251,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                 int i = 0;
                 for (auto grp_clr : grp_clr_map) { // add node for each group
                     ostringstream oss;
-                    no_vertices += 1;
+                    ++no_vertices;
                     ++i;
                     rgb_color clr = grp_clr.second; // get color of group
                     // no_clr_map[no_vertices] = clr; // save new node with color with all other clrd nodes
@@ -274,7 +271,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
                 }
             }
-            // if end of vlabels add only labels for groups
+            // if end of vlabels add labels for groups
             if(vlabels && !vertices){
                 colored_nexus << legend.str();
             }
@@ -293,9 +290,15 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                 // removing quotes and comma
                 taxname.erase(remove_if(taxname.begin(), taxname.end(),
                                         [](char c) { return (c == '\'' || c == ','); }), taxname.end());
+
                 // get color via taxname -> group -> color
-                rgb_color clr = grp_clr_map[tax_grp_map[taxname]];
-                no_clr_map[stoi(no)] = clr; // save node number -> color
+                if(tax_grp_map.find(taxname) != tax_grp_map.end()){ // check if taxa has been assigned to a group
+                    rgb_color clr = grp_clr_map[tax_grp_map[taxname]];
+                    no_clr_map[stoi(no)] = clr; // save node number -> color
+                } else {/* TODO message if no group is assigned?*/
+                    cout << "No group assigned to " << taxname << endl;
+                }
+
 
             } else {
                 cerr << "Error reading TRANSLATE block in nexus file.\n";
@@ -303,6 +306,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             }
 
         }
+
         if(vertices) { // color certain vertices
             // variables to save info contained for the vertex
             istringstream iss(line);
@@ -338,8 +342,6 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     if(x > max_x) max_x = x;
                     if(y < min_y) min_y = y;
 
-                } else {
-                    // TODO check what it does for lines that should not be colored
                 }
             } else {
                 // TODO
@@ -348,8 +350,35 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
             no_vertices = vertex_no;
         }
-        if(vlabels){ // skip these TODO always? never labels nodes?
-            continue;
+
+        if(vlabels){ //  TODO label nodes without a group
+
+            istringstream iss(line);
+            string no, taxname; // number, taxname of node, additional info
+            if ((getline(iss, no, ' ') && getline(iss, taxname))) {
+
+                // if additional info is given for label, extract the name
+                size_t pos = taxname.find_first_of(' ');
+                string name, more_info = "";
+                if (pos != string::npos) {
+                    more_info = taxname.substr(pos + 1); // extract everything after that
+                    more_info.erase(remove_if(more_info.begin(), more_info.end(),
+                                              [](char c) { return (c == ','); }), more_info.end());
+                    taxname = taxname.substr(0, pos); // extract name
+                }
+                // removing quotes and comma
+                taxname.erase(remove_if(taxname.begin(), taxname.end(),
+                                        [](char c) { return (c == '\'' || c == ','); }), taxname.end());
+
+                if(tax_grp_map.find(taxname) != tax_grp_map.end()){ // skip these
+                    continue;
+                } else { // if no group is assigned to taxa, keep its name at the node
+                    ostringstream oss;
+                    oss << no << " \'" << taxname << "\' " << more_info << ",";
+                    line = oss.str();
+                }
+
+            }
         }
 
         // identify block

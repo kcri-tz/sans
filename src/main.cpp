@@ -47,11 +47,11 @@ int main(int argc, char* argv[]) {
         cout << "                  \t (only applicable in combination with -f strict or n-tree)" << endl;
         cout << endl;
         cout << "    -X, --nexus  \t Output Nexus file" << endl;
-        cout << "                  \t (Warning: Already existent files will be overwritten)" << endl;
+        cout << "                  \t (Warning: Already existing files will be overwritten)" << endl;
         cout << endl;
         cout << "    -p, --pdf  \t Output network as PDF file" << endl;
         cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
-        cout << "                  \t (Warning: Already existent files will be overwritten)" << endl;
+        cout << "                  \t (Warning: Already existing files will be overwritten)" << endl;
         cout << endl;
         cout << "    (at least --output, --newick, --nexus or --pdf must be provided)" << endl;
         cout << endl;
@@ -107,8 +107,9 @@ int main(int argc, char* argv[]) {
         cout << "                  \t optional: specify separate filter (see --filter for available filters.)" << endl;
         cout << endl;
         cout << "    -l, --label\t\t Label taxa with given groups" << endl;
-        cout << "                  \t required: tab separated file with name of taxon and group" << endl;
-        cout << "                  \t optional: additional tab separated file with group and color (rgb value)" << endl;
+        cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
+        cout << "                  \t required file: tab separated file with name of taxon and group" << endl;
+        cout << "                  \t optional: additional tab separated file with group and color (rgb values)" << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -T, --threads \t The number of threads to spawn (default is all)" << endl;
