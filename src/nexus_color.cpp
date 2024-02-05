@@ -3,9 +3,16 @@
 struct rgb_color {
     int r, g, b;
 
-    bool is_white(){
-        return (r == 0) && (g == 0) && (b == 0);
+    bool is_white(){ return ((r == 0) && (g == 0) && (b == 0));}
+    bool is_default(){ return this->is_white();} // in case another default color than white should be used
+    bool is_equal(rgb_color color){
+        return ((this->r == color.r) && (this->g == color.g) && (this->b == color.b));
     }
+
+    void set_white(){ r = g = b = 0;}
+    void set_black(){ r = g = b = 255;}
+
+    void print(){ cout << r << " " << g << " " << b;}
 };
 
 
@@ -28,7 +35,7 @@ bool nexus_color::program_in_path(const string& programName) {
 string modified_filename(string file, string front_extension){
 
     // TODO handle filepath for windows and unix \\ / and such
-    // TODO necessary??
+    //  necessary??
 
     size_t lastSlash = file.find_last_of("/\\");
     string filename;
@@ -45,6 +52,7 @@ string modified_filename(string file, string front_extension){
 /**
  * Creates a map of a given tab separated file with two fields (key,value) per line.
  * Also creates another map with the given values as keys for further usage.
+ * Here: Key = Taxon, Value = Group
  * @param map The dictionary consistent of the provided (key,value) pairs.
  * @param filename The input file to read from.
  * @param value_map The dictionary with the provided values as keys.
@@ -62,16 +70,25 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
         istringstream iss(line);
         string key, value; // two fields, tab separated
         if (getline(iss, key, '\t') && getline(iss, value)) {
+
+            if(map.find(key) != map.end()){ // taxon has already been assigned to group
+                if(map[key] != value){ // the groups are not the same
+                    // TODO cerr ?
+                    cout << "Warning: Several groups have been assigned to " << key << endl;
+                    cout << " Using latest assigned group: " << value << endl;
+                }
+            }
             // Store fields in dictionary
             map[key] = value;
-            value_map[value]; // TODO add empty color or white
+            rgb_color clr; clr.set_white();
+            value_map[value] = clr; // TODO add white or other default color?
         }
     }
     infile.close();
 }
 
 // Using the golden ratio to create distinct hsv colors and then convert them to rgb
-vector<rgb_color> create_colors(int n) { // !not my function!
+vector<rgb_color> create_colors(int n) { // !not completely my function!
     vector<rgb_color> colors;
 
     // Golden ratio to ensure visual distinctiveness
@@ -147,6 +164,11 @@ void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_
                     color.g = g;
                     color.b = b;
 
+                    // check if group already has a color
+                    if(!grp_clr_map[grp].is_default()){
+                        // TODO cerr ?
+                        cout << "Warning: Several colors given for group " << grp << ". Using latest";
+                    }
                     grp_clr_map[grp] = color;
                 } else {
                     cerr << "Warning: Invalid color (rgb value) given: " << grp << "  " << clr << endl;
@@ -187,7 +209,7 @@ void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf
         // Running splitstree
         if(verbose) cout  << "Running SplitsTree\n";
         /// .../SplitsTree -g -S -c run_splitstree
-        string command = splitstree_path + " -g -c " + temp + " > splitstree.log"; // TODO change Ort for .log
+        string command = splitstree_path + " -g -c " + temp + " > splitstree.log";
         const char* splitstree_command = command.c_str();
         int result = system(splitstree_command); // executing command
         if(result != 0){
@@ -258,6 +280,10 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     int bg_r, bg_g, bg_b;
                     if(clr.is_white()){ // if color is white, turn outline black
                         bg_r = bg_g = bg_b = 255;
+                        // TODO white = default color = no color was given for group
+                        //  use white? or don't color at all and keep labels?
+                        // only print message if verbose?
+                        cout << "No color (or white) given for group " << grp_clr.first << ". Using white\n";
                     } else {
                         bg_b = clr.b;
                         bg_g = clr.g;
@@ -295,10 +321,38 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                 if(tax_grp_map.find(taxname) != tax_grp_map.end()){ // check if taxa has been assigned to a group
                     rgb_color clr = grp_clr_map[tax_grp_map[taxname]];
                     no_clr_map[stoi(no)] = clr; // save node number -> color
-                } else {/* TODO message if no group is assigned?*/
-                    cout << "No group assigned to " << taxname << endl;
-                }
+                } else { // TODO cout only of verbose?
+                    // test if several taxa joined at node
+                    size_t space_pos = taxname.find(' ');
+                    size_t pos = 0;
+                    string name;
+                    if(space_pos != string::npos){
+                        name = taxname.substr(pos, space_pos - pos);
+                        rgb_color current_clr= grp_clr_map[tax_grp_map[name]];
+                        // search through node name and extract all actual taxnames
+                        while(pos < taxname.size() && space_pos != string::npos){
 
+                            space_pos = taxname.find(' ', pos);
+                            name = taxname.substr(pos, space_pos - pos);
+                            pos = space_pos+1;
+                            // check if all the same color
+                            if( !current_clr.is_equal(grp_clr_map[tax_grp_map[name]]) ){
+                                // TODO keep label? add extra legend node?
+
+                                // if non equal colors: several taxa groups merged at one node
+                                cout << "Warning: Several taxa of different groups have been joined at one node\n";
+                                cout << " Node will be colored black" << endl;
+                                // TODO geht nicht, SplitsTree macht den dann weiß
+                                current_clr.set_black();
+                                break;
+                            }
+                        }
+                        no_clr_map[stoi(no)] = current_clr;
+
+                    } else { // message if no group is assigned
+                        cout << "No group assigned to " << taxname << endl;
+                    }
+                }
 
             } else {
                 cerr << "Error reading TRANSLATE block in nexus file.\n";
@@ -339,6 +393,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     } else { /* if already colored do not change */ }
 
                     // find 'corner' of graph to put legend later
+                    // TODO improve
                     if(x > max_x) max_x = x;
                     if(y < min_y) min_y = y;
 
@@ -351,7 +406,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             no_vertices = vertex_no;
         }
 
-        if(vlabels){ //  TODO label nodes without a group
+        if(vlabels){ // label nodes without a group
 
             istringstream iss(line);
             string no, taxname; // number, taxname of node, additional info
