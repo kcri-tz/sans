@@ -3,14 +3,14 @@
 struct rgb_color {
     int r, g, b;
 
-    bool is_white(){ return ((r == 0) && (g == 0) && (b == 0));}
+    bool is_white(){ return ((r == 255) && (g == 255) && (b == 255));}
     bool is_default(){ return this->is_white();} // in case another default color than white should be used
     bool is_equal(rgb_color color){
         return ((this->r == color.r) && (this->g == color.g) && (this->b == color.b));
     }
 
-    void set_white(){ r = g = b = 0;}
-    void set_black(){ r = g = b = 255;}
+    void set_white(){ r = g = b = 255;}
+    void set_black(){ r = g = b = 0;}
 
     void print(){ cout << r << " " << g << " " << b;}
 };
@@ -342,7 +342,6 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                                 // if non equal colors: several taxa groups merged at one node
                                 cout << "Warning: Several taxa of different groups have been joined at one node\n";
                                 cout << " Node will be colored black" << endl;
-                                // TODO geht nicht, SplitsTree macht den dann weiß
                                 current_clr.set_black();
                                 break;
                             }
