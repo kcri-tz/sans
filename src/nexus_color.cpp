@@ -81,7 +81,7 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
             // Store fields in dictionary
             map[key] = value;
             rgb_color clr; clr.set_white();
-            value_map[value] = clr; // TODO add white or other default color?
+            value_map[value] = clr; // default color = white
         }
     }
     infile.close();
@@ -93,7 +93,7 @@ vector<rgb_color> create_colors(int n) { // !not completely my function!
 
     // Golden ratio to ensure visual distinctiveness
     const double goldenRatioConjugate = 0.618033988749895; // used to create different colors
-    double hue = 0.01; // TODO probably adjust for better colors
+    double hue = 0.01; // probably adjust for better colors
 
     double saturation = 0.6; // changed later for distinct colors
     double value = 0.9; // = brightness
@@ -233,6 +233,8 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     int textsize = 15; // size of label text
     double max_x = 0; // max x value of graph nodes
     double min_y = std::numeric_limits<double>::max(); // min y value of graph nodes
+    double pos_x; // value to shift legend by
+    double pos_y; // value to shift legend by
     ostringstream legend; // to save info for legend later
     string line = "";
     //vector<string> lines;
@@ -277,19 +279,22 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     ++i;
                     rgb_color clr = grp_clr.second; // get color of group
                     // no_clr_map[no_vertices] = clr; // save new node with color with all other clrd nodes
-                    int bg_r, bg_g, bg_b;
+                    int fg_r, fg_g, fg_b;
                     if(clr.is_white()){ // if color is white, turn outline black
-                        bg_r = bg_g = bg_b = 255;
+                        fg_r = fg_g = fg_b = 0;
                         // TODO white = default color = no color was given for group
                         //  use white? or don't color at all and keep labels?
                         // only print message if verbose?
                         cout << "No color (or white) given for group " << grp_clr.first << ". Using white\n";
                     } else {
-                        bg_b = clr.b;
-                        bg_g = clr.g;
-                        bg_r = clr.r;
+                        fg_b = clr.b;
+                        fg_g = clr.g;
+                        fg_r = clr.r;
                     }
-                    oss << no_vertices << " " << (max_x+100) <<" "<< min_y-(i*150) <<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<<bg_r<<" "<<bg_g<<" "<<bg_b<<",";
+                    // legend positioning
+                    pos_x = (max_x+1)/2; // 100
+                    pos_y = double(i) * min(abs((min_y+1)/double(grp_clr_map.size()+1)), 150.0); // min((min_y+1)/(grp_clr_map.size()+1), double(150))
+                    oss << no_vertices << " " << (max_x+pos_x) <<" "<< min_y+(pos_y) <<" w="<<size<<" h="<<size<<" fg="<<fg_r<<" "<<fg_g<<" "<<fg_b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                     colored_nexus << oss.str() << endl;
 
                     // save info for vlabels
@@ -329,20 +334,25 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     if(space_pos != string::npos){
                         name = taxname.substr(pos, space_pos - pos);
                         rgb_color current_clr= grp_clr_map[tax_grp_map[name]];
+                        string current_group = tax_grp_map[name];
+
                         // search through node name and extract all actual taxnames
                         while(pos < taxname.size() && space_pos != string::npos){
 
                             space_pos = taxname.find(' ', pos);
                             name = taxname.substr(pos, space_pos - pos);
                             pos = space_pos+1;
-                            // check if all the same color
-                            if( !current_clr.is_equal(grp_clr_map[tax_grp_map[name]]) ){
-                                // TODO keep label? add extra legend node?
-
+                            // check if all the same group (= same color)
+                            if( !(current_group == tax_grp_map[name])){ // !current_clr.is_equal(grp_clr_map[tax_grp_map[name]])
                                 // if non equal colors: several taxa groups merged at one node
+                                // TODO keep label? add extra legend node?
+                                //  add legend node with all groups as label , problematic
+                                current_clr.set_black();
+                                legend << no << " '" << taxname << "' l=9 x=15 y=5 f='Dialog-PLAIN-" << textsize <<"',\n";
+                                //grp_clr_map[taxname] = current_clr; //problems bc of nvertices TODO instead of taxname all group names
+
                                 cout << "Warning: Several taxa of different groups have been joined at one node\n";
                                 cout << " Node will be colored black" << endl;
-                                current_clr.set_black();
                                 break;
                             }
                         }
@@ -376,32 +386,28 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
                     if(rest == ","){ // if last char is ',' add color
                         rgb_color clr = no_clr_map[vertex_no]; // get defined color for vertex
-                        int bg_r, bg_g, bg_b;
+                        int fg_r, fg_g, fg_b;
                         // add color information to line
                         ostringstream oss;
                         if(clr.is_white()){ // if color is white, turn outline black
-                            bg_r = bg_g = bg_b = 255;
+                            fg_r = fg_g = fg_b = 0;
                         } else {
-                            bg_b = clr.b;
-                            bg_g = clr.g;
-                            bg_r = clr.r;
+                            fg_b = clr.b;
+                            fg_g = clr.g;
+                            fg_r = clr.r;
                         }
-                        oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<<bg_r<<" "<<bg_g<<" "<<bg_b<<",";
+                        oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" fg="<<fg_r<<" "<<fg_g<<" "<<fg_b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                         line = oss.str();
 
                     } else { /* if already colored do not change */ }
 
                     // find 'corner' of graph to put legend later
-                    // TODO improve
                     if(x > max_x) max_x = x;
                     if(y < min_y) min_y = y;
-
                 }
             } else {
-                // TODO
                 cout << "Problems reading vertex: " << line << endl;
             }
-
             no_vertices = vertex_no;
         }
 
@@ -439,12 +445,6 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
         if(line.find("TRANSLATE") != string::npos || line.find("Translate") != string::npos || line.find("translate") != string::npos){// starting point of: [number] [taxname]
             translate = true;
         }
-        if (line.find("VERTICES") != string::npos || line.find("Vertices") != string::npos || line.find("vertices") != string::npos) {// starting point of vertices
-            vertices = true;
-        }
-        if(line.find("VLABELS") != string::npos){
-            vlabels = true;
-        }
         if(line.find("DIMENSIONS") != string::npos){
             // change nvertices=xx in DIMENSIONS
             size_t pos_str = line.find("nvertices=");
@@ -459,7 +459,12 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                 line.replace(pos_str, end - pos_str, to_string(nvert));
             }
         }
-
+        if (line.find("VERTICES") != string::npos || line.find("Vertices") != string::npos || line.find("vertices") != string::npos) {// starting point of vertices
+            vertices = true;
+        }
+        if(line.find("VLABELS") != string::npos){
+            vlabels = true;
+        }
         colored_nexus << line << endl;
     }
 
