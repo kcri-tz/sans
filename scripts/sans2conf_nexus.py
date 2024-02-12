@@ -54,7 +54,7 @@ def readfile(filename,taxa,bootstrapvalues):
            if f not in taxa.keys():
                 eprint("WARNING: taxa from split not in taxa file and thus discarded: "+f)
 #                exit(1)
-            else:
+           else:
                 split.append(taxa[f])
         if len(split)==len(taxa) or len(split)==0:
             continue
