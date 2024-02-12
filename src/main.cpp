@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
     // show the help page if no args are given or the arg is --help 
     if (argc <= 1 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0 ) { show_help_page(); return(0);}
     // show the help page if SANS is run from autoN-script without further arguments or --help
-    if ((strcmp(argv[1],"-M") == 0 || strcmp(argv[1],"--maxN") == 0) && (argc <= 2 || strcmp(argv[2], "-h") == 0 || strcmp(argv[2], "--help") == 0 )) { show_help_page(); return(0);}
+    if ((strcmp(argv[1],"-M") == 0 ) && (argc <= 3 || strcmp(argv[3], "-h") == 0 || strcmp(argv[3], "--help") == 0 )) { show_help_page(); return(0);}
 
     
 
