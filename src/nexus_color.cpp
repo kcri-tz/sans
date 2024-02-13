@@ -4,13 +4,14 @@ struct rgb_color {
     int r, g, b;
 
     bool is_white(){ return ((r == 255) && (g == 255) && (b == 255));}
-    bool is_default(){ return this->is_white();} // in case another default color than white should be used
+    bool is_default(){ return ((r == -1) && (g == -1) && (b == -1));} // none color default
     bool is_equal(rgb_color color){
-        return ((this->r == color.r) && (this->g == color.g) && (this->b == color.b));
+        return ((r == color.r) && (g == color.g) && (b == color.b));
     }
 
     void set_white(){ r = g = b = 255;}
     void set_black(){ r = g = b = 0;}
+    void set_default(){ r = g = b = -1;}
 
     void print(){ cout << r << " " << g << " " << b;}
 };
@@ -80,8 +81,8 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
             }
             // Store fields in dictionary
             map[key] = value;
-            rgb_color clr; clr.set_white();
-            value_map[value] = clr; // default color = white
+            rgb_color clr; clr.set_default();
+            value_map[value] = clr; // default color = -1 (no color)
         }
     }
     infile.close();
@@ -129,8 +130,8 @@ vector<rgb_color> create_colors(int n) { // !not completely my function!
         // Gradually decrease saturation and value
         saturation -= 0.2 / double(n);
         saturation = std::max(0.2, saturation);
-        value -= 0.2 / double(n);
-        value = std::max(0.6, value);
+        //value -= 0.2 / double(n);
+        //value = std::max(0.6, value);
     }
 
     return colors;
@@ -167,7 +168,8 @@ void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_
                     // check if group already has a color
                     if(!grp_clr_map[grp].is_default()){
                         // TODO cerr ?
-                        cout << "Warning: Several colors given for group " << grp << ". Using latest";
+                        cout << "Warning: Several colors given for group " << grp << ". Using latest: ";
+                        color.print(); cout << endl;
                     }
                     grp_clr_map[grp] = color;
                 } else {
@@ -230,7 +232,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     int no_vertices = 0; // number of all vertices in network
     int no_grps; // number of groups given
     int size = 10; // size of colored vertex
-    int textsize = 15; // size of label text
+    int textsize = 12; // size of label text
     double max_x = 0; // max x value of graph nodes
     double min_y = std::numeric_limits<double>::max(); // min y value of graph nodes
     double pos_x; // value to shift legend by
@@ -279,22 +281,21 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     ++i;
                     rgb_color clr = grp_clr.second; // get color of group
                     // no_clr_map[no_vertices] = clr; // save new node with color with all other clrd nodes
-                    int fg_r, fg_g, fg_b;
-                    if(clr.is_white()){ // if color is white, turn outline black
-                        fg_r = fg_g = fg_b = 0;
-                        // TODO white = default color = no color was given for group
-                        //  use white? or don't color at all and keep labels?
+
+                    // legend positioning TODO improve
+                    pos_x = (max_x+1)/2; // +100
+                    pos_y = double(i) * min(abs((min_y+1)/double(grp_clr_map.size()+1)), 150.0);
+
+                    if(clr.is_white()){ // if color is white, turn outline black (don't give values for fg, they are treated as 0 then)
+                        oss << no_vertices << " " << (max_x+pos_x) <<" "<< min_y+(pos_y) <<" w="<<size<<" h="<<size<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
+                    } else if (clr.is_default()){ // if no color given change the shape to rectangle (s=r)
                         // only print message if verbose?
-                        cout << "No color (or white) given for group " << grp_clr.first << ". Using white\n";
-                    } else {
-                        fg_b = clr.b;
-                        fg_g = clr.g;
-                        fg_r = clr.r;
+                        cout << "Invalid/No color given for group " << grp_clr.first << ". Using white rectangle\n";
+                        clr.set_white();
+                        oss << no_vertices << " " << (max_x+pos_x) <<" "<< min_y+(pos_y) <<" w="<<size<<" h="<<size<<" s=r bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
+                    } else { // normal, shape is circle, color is the given one
+                        oss << no_vertices << " " << (max_x+pos_x) <<" "<< min_y+(pos_y) <<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                     }
-                    // legend positioning
-                    pos_x = (max_x+1)/2; // 100
-                    pos_y = double(i) * min(abs((min_y+1)/double(grp_clr_map.size()+1)), 150.0); // min((min_y+1)/(grp_clr_map.size()+1), double(150))
-                    oss << no_vertices << " " << (max_x+pos_x) <<" "<< min_y+(pos_y) <<" w="<<size<<" h="<<size<<" fg="<<fg_r<<" "<<fg_g<<" "<<fg_b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                     colored_nexus << oss.str() << endl;
 
                     // save info for vlabels
@@ -386,17 +387,19 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
                     if(rest == ","){ // if last char is ',' add color
                         rgb_color clr = no_clr_map[vertex_no]; // get defined color for vertex
-                        int fg_r, fg_g, fg_b;
+                        //int fg_r, fg_g, fg_b;
                         // add color information to line
                         ostringstream oss;
                         if(clr.is_white()){ // if color is white, turn outline black
-                            fg_r = fg_g = fg_b = 0;
+                            // fg_r = fg_g = fg_b = 0; leave it out, SplitsTree treats not given values as 0
+                            oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
+                        } else if (clr.is_default()){ // if no color given change the shape to rectangle (s=r)
+                            clr.set_white();
+                            oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" s=r bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                         } else {
-                            fg_b = clr.b;
-                            fg_g = clr.g;
-                            fg_r = clr.r;
+                            // fg_b = clr.b; fg_g = clr.g; fg_r = clr.r;
+                            oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                         }
-                        oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" fg="<<fg_r<<" "<<fg_g<<" "<<fg_b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                         line = oss.str();
 
                     } else { /* if already colored do not change */ }

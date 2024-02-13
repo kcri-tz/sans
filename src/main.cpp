@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
         cout << "    -l, --label\t\t Label taxa with given groups" << endl;
         cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
         cout << "                  \t required file: tab separated file with name of taxon and group" << endl;
-        cout << "                  \t optional: additional tab separated file with group and color (rgb values)" << endl;
+        cout << "                  \t optional: additional tab separated file with group and color (rgb values, e.g. 90 0 255)" << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -T, --threads \t The number of threads to spawn (default is all)" << endl;
@@ -267,16 +267,25 @@ int main(int argc, char* argv[]) {
             c_nexus_wanted = true;
             groups = argv[++i];
 
-            // optional scnd argument for specified coloring
-            if (argv[i+1] != NULL && string(argv[i+1]).rfind("-", 0) != 0){
-                coloring = argv[++i];
-            }
             ifstream file_stream(groups);
             if (!file_stream.good()) { // catch unreadable file
                 cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << groups << ">" << "\u001b[0m" << endl;
                 file_stream.close();
                 return 1;
             } else { file_stream.close();}
+
+            // optional scnd argument for specified coloring
+            if (argv[i+1] != NULL && string(argv[i+1]).rfind("-", 0) != 0){
+                coloring = argv[++i];
+
+                ifstream file_stream(coloring); // TODO check if working now
+                if (!file_stream.good()) { // catch unreadable file
+                    cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << coloring << ">" << "\u001b[0m" << endl;
+                    file_stream.close();
+                    return 1;
+                } else { file_stream.close();}
+
+            }
         }
         else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--kmer") == 0) {            
             catch_missing_dependent_args(argv[i + 1], argv[i]);
@@ -816,11 +825,6 @@ int main(int argc, char* argv[]) {
 		cout<<"Restricting output to "<<top<<" splits."<< endl;
 	}
 
-    // Give warning if number of splits is high
-    if(nexus_wanted && top > 70){ //TODO
-        cerr << "Warning: Creating a nexus file without filter and " << top << " splits takes time.\n" ;
-    }
-
     /**
      * [input processing]
      * - transcribe each given input to the graph
@@ -1268,9 +1272,8 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         stream_nexus << "\n;\nEND; [Splits]\n";
         // filter = strict (=greedy),  weakly (=greedyWC), tree (=?greedy)
         string fltr = "none"; // filter used for SplitsTree
-        if(filter.empty() && top > 35){
-           cerr <<  "Warning: No filter given, network might take time and look muddled\n";
-        }
+        // TODO Give warning if number of splits is high
+        //if(filter.empty() && top > 35){ cerr <<  "Warning: No filter given, network might take time and look muddled\n"; }
         stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=";
         stream_nexus << fltr << ";\nexclude no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
     }
