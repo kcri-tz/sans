@@ -33,21 +33,20 @@ bool nexus_color::program_in_path(const string& programName) {
 }
 
 
-string modified_filename(string file, string front_extension){
+string nexus_color::modify_filename(string& old_name, string front_extension){
 
     // TODO handle filepath for windows and unix \\ / and such
-    //  necessary??
 
-    size_t lastSlash = file.find_last_of("/\\");
-    string filename;
+    size_t lastSlash = old_name.find_last_of("/\\");
+    string new_name;
     if (lastSlash != string::npos) {
-        string path = file.substr(0, lastSlash + 1);
-        filename = file.substr(lastSlash + 1);
-        filename = path + front_extension + filename;
+        string path = old_name.substr(0, lastSlash + 1);
+        new_name = old_name.substr(lastSlash + 1);
+        new_name = path + front_extension + new_name;
     } else {
-        filename = front_extension + file;
+        new_name = front_extension + old_name;
     }
-    return filename;
+    return new_name;
 }
 
 /**
@@ -74,9 +73,8 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
 
             if(map.find(key) != map.end()){ // taxon has already been assigned to group
                 if(map[key] != value){ // the groups are not the same
-                    // TODO cerr ?
-                    cout << "Warning: Several groups have been assigned to " << key << endl;
-                    cout << " Using latest assigned group: " << value << endl;
+                    cerr << "Warning: Several groups have been assigned to " << key << endl;
+                    cerr << " Using latest assigned group: " << value << endl;
                 }
             }
             // Store fields in dictionary
@@ -166,10 +164,9 @@ void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_
                     color.b = b;
 
                     // check if group already has a color
-                    if(!grp_clr_map[grp].is_default()){
-                        // TODO cerr ?
-                        cout << "Warning: Several colors given for group " << grp << ". Using latest: ";
-                        color.print(); cout << endl;
+                    if(!grp_clr_map[grp].is_default() && !grp_clr_map[grp].is_equal(color)){
+                        cerr << "Warning: Several colors given for group " << grp << ". Using latest: ";
+                        color.print(); cerr << endl;
                     }
                     grp_clr_map[grp] = color;
                 } else {
@@ -190,7 +187,72 @@ void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_
 }
 
 
-void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose, bool update, const string splitstree_path){
+void nexus_color::scale_nexus(const string& unopened_nexus_file){
+
+    cout << "Scaling nexus" << endl;
+
+
+    bool matrix = false;
+    int max_weight = -1;
+    string line;
+    string temp_file = "./temp_scaled";
+
+    ifstream plain_nexus(unopened_nexus_file); // nexus input file
+    ofstream scaled_nexus(temp_file.c_str());
+    if(!plain_nexus.is_open()){
+        cerr << "Error opening nexus file "<< unopened_nexus_file <<" to modify with color.\n";
+        return;
+    }
+    if(!scaled_nexus.is_open()){
+        cerr << "Error creating scaled temporary nexus file " << temp_file << endl;
+        return;
+    }
+
+    // reading nexus file
+    while (getline(plain_nexus, line)) {
+        // end of block
+        if(line.find(";") != string::npos){
+            matrix = false;
+        }
+        // read matrix block and scale length/weights
+        if(matrix){
+            istringstream iss(line);
+            string token;
+            string split;
+            string split_members;
+            double weight;
+
+            if (std::getline(iss, token, '\t')) split = token; // extract first field
+            if (std::getline(iss, token, '\t')) { // modify weight
+                weight = stod(token);
+                if(max_weight == -1) max_weight = weight; // first entry is the max weight
+                weight /= max_weight; // normalize using first/max weight
+            }
+            if (std::getline(iss, token)) split_members = token; // extract third field
+
+            // save to write to output
+            ostringstream oss;
+            oss << split << "\t" << weight << "\t " << split_members;
+            line = oss.str();
+        }
+
+        // identify matrix block
+        if(line.find("MATRIX") != string::npos || line.find("Matrix") != string::npos || line.find("matrix") != string::npos){
+            matrix = true;
+        }
+
+        scaled_nexus << line << endl; // write to output
+    }
+
+    plain_nexus.close();
+    scaled_nexus.close();
+
+    //either rename or return name of the scaled nexus file
+    std::rename(temp_file.c_str(), unopened_nexus_file.c_str());
+}
+
+
+void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf, bool verbose, bool update, const string& save_as, const string splitstree_path){
     // = "../splitstree4/SplitsTree"
     if (!program_in_path(splitstree_path)) {
         cerr << splitstree_path << " is not in the PATH." << endl;
@@ -203,7 +265,8 @@ void nexus_color::open_in_splitstree(const string& nexus_file, const string& pdf
 
         // Writing commands for splitstree
         temp_file << "begin SplitsTree;\nEXECUTE FILE=" << nexus_file << endl;
-        if(update) temp_file << "UPDATE\nSAVE FILE=" << nexus_file << " REPLACE=YES\n";
+        if(update) temp_file << "UPDATE\n";// add network in SplitsTree graphic
+        if(!save_as.empty()) temp_file << "SAVE FILE=" << save_as << " REPLACE=YES\n"; // save the network to the file (only needed if color should be added)
         if(!pdf.empty()) temp_file << "EXPORTGRAPHICS format=PDF file=" << pdf << " REPLACE=yes\n";
         temp_file << "QUIT\nend;";
         temp_file.close();
@@ -234,12 +297,12 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     int size = 10; // size of colored vertex
     int textsize = 12; // size of label text
     double max_x = 0; // max x value of graph nodes
+    double max_y = 0; // max y value of graph nodes
     double min_y = std::numeric_limits<double>::max(); // min y value of graph nodes
     double pos_x; // value to shift legend by
     double pos_y; // value to shift legend by
     ostringstream legend; // to save info for legend later
     string line = "";
-    //vector<string> lines;
 
     unordered_map<string, string> tax_grp_map; // map containing taxname -> group
     unordered_map<string, rgb_color> grp_clr_map; // map conatining group -> color
@@ -251,13 +314,14 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     // (Reading &) Saving grp -> col mapping
     reading_grp_clr_file(grp_clr_file, grp_clr_map, no_grps);
 
-    // naming output file // TODO evtl temp name again
-    string filename = modified_filename(nexus_file, "clrd_");
+    // temporary naming output file
+    //string filename = modify_filename(nexus_file, "clrd_");
+    string filename = "./temp_nexus";
 
     ifstream plain_nexus(nexus_file); // nexus input file
     ofstream colored_nexus(filename.c_str()); // colored nexus output file
     if(!plain_nexus.is_open()){
-        cerr << "Error opening nexus file to modify with color.\n";
+        cerr << "Error opening nexus file "<< nexus_file <<" to modify with color.\n";
         return;
     }
     if(!colored_nexus.is_open()){
@@ -283,14 +347,14 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     // no_clr_map[no_vertices] = clr; // save new node with color with all other clrd nodes
 
                     // legend positioning TODO improve
-                    pos_x = (max_x+1)/2; // +100
-                    pos_y = double(i) * min(abs((min_y+1)/double(grp_clr_map.size()+1)), 150.0);
-
+                    pos_x = 0.3; //max((max_x+2)/2.0, 50.0); // +100
+                    double h = abs(max_y-min_y);
+                    pos_y = double(i)* min(h/no_grps, 1.0/no_grps); //double(i) * abs(max_y-min_y)/(double(no_grps)*3.0); // min(abs((min_y+1)/double(grp_clr_map.size()+1)), 150.0)
+                    
                     if(clr.is_white()){ // if color is white, turn outline black (don't give values for fg, they are treated as 0 then)
-                        oss << no_vertices << " " << (max_x+pos_x) <<" "<< min_y+(pos_y) <<" w="<<size<<" h="<<size<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
+                        oss << no_vertices << " " << (max_x+pos_x) <<" "<< (min_y+pos_y) <<" w="<<size<<" h="<<size<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                     } else if (clr.is_default()){ // if no color given change the shape to rectangle (s=r)
-                        // only print message if verbose?
-                        cout << "Invalid/No color given for group " << grp_clr.first << ". Using white rectangle\n";
+                        cerr << "Invalid/No color given for group " << grp_clr.first << ". Using white rectangle\n";
                         clr.set_white();
                         oss << no_vertices << " " << (max_x+pos_x) <<" "<< min_y+(pos_y) <<" w="<<size<<" h="<<size<<" s=r bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                     } else { // normal, shape is circle, color is the given one
@@ -327,7 +391,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                 if(tax_grp_map.find(taxname) != tax_grp_map.end()){ // check if taxa has been assigned to a group
                     rgb_color clr = grp_clr_map[tax_grp_map[taxname]];
                     no_clr_map[stoi(no)] = clr; // save node number -> color
-                } else { // TODO cout only of verbose?
+                } else {
                     // test if several taxa joined at node
                     size_t space_pos = taxname.find(' ');
                     size_t pos = 0;
@@ -352,15 +416,15 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                                 legend << no << " '" << taxname << "' l=9 x=15 y=5 f='Dialog-PLAIN-" << textsize <<"',\n";
                                 //grp_clr_map[taxname] = current_clr; //problems bc of nvertices TODO instead of taxname all group names
 
-                                cout << "Warning: Several taxa of different groups have been joined at one node\n";
-                                cout << " Node will be colored black" << endl;
+                                cerr << "Warning: Several taxa of different groups have been joined at one node\n";
+                                cerr << " Node will be colored black" << endl;
                                 break;
                             }
                         }
                         no_clr_map[stoi(no)] = current_clr;
 
                     } else { // message if no group is assigned
-                        cout << "No group assigned to " << taxname << endl;
+                        cerr << "Warning: No group assigned to " << taxname << endl;
                     }
                 }
 
@@ -387,17 +451,14 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
                     if(rest == ","){ // if last char is ',' add color
                         rgb_color clr = no_clr_map[vertex_no]; // get defined color for vertex
-                        //int fg_r, fg_g, fg_b;
                         // add color information to line
                         ostringstream oss;
                         if(clr.is_white()){ // if color is white, turn outline black
-                            // fg_r = fg_g = fg_b = 0; leave it out, SplitsTree treats not given values as 0
                             oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                         } else if (clr.is_default()){ // if no color given change the shape to rectangle (s=r)
                             clr.set_white();
                             oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" s=r bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                         } else {
-                            // fg_b = clr.b; fg_g = clr.g; fg_r = clr.r;
                             oss <<vertex_no<<" "<<x<<" "<<y<<" w="<<size<<" h="<<size<<" fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
                         }
                         line = oss.str();
@@ -406,10 +467,11 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
 
                     // find 'corner' of graph to put legend later
                     if(x > max_x) max_x = x;
+                    if(y > max_y) max_y = y;
                     if(y < min_y) min_y = y;
                 }
             } else {
-                cout << "Problems reading vertex: " << line << endl;
+                cerr << "Problems reading vertex: " << line << endl;
             }
             no_vertices = vertex_no;
         }
@@ -420,7 +482,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             string no, taxname; // number, taxname of node, additional info
             if ((getline(iss, no, ' ') && getline(iss, taxname))) {
 
-                // if additional info is given for label, extract the name
+                // if additional info is given for label, extract only the name
                 size_t pos = taxname.find_first_of(' ');
                 string name, more_info = "";
                 if (pos != string::npos) {
@@ -475,6 +537,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
     colored_nexus.close();
 
     std::rename(filename.c_str(), nexus_file.c_str());
+
     // special treatment if nodes would have multiple colors
     //      (draw two dots? other shape? different inner/outer color?)
     // nice-to-have: color for colorblind, or diff shape

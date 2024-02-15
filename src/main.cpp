@@ -282,7 +282,7 @@ int main(int argc, char* argv[]) {
             if (argv[i+1] != NULL && string(argv[i+1]).rfind("-", 0) != 0){
                 coloring = argv[++i];
 
-                ifstream file_stream(coloring); // TODO check if working now
+                ifstream file_stream(coloring);
                 if (!file_stream.good()) { // catch unreadable file
                     cout << "\33[2K\r" << "\u001b[31m" << "(ERR)" << " Could not read file " <<  "<" << coloring << ">" << "\u001b[0m" << endl;
                     file_stream.close();
@@ -1276,8 +1276,6 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         stream_nexus << "\n;\nEND; [Splits]\n";
         // filter = strict (=greedy),  weakly (=greedyWC), tree (=?greedy)
         string fltr = "none"; // filter used for SplitsTree
-        // TODO Give warning if number of splits is high
-        //if(filter.empty() && top > 35){ cerr <<  "Warning: No filter given, network might take time and look muddled\n"; }
         stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=";
         stream_nexus << fltr << ";\nexclude no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
     }
@@ -1290,20 +1288,29 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	}
     if(nexus_wanted || pdf_wanted){
         file_nexus.close();
-        // Only modify file using SplitsTree if pdf or coloring  wanted
-        if(c_nexus_wanted || pdf_wanted){
-            nexus_color::open_in_splitstree(nexus, pdf, verbose);
-            if(c_nexus_wanted){
-                if(verbose) cout << "Adding color\n";
-                nexus_color::color_nexus(nexus, groups, coloring);
-                if(pdf_wanted){
-                    nexus_color::open_in_splitstree(nexus, pdf, verbose, false);
-                }
+
+        // naming modified nexus output file
+        string modded_file = nexus_color::modify_filename(nexus, "labeled_");
+        // Only save modified file using SplitsTree coloring  wanted
+        if(c_nexus_wanted){
+
+            // scale weights to 0-1
+            nexus_color::scale_nexus(nexus);
+            // use scaled file to open and save and mod in SplitsTree
+            nexus_color::open_in_splitstree(nexus, pdf, verbose, true, modded_file);
+            if(verbose) cout << "Adding color\n";
+            nexus_color::color_nexus(modded_file, groups, coloring);
+            if(pdf_wanted){
+                nexus_color::open_in_splitstree(modded_file, pdf, verbose, false);
             }
+        } else { // Do not save (via SplitsTree) modified file
+            nexus_color::open_in_splitstree(nexus, pdf, verbose);
         }
+
         // Delete nexus file if only pdf wanted
         if(!nexus_wanted){
             remove(nexus.c_str());
+            remove(modded_file.c_str());
         }
     }
 
