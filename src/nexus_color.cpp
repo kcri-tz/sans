@@ -186,11 +186,53 @@ void reading_grp_clr_file(const string& grp_clr_file, unordered_map<string, rgb_
     }
 }
 
+/* Unused for now TODO saving pdf doesnt work (the created file itself is good) **/
+void create_legend_pdf(unordered_map<string, rgb_color>& grp_clr_map){
 
-void nexus_color::scale_nexus(const string& unopened_nexus_file){
+    const char* temp_file = "./temp_legend.nex";
+    ofstream temp_nexus(temp_file);
+    if(!temp_nexus.is_open()){
+        cerr << "Error creating temporary file  "<< temp_file <<" for legend creation.\n";
+        return;
+    }
 
-    cout << "Scaling nexus" << endl;
+    ostringstream labels;
+    string pdf = "./example_data/legend_test.pdf"; // TODO saving doesn't work
+    int nvertices = grp_clr_map.size()+1;
+    double i = 0;
+    rgb_color clr;
 
+    // Nexus format stuff
+    temp_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=0;\nTAXLABELS\n;\nEND; [Taxa]\n";
+    temp_nexus << "\nBEGIN Network;\nDIMENSIONS ntax=0 nvertices=" << nvertices << " nedges=0;\nDRAW to_scale;\nTRANSLATE\n;\n";
+    temp_nexus << "VERTICES\n";
+    for (pair<string, rgb_color> grp_clr : grp_clr_map) { // adding nodes for legend
+        ++i;
+        clr = grp_clr.second;
+        if(clr.is_white()){
+            temp_nexus << i << " 0.0 " << i*0.1 << " w=10 h=10 bg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<",\n";
+        } else {
+            temp_nexus << i << " 0.0 " << i*0.1 << " w=10 h=10 fg="<<clr.r<<" "<<clr.g<<" "<< clr.b<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",\n";
+        }
+        labels << i << " " << grp_clr.first << " l=9 x=15 y=5 f='Dialog-PLAIN-12',\n";
+    }
+    // invisible node to keep good zoom
+    temp_nexus << ++i << " 0.0 " << (2.0*double(nvertices)*0.1)+2.0 << " w=0 h=0,\n";
+
+    temp_nexus << ";\nVLABELS\n" << labels.str() << ";\nEDGES\n;\nEND; [Network]\n";
+    temp_nexus << "BEGIN st_Assumptions;\nuptodate;\n exclude  no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
+
+    nexus_color::open_in_splitstree(temp_file, "", true, false, temp_file);
+    // TODO weird error messages (: must start with #nexus , tut sie aber doch??!?)
+
+    //cout << "Legend saved in " << pdf << endl;
+    //remove(temp_file);
+}
+
+
+void nexus_color::scale_nexus(const string& unopened_nexus_file, bool verbose){
+
+    if(verbose) cout << "Scaling nexus" << endl;
 
     bool matrix = false;
     int max_weight = -1;
@@ -339,6 +381,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
             // if end of vertices (#vertices has been assigned) add nodes at the end for legend
             if(vertices && no_vertices>0){
                 int i = 0;
+                //create_legend_pdf(grp_clr_map); // Extra pdf with only legend, doesn't work yet
                 for (auto grp_clr : grp_clr_map) { // add node for each group
                     ostringstream oss;
                     ++no_vertices;
@@ -349,7 +392,7 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                     // legend positioning TODO improve
                     pos_x = 0.3; //max((max_x+2)/2.0, 50.0); // +100
                     double h = abs(max_y-min_y);
-                    pos_y = double(i)* min(h/no_grps, 1.0/no_grps); //double(i) * abs(max_y-min_y)/(double(no_grps)*3.0); // min(abs((min_y+1)/double(grp_clr_map.size()+1)), 150.0)
+                    pos_y = double(i) * 0.12; //min(h/no_grps, 1.0/no_grps); //double(i) * abs(max_y-min_y)/(double(no_grps)*3.0); // min(abs((min_y+1)/double(grp_clr_map.size()+1)), 150.0)
                     
                     if(clr.is_white()){ // if color is white, turn outline black (don't give values for fg, they are treated as 0 then)
                         oss << no_vertices << " " << (max_x+pos_x) <<" "<< (min_y+pos_y) <<" w="<<size<<" h="<<size<<" bg="<< clr.r<<" "<<clr.g<<" "<< clr.b<<",";
@@ -410,8 +453,6 @@ void nexus_color::color_nexus(const string& nexus_file, const string& tax_grp_fi
                             // check if all the same group (= same color)
                             if( !(current_group == tax_grp_map[name])){ // !current_clr.is_equal(grp_clr_map[tax_grp_map[name]])
                                 // if non equal colors: several taxa groups merged at one node
-                                // TODO keep label? add extra legend node?
-                                //  add legend node with all groups as label , problematic
                                 current_clr.set_black();
                                 legend << no << " '" << taxname << "' l=9 x=15 y=5 f='Dialog-PLAIN-" << textsize <<"',\n";
                                 //grp_clr_map[taxname] = current_clr; //problems bc of nvertices TODO instead of taxname all group names
