@@ -291,6 +291,9 @@ void nexus_color::scale_nexus(const string& unopened_nexus_file, bool verbose){
 
     //either rename or return name of the scaled nexus file
     std::rename(temp_file.c_str(), unopened_nexus_file.c_str());
+
+    cerr << "Attention: For a reliable visualization using SplitsTree, split weights in the Nexus file have been scaled "
+            "to the range 0 to 1 by division by the maximum split weight " << max_weight << endl;
 }
 
 

@@ -1292,13 +1292,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         // naming modified nexus output file
         //string modded_file = nexus_color::modify_filename(nexus, "labeled_");
 
-        // Only save modified file using SplitsTree coloring if wanted
+        // scale weights to 0-1
+        nexus_color::scale_nexus(nexus, verbose);
+
         if(c_nexus_wanted){
-
-            // scale weights to 0-1
-            nexus_color::scale_nexus(nexus, verbose);
-
-            // use scaled file to open and save and mod in SplitsTree
+            // use scaled file to open, mod and save in SplitsTree
             //nexus_color::open_in_splitstree(nexus, pdf, verbose, true, modded_file);
             nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
 
@@ -1309,8 +1307,9 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
                 //nexus_color::open_in_splitstree(modded_file, pdf, verbose, false);
                 nexus_color::open_in_splitstree(nexus, pdf, verbose, false);
             }
-        } else { // Do not save (via SplitsTree) modified file
-            nexus_color::open_in_splitstree(nexus, pdf, verbose);
+        } else if(pdf_wanted){
+            //nexus_color::open_in_splitstree(nexus, pdf, verbose); // not saving (via SplitsTree) network to file
+            nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
         }
 
         // Delete nexus file if only pdf wanted
