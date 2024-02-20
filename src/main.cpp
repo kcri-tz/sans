@@ -47,7 +47,9 @@ int main(int argc, char* argv[]) {
         cout << "                  \t (only applicable in combination with -f strict or n-tree)" << endl;
         cout << endl;
         cout << "    -X, --nexus  \t Output Nexus file" << endl;
-        cout << "                  \t (Warning: Already existing files will be overwritten)" << endl;
+        cout << "                 \t (Warning: Already existing files will be overwritten)" << endl;
+        cout << "                 \t Attention: For a reliable visualization using SplitsTree, split weights in the Nexus file "
+                "are scaled to the range 0 to 1.";
         cout << endl;
         cout << "    -p, --pdf  \t Output network as PDF file" << endl;
         cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
