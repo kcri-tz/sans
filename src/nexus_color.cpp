@@ -230,9 +230,9 @@ void create_legend_pdf(unordered_map<string, rgb_color>& grp_clr_map){
 }
 
 
-void nexus_color::scale_nexus(const string& unopened_nexus_file, bool verbose){
+void nexus_color::scale_nexus(const string& unopened_nexus_file, bool verbose, bool scale_notification){
 
-    if(verbose) cout << "Scaling nexus" << endl;
+    if(verbose && scale_notification) cout << "Scaling nexus" << endl;
 
     bool matrix = false;
     int max_weight = -1;
@@ -292,8 +292,10 @@ void nexus_color::scale_nexus(const string& unopened_nexus_file, bool verbose){
     //either rename or return name of the scaled nexus file
     std::rename(temp_file.c_str(), unopened_nexus_file.c_str());
 
-    cerr << "Attention: For a reliable visualization using SplitsTree, split weights in the Nexus file have been scaled "
+    if(scale_notification) {
+        cerr << "Attention: For a reliable visualization using SplitsTree, split weights in the Nexus file have been scaled "
             "to the range 0 to 1 by division by the maximum split weight " << max_weight << endl;
+    }
 }
 
 

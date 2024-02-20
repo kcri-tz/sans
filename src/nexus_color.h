@@ -51,7 +51,7 @@ namespace nexus_color{
      */
     string modify_filename(string& file, string front_extension);
 
-    void scale_nexus(const string& unopened_nexus_file, bool verbose = false);
+    void scale_nexus(const string& unopened_nexus_file, bool verbose = false, bool scale_notification = false);
 }
 
 #endif //SRC_NEXUS_COLOR_H

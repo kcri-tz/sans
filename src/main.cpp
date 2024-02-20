@@ -1290,12 +1290,10 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	}
     if(nexus_wanted || pdf_wanted){
         file_nexus.close();
-
         // naming modified nexus output file
         //string modded_file = nexus_color::modify_filename(nexus, "labeled_");
-
         // scale weights to 0-1
-        nexus_color::scale_nexus(nexus, verbose);
+        nexus_color::scale_nexus(nexus, verbose, nexus_wanted);
 
         if(c_nexus_wanted){
             // use scaled file to open, mod and save in SplitsTree
