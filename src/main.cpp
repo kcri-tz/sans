@@ -48,12 +48,12 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -X, --nexus  \t Output Nexus file" << endl;
         cout << "                 \t (Warning: Already existing files will be overwritten)" << endl;
-        cout << "                 \t Attention: For a reliable visualization using SplitsTree, split weights in the Nexus file "
-                "are scaled to the range 0 to 1.";
+        cout << "                 \t Attention: For a reliable visualization using SplitsTree,\n"
+                "                 \t split weights in the Nexus file are scaled to the range 0 to 1." << endl;
         cout << endl;
-        cout << "    -p, --pdf  \t Output network as PDF file" << endl;
-        cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
-        cout << "                  \t (Warning: Already existing files will be overwritten)" << endl;
+        cout << "    -p, --pdf  \t\t Output network as PDF file" << endl;
+        cout << "                 \t Requires SplitsTree in the PATH" << endl;
+        cout << "                 \t Warning: Already existing files will be overwritten" << endl;
         cout << endl;
         cout << "    (at least --output, --newick, --nexus or --pdf must be provided)" << endl;
         cout << endl;
@@ -108,10 +108,13 @@ int main(int argc, char* argv[]) {
         cout << "                  \t else: final filter w.r.t. split weights" << endl;
         cout << "                  \t optional: specify separate filter (see --filter for available filters.)" << endl;
         cout << endl;
-        cout << "    -l, --label\t\t Label taxa with given groups" << endl;
+        cout << "    -l, --label\t\t Color taxa according to given groups" << endl;
         cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
-        cout << "                  \t required file: tab separated file with name of taxon and group" << endl;
-        cout << "                  \t optional: additional tab separated file with group and color (rgb values, e.g. 90 0 255)" << endl;
+        cout << "                  \t required file:  file with name of taxon and group (tab separated)" << endl;
+        cout << "                  \t optional: additional file with group and " << endl;
+        cout << "                  \t   color (rgb values, e.g. 90 0 255) (tab separated)" << endl;
+        cout << "                  \t Only applicable together with -X or -p " << endl;
+        cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
         cout << endl;
         cout << "    -T, --threads \t The number of threads to spawn (default is all)" << endl;
@@ -1204,7 +1207,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         // nexus format stuff
         stream_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=" << denom_file_count << ";\nTAXLABELS" ;
         for(int i; i < denom_file_count; ++i){
-            string taxa = denom_names[i].substr(0, denom_names[i].find_last_of(".")); // cutting off file extension
+            string taxa = denom_names[i].substr(0, denom_names[i].find_first_of(".")); // cutting off file extension
             stream_nexus << "\n[" << i+1 << "] '" << taxa << "'";
         }
         stream_nexus << "\n;\nEND; [TAXA]\n";

@@ -68,9 +68,9 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
     while (getline(infile, line)){
         // String stream to split and read line
         istringstream iss(line);
-        string key, value; // two fields, tab separated
+        string key, value; // two fields, tab separated (taxon and group)
         if (getline(iss, key, '\t') && getline(iss, value)) {
-
+            key = key.substr(0, key.find_first_of(".")); // cut off any file extensions
             if(map.find(key) != map.end()){ // taxon has already been assigned to group
                 if(map[key] != value){ // the groups are not the same
                     cerr << "Warning: Several groups have been assigned to " << key << endl;
