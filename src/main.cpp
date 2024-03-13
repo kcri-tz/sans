@@ -1207,7 +1207,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
         // nexus format stuff
         stream_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=" << denom_file_count << ";\nTAXLABELS" ;
         for(int i; i < denom_file_count; ++i){
-            string taxa = denom_names[i].substr(0, denom_names[i].find_first_of(".")); // cutting off file extension
+            string taxa = nexus_color::remove_extensions(denom_names[i]); // cutting off file extension
             stream_nexus << "\n[" << i+1 << "] '" << taxa << "'";
         }
         stream_nexus << "\n;\nEND; [TAXA]\n";

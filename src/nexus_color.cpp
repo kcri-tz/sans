@@ -49,6 +49,34 @@ string nexus_color::modify_filename(string& old_name, string front_extension){
     return new_name;
 }
 
+string nexus_color::remove_extensions(string& filename) {
+
+    vector<string> extensions_fst = {".fa",".fas",".fastq",".mfasta",".fasta",".fsa",".fna"};
+    vector<string> extensions_snd {".gz",".gzip",".zip"};
+
+    size_t lastDotPos = filename.find_last_of('.'); // last occurrence of the dot
+    // removing gz, gzip, zip
+    if (lastDotPos != std::string::npos) {
+        string ext = filename.substr(lastDotPos); // extract extension
+        // check if one of the above
+        auto it = find(extensions_snd.begin(), extensions_snd.end(), ext);
+        if (it != extensions_snd.end()) {
+            filename = filename.substr(0, lastDotPos); // remove extension
+        }
+    }
+    // removing rest
+    lastDotPos = filename.find_last_of('.');
+    if (lastDotPos != std::string::npos) {
+        string ext = filename.substr(lastDotPos); // extract extension
+        // check if one of the above
+        auto it = find(extensions_fst.begin(), extensions_fst.end(), ext);
+        if (it != extensions_fst.end()) {
+            filename = filename.substr(0, lastDotPos); // remove extension
+        }
+    }
+    return filename;
+}
+
 /**
  * Creates a map of a given tab separated file with two fields (key,value) per line.
  * Also creates another map with the given values as keys for further usage.
@@ -70,7 +98,8 @@ void create_maps(unordered_map<string, string>& map, const string& filename, uno
         istringstream iss(line);
         string key, value; // two fields, tab separated (taxon and group)
         if (getline(iss, key, '\t') && getline(iss, value)) {
-            key = key.substr(0, key.find_first_of(".")); // cut off any file extensions
+            key = nexus_color::remove_extensions(key);
+
             if(map.find(key) != map.end()){ // taxon has already been assigned to group
                 if(map[key] != value){ // the groups are not the same
                     cerr << "Warning: Several groups have been assigned to " << key << endl;

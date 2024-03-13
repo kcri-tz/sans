@@ -18,6 +18,24 @@ using namespace std;
 namespace nexus_color{
 
     /**
+     * Tests whether a program can be found and executed.
+     * @param programName Program to be tested.
+     * @return bool if program is executable
+     */
+    bool program_in_path(const string& programName);
+
+    /**
+     * Modifies a filename with the given extension at the front.
+     * @param file THe filename to modify
+     * @param front_extension The extension to add
+     * @return The new name
+     */
+    string modify_filename(string& file, string front_extension);
+
+
+    string remove_extensions(string& filename);
+
+    /**
      * This function adds a network to the initially generated nexus file via SplitsTree.
      * @param nexus_file Path to the initial nexus file
      * @param verbose If info should be printed
@@ -37,20 +55,7 @@ namespace nexus_color{
      */
     void color_nexus(const string& nexus_file, const string& tax_grp_file, const string& grp_clr_file = "");
 
-    /**
-     * Tests whether a program can be found and executed.
-     * @param programName Program to be tested.
-     * @return bool if program is executable
-     */
-    bool program_in_path(const string& programName);
 
-    /**
-     * Modifies a filename with the given extension at the front.
-     * @param file THe filename to modify
-     * @param front_extension The extension to add
-     * @return The new name
-     */
-    string modify_filename(string& file, string front_extension);
 
     void scale_nexus(const string& unopened_nexus_file, bool verbose = false, bool scale_notification = false);
 }
