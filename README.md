@@ -129,7 +129,7 @@ To visualize the splits, we recommend the tool [SplitsTree (version 4)](https://
 
 To generate SANS output readable for SplitsTree, use option `-X  <nexus-file>`. In SplitsTree, after opening the `<nexus-file>`, select "Draw" > "EqualAngle" > "Apply". To produce a PDF using SplitsTree, use option `-p <pdf-file>`.
 
-To depict the phylogeny on a higher level, taxa can be assigned to groups. Each group is then represented by a color and individual text labels of taxa are replaced colored circles accordingly. Use option `-l <groups.tsv>` to provide a mapping of some or all genome identifiers to arbitrary group names. Optionally, provide a second file  `<colors.tsv>` to provide a mapping of group names to custom RGB values, e.g. `255 0 0` for red.
+To depict the phylogeny on a higher level, taxa can be assigned to groups. Each group is then represented by a color and individual text labels of taxa are replaced by colored circles accordingly. Use option `-l <groups.tsv>` to provide a mapping of some or all genome identifiers to arbitrary group names. Optionally, provide a second file  `<colors.tsv>` to provide a mapping of group names to custom RGB values, e.g. `255 0 0` for red.
 
 **Further parameters**
 - To observe the progress of SANS during computation, use `-v` to switch to verbose mode.
