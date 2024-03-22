@@ -54,6 +54,12 @@ string nexus_color::remove_extensions(string& filename) {
     vector<string> extensions_fst = {".fa",".fas",".fastq",".mfasta",".fasta",".fsa",".fna"};
     vector<string> extensions_snd {".gz",".gzip",".zip"};
 
+    // remove folder prefix
+    size_t lastSlash = filename.find_last_of("/\\");
+    if (lastSlash != string::npos) {
+        filename = filename.substr(lastSlash + 1);
+    }
+
     size_t lastDotPos = filename.find_last_of('.'); // last occurrence of the dot
     // removing gz, gzip, zip
     if (lastDotPos != std::string::npos) {
