@@ -15,6 +15,7 @@ uint64_t graph::t;
 vector<int> graph::q_table;
 int graph::quality;
 
+
 bool graph::isAmino;
 
 /*
@@ -61,6 +62,12 @@ vector<hash_set<kmer_t>> graph::quality_set;
 vector<hash_map<kmer_t, uint64_t>> graph::quality_map;
 
 /**
+ * Look-up set for k-mers that are ignored, i.e., not stored, counted etc.
+ */
+hash_set<kmer_t> graph::blacklist;
+hash_set<kmerAmino_t> graph::blacklist_amino;
+
+/**
  * This is a hash set used to filter k-mers for coverage (q > 1).
  */
 vector<hash_set<kmerAmino_t>> graph::quality_setAmino;
@@ -85,8 +92,10 @@ vector<char> graph::allowedChars;
 /**
  * This function qualifies a k-mer and places it into the hash table.
  */
-function<void(uint64_t& T, uint_fast32_t& bin, const kmer_t&, uint64_t&)> graph::emplace_kmer;
-function<void(uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, uint64_t&)> graph::emplace_kmer_amino;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint64_t&)> graph::emplace_kmer;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint64_t&)> graph::emplace_kmer_tmp;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint64_t&)> graph::emplace_kmer_amino;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint64_t&)> graph::emplace_kmer_amino_tmp;
 
 /**
  * This is a comparison function extending std::bitset.
@@ -127,7 +136,7 @@ struct node* newSet(color_t taxa, double weight, vector<node*> subsets) {
  * @param quality global q or maximum among all q values
  */
 
-void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& quality, uint64_t& thread_count) {
+void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& quality, hash_set<kmer_t>& blacklist, hash_set<kmerAmino_t>& blacklist_amino, uint64_t& thread_count) {
     t = top_size;
     isAmino = amino;
     if(!isAmino){
@@ -210,13 +219,15 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
     }
 
     graph::q_table = q_table;
+	graph::blacklist = blacklist;
+	graph::blacklist_amino = blacklist_amino;
     switch (quality) {
     case 1:
-        case 0: /* no quality check */
-        emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const size_t& color) {
+	case 0: /* no quality check */
+        emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
             hash_kmer(bin, kmer, color);
         };
-        emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+        emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
             hash_kmer_amino(bin, kmer, color);
         };
         break;
@@ -224,7 +235,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
     case 2:
         isAmino ? quality_setAmino.resize(thread_count) : quality_set.resize(thread_count);
         if (q_table.size()>0){
-            emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const size_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
                 if (q_table[color]==1){
                     hash_kmer(bin, kmer, color);
                 } else if (quality_set[T].find(kmer) == quality_set[T].end()) {
@@ -234,7 +245,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
                 if (q_table[color]==1){
                     hash_kmer_amino(bin, kmer, color);
                 } else if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
@@ -245,7 +256,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                 }
             };
         } else { // global quality value (one if-clause fewer)
-            emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const size_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
                 if (quality_set[T].find(kmer) == quality_set[T].end()) {
                     quality_set[T].emplace(kmer);
                 } else {
@@ -253,7 +264,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
                 if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
                     quality_setAmino[T].emplace(kmer);
                 } else {
@@ -266,7 +277,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
     default:
         isAmino ? quality_mapAmino.resize(thread_count) : quality_map.resize(thread_count);
         if (q_table.size()>0){
-            emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const size_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
                 if (quality_map[T][kmer] < q_table[color]-1) {
                     quality_map[T][kmer]++;
                 } else {
@@ -274,7 +285,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
                 if (quality_mapAmino[T][kmer] < q_table[color]-1) {
                     quality_mapAmino[T][kmer]++;
                 } else {
@@ -283,7 +294,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                 }
             };
         }else { // global quality value
-            emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const size_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
                 if (quality_map[T][kmer] < quality-1) {
                     quality_map[T][kmer]++;
                 } else {
@@ -291,7 +302,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const size_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
                 if (quality_mapAmino[T][kmer] < quality-1) {
                     quality_mapAmino[T][kmer]++;
                 } else {
@@ -303,7 +314,35 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         }
         break;
     }
+	emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+		emplace_kmer_tmp(T, bin, kmer, color);
+	};
+	emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+		emplace_kmer_amino_tmp(T, bin, kmer, color);
+	};
 }
+
+/**
+ * This function activates the use of the blacklist when inserting k-mers. It has to be separated from the init function, because when the latter is called, the blacklist is still empty. 
+ */
+void graph::activate_blacklist(){
+    // Black list for kmers given?
+    if ((!isAmino && !blacklist.empty()) || (isAmino && !blacklist_amino.empty())) {
+		emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+			// only add if kmer not in blacklist
+			if (graph::blacklist.find(kmer)==graph::blacklist.end()) {
+				emplace_kmer_tmp(T, bin, kmer, color);
+			}
+		};
+		emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+			// only add if kmer not in blacklist
+			if (graph::blacklist_amino.find(kmer)==graph::blacklist_amino.end()) {
+				emplace_kmer_amino_tmp(T, bin, kmer, color);
+			}
+		};
+	}
+}
+
 
 /**
 * --- [Hash map access] ---
@@ -498,6 +537,92 @@ void graph::remove_kmer_amino(const kmerAmino_t& kmer){
 * [Sequence processing]
 *
 */
+
+
+/**
+ * This function extracts k-mers from a sequence and adds them to the black list.
+ *
+ * @param str sequence
+ * @param reverse merge complements
+ */
+void graph::fill_blacklist(string& str, bool& reverse) {
+    if (str.length() < kmer::k) return;    // not enough characters
+
+    uint64_t pos;    // current position in the string, from 0 to length
+
+    kmer_t kmer;    // create a new empty bit sequence for the k-mer
+    kmer_t rcmer; // create a bit sequence for the reverse complement
+
+
+    uint_fast8_t left;  // The character that is shifted out 
+    uint_fast8_t right; // The binary code of the character that is shifted in
+
+    #if maxK > 32
+    if (!isAmino){
+        for (int i =0; i < 2* kmer::k; i++){rc_bin += period[i];}
+        rc_bin %= table_count;
+    }
+    #endif
+
+    kmerAmino_t kmerAmino=0;    // create a new empty bit sequence for the k-mer
+
+    uint64_t begin = 0;
+    
+    next_kmer:
+
+    pos = begin;
+    for (; pos < str.length(); ++pos) {    // collect the bases from the string
+        if (!isAllowedChar(pos, str)) {
+            begin = pos+1;    // str = str.substr(pos+1, string::npos);
+            goto next_kmer;    // unknown base, start a new k-mer from the beginning
+        }
+        // DNA processing 
+        if (!isAmino) {
+
+            right = util::char_to_bits(str[pos]);
+            #if maxK <= 32
+                kmer::shift(kmer, right); // shift each base into the bit sequence
+                rcmer = kmer;
+	            if (reverse){
+                    kmer::reverse_complement(rcmer); // invert the k-mer
+                }
+            #else
+                kmer::shift(kmer, right); // shift each base into the bit sequence
+                rcmer = kmer;
+                if (reverse){
+                    kmer::reverse_complement(rcmer);
+                }
+            #endif
+             // If the current word is a k-mer
+            if (pos+1 - begin >= kmer::k) {
+                rcmer < kmer ? blacklist.emplace(rcmer) : blacklist.emplace(kmer);
+            }
+        
+        // Amino processing
+        } else {
+            right = util::amino_char_to_bits(str[pos]);
+            #if maxK <= 12
+                kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
+            #else
+                kmerAmino::shift_right(kmerAmino, str[pos]);
+            #endif
+            // The current word is a k-mer
+            if (pos+1 - begin >= kmerAmino::k) {
+                // Insert the k-mer
+                blacklist_amino.emplace(kmerAmino);
+            }
+        }
+    }
+}
+
+
+/**
+* This function tells how many k-mers are in the black list.
+*/
+uint64_t graph::size_blacklist(){
+	return isAmino ? blacklist_amino.size() : blacklist.size();
+}
+
 
 /**
  * This function extracts k-mers from a sequence and adds them to the hash table.

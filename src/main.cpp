@@ -37,6 +37,8 @@ int main(int argc, char* argv[]) {
         cout << "    -s, --splits  \t Splits file: load an existing list of splits file" << endl;
         cout << "                  \t (allows to filter -t/-f, other arguments are ignored)" << endl;
         cout << endl;
+        cout << "    -B, --blacklist\t File (Fasta, Fastq) of k-mers to be ignored" << endl;
+        cout << endl;
         cout << "    (either --input and/or --graph, or --splits must be provided)" << endl;
         cout << endl;
         cout << "  Output arguments:" << endl;
@@ -142,6 +144,7 @@ int main(int argc, char* argv[]) {
     string input;    // name of input file
     string graph;    // name of graph file
     string splits;    // name of splits file
+    string blacklistfile; // name of blacklist file
     string output;    // name of output file
     string newick;    // name of newick output file // Todo
     string nexus;   // name of nexus output file
@@ -194,6 +197,13 @@ int main(int argc, char* argv[]) {
     bool nexus_wanted = false;
     bool c_nexus_wanted = false;
     bool pdf_wanted = false;
+	
+	/**
+	* Look-up set for k-mers that are ignored, i.e., not stored, counted etc.
+	*/
+	hash_set<kmer_t> blacklist;
+	hash_set<kmerAmino_t> blacklist_amino;
+
 
     /**
      * [argument parser]
@@ -245,6 +255,10 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--splits") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             splits = argv[++i];    // Splits file: load an existing list of splits file
+        }
+        else if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--blacklist") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            blacklistfile = argv[++i];    // Blacklist file: load kmers to be ignored
         }
         else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
@@ -752,6 +766,8 @@ int main(int argc, char* argv[]) {
     }
     int denom_file_count = denom_names.size();
 
+	
+
 
     /**
      * --- [indexing CDBG input] --- 
@@ -844,8 +860,73 @@ int main(int argc, char* argv[]) {
     kmer::init(kmer);      // initialize the k-mer length
     kmerAmino::init(kmer); // initialize the k-mer length
     color::init(num);    // initialize the color number
-    graph::init(top, amino, q_table, quality, threads); // initialize the toplist size and the allowed characters
+    graph::init(top, amino, q_table, quality, blacklist, blacklist_amino, threads); // initialize the toplist size and the allowed characters
 
+	
+	/**
+	 * Read blacklist
+	 */
+	if(!blacklistfile.empty()){
+
+        if (verbose) {
+            cout << "Reading blacklist file... " << flush;
+        }
+ 
+        string sequence;    // read in the sequence files and extract the k-mers
+		char c_name[(blacklistfile).length()]; // Create char array for c compatibilty
+		strcpy(c_name, (blacklistfile).c_str()); // Transcire to char array
+
+		igzstream file(c_name, ios::in);    // input file stream
+				count::deleteCount();
+
+				string appendixChars; 
+				string line;    // read the file line by line
+				while (getline(file, line)) {
+					if (line.length() > 0) {
+						if (line[0] == '>' || line[0] == '@') {    // FASTA & FASTQ header -> process
+							graph::fill_blacklist(sequence, reverse);
+							sequence.clear();
+						}
+						else if (line[0] == '+') {    // FASTQ quality values -> ignore
+							getline(file, line);
+						}
+						else {
+							transform(line.begin(), line.end(), line.begin(), ::toupper);
+							string newLine = line;
+							if (shouldTranslate) {
+								if (appendixChars.length() >0 ) {
+									newLine= appendixChars + newLine;
+									appendixChars = "";
+								}
+								auto toManyChars = line.length() % 3;
+								if (toManyChars > 0) {
+									appendixChars = newLine.substr(line.length() - toManyChars, toManyChars);
+									newLine = newLine.substr(0, line.length() - toManyChars);
+								}
+								newLine = translator::translate(newLine);
+							}
+							sequence += newLine;    // FASTA & FASTQ sequence -> read
+						}
+					}
+				}
+				if (verbose && count::getCount() > 0) {
+					cerr << count::getCount()<< " triplets could not be translated while reading blacklist."<< endl;
+				}
+				graph::fill_blacklist(sequence, reverse);
+				sequence.clear();
+
+				file.close();
+       if (verbose) {
+            cout << graph::size_blacklist() << " k-mers read." << endl << flush;
+        }
+        if (graph::size_blacklist()==0){
+			cerr << "Warning: Blacklist provided, but no k-mers read." << endl << flush;
+		}
+		graph::activate_blacklist();
+	}
+
+
+	
     /**
      *  ---> Split processing
      *  - transcibe all splits from the input split file
@@ -881,6 +962,9 @@ int main(int argc, char* argv[]) {
     file.close();
     }
 
+    
+    
+    
     /**
      * ---> sequence processing ---
      * - translate all given sequence k-mers
@@ -890,7 +974,7 @@ int main(int argc, char* argv[]) {
 
     if (!input.empty() && splits.empty()) {
         if (verbose) {
-            cout << "SANS::main(): Reading input files..." << flush;
+            cout << "Reading input files..." << flush;
         }
 
         // Thread safe implementation of getting the index of the next input to preocess

@@ -115,6 +115,12 @@ private:
 
     static bool isAmino;
     
+	/**
+	* Look-up set for k-mers that are ignored, i.e., not stored, counted etc.
+	*/
+	static hash_set<kmer_t> blacklist;
+	static hash_set<kmerAmino_t> blacklist_amino;	
+	
     /**
      * This int indicates the number of tables to use for hashing
      */
@@ -182,10 +188,12 @@ public:
      * @param isAmino use amino processing
      * @param q_table coverage threshold
 	 * @param quality global q or maximum among all q values
+	 * @param blacklist k-mers to be ignored
+	 * @param blacklist_amino amino k-mers to be ignored
      * @param bins hash_tables to use for parallel processing
      * @param thread_count the number of threads used for processing
      */
-    static void init(uint64_t& top_size, bool isAmino, vector<int>& q_table, int& quality, uint64_t& thread_count);
+    static void init(uint64_t& top_size, bool isAmino, vector<int>& q_table, int& quality, hash_set<kmer_t>& blacklist, hash_set<kmerAmino_t>& blacklist_amino, uint64_t& thread_count);
 
 
 
@@ -279,6 +287,21 @@ public:
      */
     static void remove_kmer_amino(const kmerAmino_t& kmer);
 
+	/**
+	* This function extracts k-mers from a sequence and adds them to the black list.
+	*/
+	static void fill_blacklist(string& str, bool& reverse);
+	
+	/**
+	* This function tells how many k-mers are in the black list.
+	*/
+	static uint64_t size_blacklist();
+	
+	/**
+	 * This function activates using the blacklist while inserting kmers.
+	 */
+	static void activate_blacklist();
+	
     /**
      * This function extracts k-mers from a sequence and adds them to the hash table.
      *
@@ -421,7 +444,8 @@ protected:
      * @param kmer bit sequence
      * @param color color flag
      */
-    static function<void(uint64_t& T, uint_fast32_t& bin, const kmer_t&, uint64_t&)> emplace_kmer;
+    static function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint64_t&)> emplace_kmer;
+    static function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint64_t&)> emplace_kmer_tmp;
 
     /**
      * This function qualifies a k-mer and places it into the hash table.
@@ -429,7 +453,8 @@ protected:
      * @param kmer bit sequence
      * @param color color flag
      */
-    static function<void(uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, uint64_t&)> emplace_kmer_amino;
+    static function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint64_t&)> emplace_kmer_amino;
+    static function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint64_t&)> emplace_kmer_amino_tmp;
 
     /**
      * This function tests if a split is compatible with an existing set of splits.
