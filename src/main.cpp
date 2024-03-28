@@ -575,7 +575,7 @@ int main(int argc, char* argv[]) {
     }
 	if (output.empty() && newick.empty() && nexus.empty() && pdf.empty() && !core.empty()) {
 		if(!filter.empty() || !consensus_filter.empty() || bootstrap_no>0 || mean != util::geometric_mean2 || top!=-1 ){
-			cerr << "Warning: No output option for a phylogeny given. Only core k-mers are computed. Some given arguments only make sense for phylogeny construction and are redundant." << filter << "X" << consensus_filter << "X" << bootstrap_no << "X" << mean << "X" << top << "X" << endl;
+			cerr << "Warning: No output option for a phylogeny given. Only core k-mers are computed. Some given arguments only make sense for phylogeny construction and are redundant." << endl;
 		}
     }
 	if (!core.empty() && !splits.empty()) {
