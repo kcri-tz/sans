@@ -57,7 +57,9 @@ int main(int argc, char* argv[]) {
         cout << "                 \t Requires SplitsTree in the PATH" << endl;
         cout << "                 \t Warning: Already existing files will be overwritten" << endl;
         cout << endl;
-        cout << "    (at least --output, --newick, --nexus or --pdf must be provided)" << endl;
+        cout << "    -r, --core  \t\t Output core k-mers in fasta file" << endl;
+        cout << endl;
+        cout << "    (at least --output, --newick, --nexus, --pdf, or --core must be provided)" << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
@@ -149,6 +151,7 @@ int main(int argc, char* argv[]) {
     string newick;    // name of newick output file // Todo
     string nexus;   // name of nexus output file
     string pdf;     // name of PDF output file
+    string core;     // name of file for core k-mers
     string groups; // name of input file giving groups
     string coloring; // name of input file for using specified color
     string translate; // name of translate file
@@ -282,6 +285,14 @@ int main(int argc, char* argv[]) {
             nexus_wanted = true;
             if (!util::path_exist(nexus)){
                 cerr << "Error: output folder does not exist: "<< nexus << endl;
+                return 1;
+            }
+        }
+        else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--core") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            core = argv[++i];    // fasta output file for core k-mers
+            if (!util::path_exist(core)){
+                cerr << "Error: output folder does not exist: "<< core << endl;
                 return 1;
             }
         }
@@ -558,9 +569,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (output.empty() && newick.empty() && nexus.empty() && pdf.empty()) {
-        cerr << "Error: missing argument: --output <file_name> or --newick <file_name> or --nexus <file_name> or --pdf <file_name>" << endl;
+    if (output.empty() && newick.empty() && nexus.empty() && pdf.empty() && core.empty()) {
+        cerr << "Error: missing argument: --output <file_name> or --newick <file_name> or --nexus <file_name> or --pdf <file_name> or --core <file_name>" << endl;
         return 1;
+    }
+	if (output.empty() && newick.empty() && nexus.empty() && pdf.empty() && !core.empty()) {
+		if(!filter.empty() || !consensus_filter.empty() || bootstrap_no>0 || mean != util::geometric_mean2 || top!=-1 ){
+			cerr << "Warning: No output option for a phylogeny given. Only core k-mers are computed. Some given arguments only make sense for phylogeny construction and are redundant." << filter << "X" << consensus_filter << "X" << bootstrap_no << "X" << mean << "X" << top << "X" << endl;
+		}
+    }
+	if (!core.empty() && !splits.empty()) {
+		cerr << "Error: From splits as input, no core k-mers can be determined." << endl;
+		return 1;
+    }
+	if (!blacklist.empty() && input.empty() && graph.empty()) {
+		cerr << "Error: Blacklist can only be applied when reading sequences as input, i.e. -i or -g." << endl;
+		return 1;
     }
     if (kmer > maxK && splits.empty()) {
         cerr << "Error: k-mer length exceeds -DmaxK=" << maxK << endl;
@@ -1134,8 +1158,21 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
     }
 #endif
 
+
+	/*
+	 * [core k-mers]
+	 */
+	if(!core.empty()){
+		// output file stream
+		ofstream core_file(core);
+		ostream core_stream(core_file.rdbuf());
+		graph::output_core(core_stream,verbose);
+	}
+	
+
+
     /*
-    * [graph prossing]
+    * [graph processing]
     * - collect all colors and kmers into the color table
     * - weight the colors based on the weight function and the kmers that support them
     */

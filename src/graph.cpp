@@ -1339,7 +1339,6 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
 			weight[pos]++; // update the weight or the inverse weight of the current color set
 		}
     }
-//    compile_split_list(mean,min_value); done in main.cpp
 }
 
 /**
@@ -1374,6 +1373,74 @@ void graph::compile_split_list(double mean(uint32_t&, uint32_t&), double min_val
 	}
 }
 
+/**
+ * This function determines the core k-mers, i.e., all k-mers present in all genomes.
+ * Core k-mers are output to given file in fasta format, one k-mer per entry
+ * @param file output file stream
+ * @param verbose print progess
+ */
+void graph::output_core(ostream& file, bool& verbose)
+{
+    uint64_t cur=0, prog=0, next, core_count=0, all_count=0;
+
+    // check table (Amino or base)
+    uint64_t max = 0; // table size
+    if (isAmino){for (auto table: kmer_tableAmino){max += table.size();}} // use the sum of amino table sizes
+    else {for (auto table: kmer_table){max+=table.size();}} // use the sum of base table sizes
+
+    // If the tables are empty, there is nothing to be done	    
+    if (max==0){
+        return;
+    }
+    // The iterators for the tables
+    hash_map<kmer_t, color_t>::iterator base_it;
+    hash_map<kmerAmino_t, color_t>::iterator amino_it;
+
+    // Iterate the tables
+    for (int i = 0; i < graph::table_count; i++) // Iterate all tables
+    {
+        if (!isAmino){base_it = kmer_table[i].begin();} // base table iterator
+        else {amino_it = kmer_tableAmino[i].begin();} // amino table iterator
+
+        while (true) { // process splits
+            // show progress
+            if (verbose) { 
+                next = 100*cur/max;
+                if (prog < next)  cout << "\33[2K\r" << "Collecting core k-mers... " << next << "%" << flush;
+                prog = next; cur++;
+            }
+            // update the iterator
+            color_t* color_ref; // reference of the current color
+            kmer_t kmer;
+			kmerAmino_t kmerAmino;
+            if (isAmino) { // if the amino table is used, update the amino iterator
+                if (amino_it == kmer_tableAmino[i].end()){break;} // stop iterating if done
+                else{kmerAmino = amino_it->first; color_ref = &amino_it.value(); ++amino_it;} // iterate the amino table
+            }
+            else { // if the base tables is used update the base iterator
+                // Todo: Get the target hash map index from the kmer bits
+                if (base_it == kmer_table[i].end()){break;} // stop itearating if done
+                else {kmer = base_it.key(); color_ref = &base_it.value(); ++base_it;} // iterate the base table
+            }
+            // process
+            color_t& color = *color_ref;
+			all_count++;
+			// is core?
+			if(color::is_complete(color)){
+				core_count++;
+				//output
+				file << ">" << endl;
+// 				TODO ouput k-mer
+// 				file << isAmino?kmerAmino:kmer << endl;
+				file << kmer::kmer_to_string(kmer) << endl;
+			}
+		}
+    }
+	if (verbose) { 
+		cout  << endl << core_count << " core k-mers found. ("<< (100*core_count/all_count) <<"%)"<< endl << flush;
+	}
+
+}
 
 
 /**

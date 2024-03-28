@@ -349,6 +349,15 @@ public:
 	*/
 	static void compile_split_list(double mean(uint32_t&, uint32_t&), double min_value);
 
+	/**
+	* This function determines the core k-mers, i.e., all k-mers present in all genomes.
+	* Core k-mers are output to given file in fasta format, one k-mer per entry
+	* @param file output file stream
+	* @param verbose print progess
+	*/
+	static void output_core(ostream& file, bool& verbose);
+	
+	
     /**
      * This function iterates over the hash table and calculates the split weights.
      *
