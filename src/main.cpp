@@ -1158,6 +1158,10 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
     }
 #endif
 
+	if(verbose){
+		cout << graph::number_kmers() << " k-mers read." << endl << flush;
+	}
+
 
 	/*
 	 * [core k-mers]

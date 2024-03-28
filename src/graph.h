@@ -358,6 +358,12 @@ public:
 	static void output_core(ostream& file, bool& verbose);
 	
 	
+	/**
+	* Get the number of k-mers in all tables.
+	* @return number of k-mers in all tables.
+	*/
+	static uint64_t number_kmers();
+	
     /**
      * This function iterates over the hash table and calculates the split weights.
      *

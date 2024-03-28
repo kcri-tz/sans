@@ -1441,6 +1441,21 @@ void graph::output_core(ostream& file, bool& verbose)
 }
 
 
+
+/**
+ * Get the number of k-mers in all tables.
+ * @return number of k-mers in all tables.
+ */
+uint64_t graph::number_kmers(){
+	uint64_t num=0;
+	if (isAmino){ // use the sum of amino table sizes
+		for (auto table: kmer_tableAmino){num += table.size();}
+	} else { // use the sum of base table sizeskmer_table.size(); 
+		for (auto table: kmer_table){num+=table.size();}
+	}
+	return num;
+}
+
 /**
  * This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.
  * @param mean weight function
@@ -1448,13 +1463,8 @@ void graph::output_core(ostream& file, bool& verbose)
  */
 multimap_<double, color_t> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 
-	uint64_t max = 0;
+	uint64_t max = graph::number_kmers();
 	
-	if (isAmino){ // use the sum of amino table sizes
-		for (auto table: kmer_tableAmino){max += table.size();}
-	} else { // use the sum of base table sizeskmer_table.size(); 
-		for (auto table: kmer_table){max+=table.size();}
-	}
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
