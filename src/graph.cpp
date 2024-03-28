@@ -1430,9 +1430,7 @@ void graph::output_core(ostream& file, bool& verbose)
 				core_count++;
 				//output
 				file << ">" << endl;
-// 				TODO ouput k-mer
-// 				file << isAmino?kmerAmino:kmer << endl;
-				file << kmer::kmer_to_string(kmer) << endl;
+ 				file << (isAmino?(kmerAmino::kmer_to_string(kmerAmino)):(kmer::kmer_to_string(kmer))) << endl;
 			}
 		}
     }
