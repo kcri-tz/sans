@@ -47,7 +47,7 @@ $(BUILDDIR)/main.o: makefile $(SRCDIR)/main.cpp $(SRCDIR)/main.h $(BUILDDIR)/tra
 $(BUILDDIR)/graph.o: makefile $(SRCDIR)/graph.cpp $(SRCDIR)/graph.h $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o
 	$(CC) -c $(SRCDIR)/graph.cpp -o $(BUILDDIR)/graph.o
 
-$(BUILDDIR)/kmer.o: makefile $(SRCDIR)/kmer.cpp $(SRCDIR)/kmer.h
+$(BUILDDIR)/kmer.o: makefile $(SRCDIR)/kmer.cpp $(SRCDIR)/kmer.h $(BUILDDIR)/util.o
 	$(CC) -c $(SRCDIR)/kmer.cpp -o $(BUILDDIR)/kmer.o
 
 $(BUILDDIR)/kmerAmino.o: makefile $(SRCDIR)/kmerAmino.cpp $(SRCDIR)/kmerAmino.h $(BUILDDIR)/util.o
