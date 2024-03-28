@@ -1170,281 +1170,283 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	}
 	
 
+	// if only core-kmers are asked for, no further processing necessary
+	if (!output.empty() || !newick.empty() || !nexus.empty() || !pdf.empty()){ 
+	
+		/*
+		* [graph processing]
+		* - collect all colors and kmers into the color table
+		* - weight the colors based on the weight function and the kmers that support them
+		*/
 
-    /*
-    * [graph processing]
-    * - collect all colors and kmers into the color table
-    * - weight the colors based on the weight function and the kmers that support them
-    */
-
-    // function to map color position to file name
-    std::function<string(const uint64_t&)> map=[=](uint64_t i) {
-        if (i < denom_names.size()) return denom_names[i];
-        cerr << "Error: color bit does not correspond to color name" << endl;
-        exit(EXIT_FAILURE);
-    };
-
-    if (verbose) {
-        cout << "Processing splits..." << flush;
-    }
-    graph::add_weights(mean, min_value, verbose);  // accumulate split weights
-
-
-
-    /* [split processing]
-     * - compute the splits
-     */ 
-
-	graph::compile_split_list(mean, min_value);
-
-
-
-    /*
-    * [bootstrap handling]
-    */
-
-	// for bootstrapping: hash_map for each original split with zero counts
-	hash_map<color_t, uint32_t> support_values;
-	if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
-		
-	// NO BOOTSTRAPPING
-		
-		if(verbose){
-			cout << "\33[2K\r" << "Filtering splits..." << flush;
-		}
-		apply_filter(filter,newick, map, graph::split_list,verbose);
-		
-	}else{
-		
-	// BOOTSTRAPPING
-		
-
-		bool verbose_orig=verbose;
-		if(verbose){
-			cout << "\n" << flush;
-			verbose=false; // switch off output of filtering
-		}
-		
-		// init bootstrap support value counting
-		// remember original split weights for later
-		hash_map<color_t, double> orig_weights;
-		for (auto& it : graph::split_list){
-			support_values.insert({it.second,0});
-			orig_weights.insert({it.second,it.first});
-		}
-		
-
-       // Thread safe implementation of getting the index of the next run
-        uint64_t index = 0;
-        std::mutex index_mutex;
-        std::mutex count_mutex;
-        auto index_lambda_bootstrap = [&] () {std::lock_guard<mutex> lg(index_mutex); return index++;};
-		
-        auto lambda_bootstrap_count = [&] (multimap_<double, color_t> split_list_bs, hash_map<color_t, uint32_t>& support_values) { std::lock_guard<mutex> lg(count_mutex); for (auto& it : split_list_bs){color_t colors = it.second;support_values[colors]++;}};
-
-        auto lambda_bootstrap = [&] (uint64_t T, uint64_t max){ // This lambda expression wraps the sequence-kmer hashing
-			uint64_t i = index_lambda_bootstrap();
-			while (i<max){
-
-				if (verbose_orig) {
-					cout << "\33[2K\r" << "Bootstrapping... ("<<(i+1)<<"/"<<max<<")" << flush;
-				}
-				
-				// create bootstrap replicate
-				multimap_<double, color_t>  split_list_bs = graph::bootstrap(mean);
-				apply_filter(filter,"", map, split_list_bs,verbose);
-				
-				// count conserved splits
-				lambda_bootstrap_count(split_list_bs, support_values);
-				
-				// more to do for this thread?
-				i = index_lambda_bootstrap();
-			}
+		// function to map color position to file name
+		std::function<string(const uint64_t&)> map=[=](uint64_t i) {
+			if (i < denom_names.size()) return denom_names[i];
+			cerr << "Error: color bit does not correspond to color name" << endl;
+			exit(EXIT_FAILURE);
 		};
-		
-		// Driver code for multithreaded bootstrapping
-		vector<thread> thread_holder(threads);
-		for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda_bootstrap, thread_id, bootstrap_no);}
-		for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
 
-		
-		if(verbose_orig){
-			cout << "\n" << flush;
+		if (verbose) {
+			cout << "Processing splits..." << flush;
 		}
-		verbose=verbose_orig; //switch back to verbose if originally set
+		graph::add_weights(mean, min_value, verbose);  // accumulate split weights
 
-		if(consensus_filter.empty()) {
-			// filter original splits by weight
-			apply_filter(filter,newick, map, graph::split_list,&support_values,bootstrap_no,verbose);
+
+
+		/* [split processing]
+		* - compute the splits
+		*/ 
+
+		graph::compile_split_list(mean, min_value);
+
+
+
+		/*
+		* [bootstrap handling]
+		*/
+
+		// for bootstrapping: hash_map for each original split with zero counts
+		hash_map<color_t, uint32_t> support_values;
+		if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
+			
+		// NO BOOTSTRAPPING
+			
+			if(verbose){
+				cout << "\33[2K\r" << "Filtering splits..." << flush;
+			}
+			apply_filter(filter,newick, map, graph::split_list,verbose);
+			
 		}else{
-			// filter original splits by bootstrap value
-			// compose a corresponding split list
-			multimap_<double, color_t> split_list_conf;
+			
+		// BOOTSTRAPPING
+			
+
+			bool verbose_orig=verbose;
+			if(verbose){
+				cout << "\n" << flush;
+				verbose=false; // switch off output of filtering
+			}
+			
+			// init bootstrap support value counting
+			// remember original split weights for later
+			hash_map<color_t, double> orig_weights;
 			for (auto& it : graph::split_list){
-				double conf=(1.0*support_values[it.second])/bootstrap_no;
-				color_t colors = it.second;
-  				graph::add_split(conf,colors,split_list_conf);
-// 				split_list_conf.emplace(conf,it.second);
+				support_values.insert({it.second,0});
+				orig_weights.insert({it.second,it.first});
 			}
-			//filter
-// 			apply_filter(consensus_filter,newick, map, split_list_conf,verbose);
-			apply_filter(consensus_filter,newick, map, split_list_conf,&support_values,bootstrap_no,verbose);
+			
 
-			//apply result to original split list
-			graph::split_list.clear();
-			for (auto& it : split_list_conf){
-				color_t colors = it.second;
-				graph::add_split(orig_weights[colors],colors);
+		// Thread safe implementation of getting the index of the next run
+			uint64_t index = 0;
+			std::mutex index_mutex;
+			std::mutex count_mutex;
+			auto index_lambda_bootstrap = [&] () {std::lock_guard<mutex> lg(index_mutex); return index++;};
+			
+			auto lambda_bootstrap_count = [&] (multimap_<double, color_t> split_list_bs, hash_map<color_t, uint32_t>& support_values) { std::lock_guard<mutex> lg(count_mutex); for (auto& it : split_list_bs){color_t colors = it.second;support_values[colors]++;}};
+
+			auto lambda_bootstrap = [&] (uint64_t T, uint64_t max){ // This lambda expression wraps the sequence-kmer hashing
+				uint64_t i = index_lambda_bootstrap();
+				while (i<max){
+
+					if (verbose_orig) {
+						cout << "\33[2K\r" << "Bootstrapping... ("<<(i+1)<<"/"<<max<<")" << flush;
+					}
+					
+					// create bootstrap replicate
+					multimap_<double, color_t>  split_list_bs = graph::bootstrap(mean);
+					apply_filter(filter,"", map, split_list_bs,verbose);
+					
+					// count conserved splits
+					lambda_bootstrap_count(split_list_bs, support_values);
+					
+					// more to do for this thread?
+					i = index_lambda_bootstrap();
+				}
+			};
+			
+			// Driver code for multithreaded bootstrapping
+			vector<thread> thread_holder(threads);
+			for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda_bootstrap, thread_id, bootstrap_no);}
+			for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
+
+			
+			if(verbose_orig){
+				cout << "\n" << flush;
+			}
+			verbose=verbose_orig; //switch back to verbose if originally set
+
+			if(consensus_filter.empty()) {
+				// filter original splits by weight
+				apply_filter(filter,newick, map, graph::split_list,&support_values,bootstrap_no,verbose);
+			}else{
+				// filter original splits by bootstrap value
+				// compose a corresponding split list
+				multimap_<double, color_t> split_list_conf;
+				for (auto& it : graph::split_list){
+					double conf=(1.0*support_values[it.second])/bootstrap_no;
+					color_t colors = it.second;
+					graph::add_split(conf,colors,split_list_conf);
+	// 				split_list_conf.emplace(conf,it.second);
+				}
+				//filter
+	// 			apply_filter(consensus_filter,newick, map, split_list_conf,verbose);
+				apply_filter(consensus_filter,newick, map, split_list_conf,&support_values,bootstrap_no,verbose);
+
+				//apply result to original split list
+				graph::split_list.clear();
+				for (auto& it : split_list_conf){
+					color_t colors = it.second;
+					graph::add_split(orig_weights[colors],colors);
+				}
+			}
+
+		}
+
+		/**
+		* [write to output]
+		*/ 
+
+		if (verbose) {
+			cout << "\33[2K\r" << "Please wait..." << flush << endl;
+		}
+
+		ofstream file(output);    // output file stream
+		ostream stream(file.rdbuf());
+
+		ofstream file_bootstrap;
+		ostream stream_bootstrap(file_bootstrap.rdbuf());
+		if (bootstrap_no>0){
+			file_bootstrap.open(output+".bootstrap");    // output file stream
+		}
+
+		ofstream file_nexus; // output for nexus file
+		ostream stream_nexus(file_nexus.rdbuf());
+
+		if(nexus_wanted || pdf_wanted){
+			if(nexus.empty()){ // temporarily name nexus file to create pdf with it
+				nexus = pdf + ".nex";
+			}
+			file_nexus.open(nexus);
+			// nexus format stuff
+			stream_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=" << denom_file_count << ";\nTAXLABELS" ;
+			for(int i; i < denom_file_count; ++i){
+				string taxa = nexus_color::remove_extensions(denom_names[i]); // cutting off file extension
+				stream_nexus << "\n[" << i+1 << "] '" << taxa << "'";
+			}
+			stream_nexus << "\n;\nEND; [TAXA]\n";
+			if(bootstrap_no>0){ // confidence values
+				stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nFORMAT CONFIDENCES=YES;\nMATRIX";
+			} else {
+				stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nMATRIX";
 			}
 		}
 
-	}
+		uint64_t pos = 0;
+		//cleanliness.setFilteredCount(graph::split_list.size());
+		color_t split_color;
 
-    /**
-     * [write to output]
-     */ 
+		int split_num = 0; // number of split
+		int split_size; // #taxa in split
+		string split_comp = ""; // save split components/taxa
 
-    if (verbose) {
-        cout << "\33[2K\r" << "Please wait..." << flush << endl;
-    }
+		for (auto& split : graph::split_list) {
 
-    ofstream file(output);    // output file stream
-    ostream stream(file.rdbuf());
+			if(nexus_wanted || pdf_wanted){ // nexus
+				++split_num;
+				split_size = 0; // reset split size
+				split_comp = ""; // reset split components
+			}
 
-	ofstream file_bootstrap;
-	ostream stream_bootstrap(file_bootstrap.rdbuf());
-    if (bootstrap_no>0){
-		file_bootstrap.open(output+".bootstrap");    // output file stream
-	}
+			double weight = split.first;
+			split_color = split.second;
+		// cleanliness.setSmallestWeight(weight, split.second);
+			stream << weight;    // weight of the split
+			if (bootstrap_no>0) {
+				stream_bootstrap << ((1.0 * support_values[split.second]) / bootstrap_no);
+				// stream_bootstrap << support_values[split.second];
+			}
+			for (uint64_t i = 0; i < num; ++i) {
 
-    ofstream file_nexus; // output for nexus file
-    ostream stream_nexus(file_nexus.rdbuf());
+				if (split_color.test(pos)) {
+					if (i < denom_names.size()) {
+						stream << '\t' << denom_names[i]; // name of the file
+						if (bootstrap_no > 0) {
+							stream_bootstrap << '\t' << denom_names[i]; // name of the file
+						}
 
-    if(nexus_wanted || pdf_wanted){
-        if(nexus.empty()){ // temporarily name nexus file to create pdf with it
-            nexus = pdf + ".nex";
-        }
-        file_nexus.open(nexus);
-        // nexus format stuff
-        stream_nexus << "#nexus\n\nBEGIN Taxa;\nDIMENSIONS ntax=" << denom_file_count << ";\nTAXLABELS" ;
-        for(int i; i < denom_file_count; ++i){
-            string taxa = nexus_color::remove_extensions(denom_names[i]); // cutting off file extension
-            stream_nexus << "\n[" << i+1 << "] '" << taxa << "'";
-        }
-        stream_nexus << "\n;\nEND; [TAXA]\n";
-        if(bootstrap_no>0){ // confidence values
-            stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nFORMAT CONFIDENCES=YES;\nMATRIX";
-        } else {
-            stream_nexus << "\nBEGIN Splits;\nDIMENSIONS ntax=" << denom_file_count << " nsplits=" << graph::split_list.size() << ";\nMATRIX";
-        }
-    }
+						if(nexus_wanted || pdf_wanted){ // nexus
+							++split_size;
+							if(split_size > 1) split_comp += " "; // " " only if not first value
+							split_comp += to_string(i+1);
+						}
 
-    uint64_t pos = 0;
-    //cleanliness.setFilteredCount(graph::split_list.size());
-    color_t split_color;
+					}
+				}
+				split_color >>= 01u;
+			}
 
-    int split_num = 0; // number of split
-    int split_size; // #taxa in split
-    string split_comp = ""; // save split components/taxa
+			if(nexus_wanted || pdf_wanted){
+				if(bootstrap_no>0){ // Adding bootstrap values
+					stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t";
+					stream_nexus << weight << "\t" << ((1.0 * support_values[split.second]) / bootstrap_no) << "\t" << split_comp << ",";
+				} else {
+					stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t" << weight << "\t" << split_comp << ",";
+				}
+			}
 
-    for (auto& split : graph::split_list) {
+			stream << endl;
+			if(bootstrap_no>0){
+				stream_bootstrap<<endl;
+			}
+		}
 
-        if(nexus_wanted || pdf_wanted){ // nexus
-            ++split_num;
-            split_size = 0; // reset split size
-            split_comp = ""; // reset split components
-        }
+		if (nexus_wanted || pdf_wanted){ // nexus
+			stream_nexus << "\n;\nEND; [Splits]\n";
+			// filter = strict (=greedy),  weakly (=greedyWC), tree (=?greedy)
+			string fltr = "none"; // filter used for SplitsTree
+			stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=";
+			stream_nexus << fltr << ";\nexclude no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
+		}
 
-        double weight = split.first;
-        split_color = split.second;
-       // cleanliness.setSmallestWeight(weight, split.second);
-        stream << weight;    // weight of the split
-        if (bootstrap_no>0) {
-            stream_bootstrap << ((1.0 * support_values[split.second]) / bootstrap_no);
-            // stream_bootstrap << support_values[split.second];
-        }
-        for (uint64_t i = 0; i < num; ++i) {
+		//cleanliness.calculateWeightBeforeCounter();
 
-            if (split_color.test(pos)) {
-                if (i < denom_names.size()) {
-                    stream << '\t' << denom_names[i]; // name of the file
-                    if (bootstrap_no > 0) {
-                        stream_bootstrap << '\t' << denom_names[i]; // name of the file
-                    }
-
-                    if(nexus_wanted || pdf_wanted){ // nexus
-                        ++split_size;
-                        if(split_size > 1) split_comp += " "; // " " only if not first value
-                        split_comp += to_string(i+1);
-                    }
-
-                }
-            }
-            split_color >>= 01u;
-        }
-
-        if(nexus_wanted || pdf_wanted){
-            if(bootstrap_no>0){ // Adding bootstrap values
-                stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t";
-                stream_nexus << weight << "\t" << ((1.0 * support_values[split.second]) / bootstrap_no) << "\t" << split_comp << ",";
-            } else {
-                stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t" << weight << "\t" << split_comp << ",";
-            }
-        }
-
-        stream << endl;
+		file.close();
 		if(bootstrap_no>0){
-			stream_bootstrap<<endl;
+			file_bootstrap.close();
 		}
-    }
+		if(nexus_wanted || pdf_wanted){
+			file_nexus.close();
+			// naming modified nexus output file
+			//string modded_file = nexus_color::modify_filename(nexus, "labeled_");
+			// scale weights to 0-1
+			nexus_color::scale_nexus(nexus, verbose, nexus_wanted);
 
-    if (nexus_wanted || pdf_wanted){ // nexus
-        stream_nexus << "\n;\nEND; [Splits]\n";
-        // filter = strict (=greedy),  weakly (=greedyWC), tree (=?greedy)
-        string fltr = "none"; // filter used for SplitsTree
-        stream_nexus << "\nBEGIN st_Assumptions;\nuptodate;\nsplitstransform=EqualAngle UseWeights = true RunConvexHull = true DaylightIterations = 0\nOptimizeBoxesIterations = 0 SpringEmbedderIterations = 0;\nSplitsPostProcess filter=";
-        stream_nexus << fltr << ";\nexclude no missing;\nautolayoutnodelabels;\nEND; [st_Assumptions]";
-    }
+			if(c_nexus_wanted){
+				// use scaled file to open, mod and save in SplitsTree
+				//nexus_color::open_in_splitstree(nexus, pdf, verbose, true, modded_file);
+				nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
 
-    //cleanliness.calculateWeightBeforeCounter();
+				if(verbose) cout << "Adding color\n";
+				//nexus_color::color_nexus(modded_file, groups, coloring);
+				nexus_color::color_nexus(nexus, groups, coloring);
+				if(pdf_wanted){
+					//nexus_color::open_in_splitstree(modded_file, pdf, verbose, false);
+					nexus_color::open_in_splitstree(nexus, pdf, verbose, false);
+				}
+			} else if(pdf_wanted){
+				//nexus_color::open_in_splitstree(nexus, pdf, verbose); // not saving (via SplitsTree) network to file
+				nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
+			}
 
-    file.close();
-	if(bootstrap_no>0){
-		file_bootstrap.close();
+			// Delete nexus file if only pdf wanted
+			if(!nexus_wanted){
+				remove(nexus.c_str());
+				//remove(modded_file.c_str());
+			}
+		}
 	}
-    if(nexus_wanted || pdf_wanted){
-        file_nexus.close();
-        // naming modified nexus output file
-        //string modded_file = nexus_color::modify_filename(nexus, "labeled_");
-        // scale weights to 0-1
-        nexus_color::scale_nexus(nexus, verbose, nexus_wanted);
 
-        if(c_nexus_wanted){
-            // use scaled file to open, mod and save in SplitsTree
-            //nexus_color::open_in_splitstree(nexus, pdf, verbose, true, modded_file);
-            nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
-
-            if(verbose) cout << "Adding color\n";
-            //nexus_color::color_nexus(modded_file, groups, coloring);
-            nexus_color::color_nexus(nexus, groups, coloring);
-            if(pdf_wanted){
-                //nexus_color::open_in_splitstree(modded_file, pdf, verbose, false);
-                nexus_color::open_in_splitstree(nexus, pdf, verbose, false);
-            }
-        } else if(pdf_wanted){
-            //nexus_color::open_in_splitstree(nexus, pdf, verbose); // not saving (via SplitsTree) network to file
-            nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
-        }
-
-        // Delete nexus file if only pdf wanted
-        if(!nexus_wanted){
-            remove(nexus.c_str());
-            //remove(modded_file.c_str());
-        }
-    }
-
-    chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
-
+	chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
     if (verbose) {
         if (!filter.empty()) {
           // cleanliness.reportCleanliness();
