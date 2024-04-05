@@ -1416,7 +1416,7 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
     // The iterators for the tables
     hash_map<kmer_t, uint64_t>::iterator base_it;
     hash_map<kmerAmino_t, uint64_t>::iterator amino_it;
-
+	uint64_t c=0;
 		
     // Iterate the tables
     for (int i = 0; i < graph::table_count; i++) // Iterate all tables
@@ -1454,8 +1454,10 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
             // add_weight(color, mean, min_value, pos);
 			array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
 			weight[0]++; // update the weight or the inverse weight of the current color set
+			c++;
 		}
     }
+    cerr << endl << to_string(c) << " singleton k-mers added to splits." << endl << flush;
 }
 
 
