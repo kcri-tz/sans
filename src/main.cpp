@@ -1160,6 +1160,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 	if(verbose){
 		cout << graph::number_kmers() << " k-mers read." << endl << flush;
+		cout << graph::number_singleton_kmers() << " singleton k-mers read." << endl << flush;
 	}
 
 
@@ -1194,6 +1195,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			cout << "Processing splits..." << flush;
 		}
 		graph::add_weights(mean, min_value, verbose);  // accumulate split weights
+		graph::add_singleton_weights(mean, min_value, verbose);  // accumulate split weights
 
 
 

@@ -369,7 +369,13 @@ public:
 	*/
 	static uint64_t number_kmers();
 	
-    /**
+	/**
+	* Get the number of k-mers in all singleton tables.
+	* @return number of k-mers in all singleton tables.
+	*/
+	static uint64_t number_singleton_kmers();
+
+	/**
      * This function iterates over the hash table and calculates the split weights.
      *
      * @param mean weight function
@@ -377,6 +383,17 @@ public:
      * @param min_value the minimal weight currently represented in the top list
      */
     static void add_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose);
+	
+	
+	/**
+	* This function iterates over the singleton tables and adds the split weights.
+	* 
+	* @param mean weight function
+	* @param min_value the minimal weight represented in the top list
+	* @param verbose print progess
+	*/
+	static void add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose);
+
 
     /**
      * This function adds a single split (weight and colors) to the output list.

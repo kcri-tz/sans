@@ -478,7 +478,8 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
 	else{
 		hash_map<kmer_t,uint64_t>::iterator s_entry = singleton_kmer_table[bin].find(kmer);
  		//seen once before? -> add to kmer table / remove from singleton table
-		if(s_entry != singleton_kmer_table[bin].end()){
+		if(s_entry != singleton_kmer_table[bin].end() && s_entry.value() != color){
+			kmer_table[bin][kmer].set(s_entry.value());
 			kmer_table[bin][kmer].set(color);
 			singleton_kmer_table[bin].erase(s_entry);
 		}
@@ -500,7 +501,25 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
 void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color)
 {
     lock[bin].lock();
-    kmer_tableAmino[bin][kmer].set(color);
+	hash_map<kmerAmino_t,color_t>::iterator entry=kmer_tableAmino[bin].find(kmer); 
+	// already in the kmer table? -> add
+	if(entry != kmer_tableAmino[bin].end()){
+		entry.value().set(color);
+	}
+	// not yet in the kmer table?
+	else{
+		hash_map<kmerAmino_t,uint64_t>::iterator s_entry = singleton_kmer_tableAmino[bin].find(kmer);
+ 		//seen once before? -> add to kmer table / remove from singleton table
+		if(s_entry != singleton_kmer_tableAmino[bin].end() && s_entry.value() != color){
+			kmer_tableAmino[bin][kmer].set(s_entry.value());
+			kmer_tableAmino[bin][kmer].set(color);
+			singleton_kmer_tableAmino[bin].erase(s_entry);
+		}
+		// not seen before -> add to singleton_table
+		else{
+			singleton_kmer_tableAmino[bin][kmer]=color;
+		}
+	}	
     lock[bin].unlock();
 }
 
@@ -738,6 +757,8 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
             }
         }
     }
+    
+
 }
 
 /**
@@ -1368,6 +1389,77 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
     }
 }
 
+
+
+
+/**
+ * This function iterates over the singleton tables and adds the split weights.
+ * 
+ * @param mean weight function
+ * @param min_value the minimal weight represented in the top list
+ * @param verbose print progess
+ */
+void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
+	
+	
+	
+    //double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
+    uint64_t cur=0, prog=0, next;
+
+    // check table (Amino or base)
+    uint64_t max = number_singleton_kmers();
+
+    // If the tables are empty, there is nothing to be done	    
+    if (max==0){
+        return;
+    }
+    // The iterators for the tables
+    hash_map<kmer_t, uint64_t>::iterator base_it;
+    hash_map<kmerAmino_t, uint64_t>::iterator amino_it;
+
+		
+    // Iterate the tables
+    for (int i = 0; i < graph::table_count; i++) // Iterate all tables
+    {
+        if (!isAmino){base_it = singleton_kmer_table[i].begin();} // base table iterator
+        else {amino_it = singleton_kmer_tableAmino[i].begin();} // amino table iterator
+
+        while (true) { // process splits
+            // show progress
+            if (verbose) { 
+                next = 100*cur/max;
+                if (prog < next)  cout << "\33[2K\r" << "Adding singleton k-mers to splits... " << next << "%" << flush;
+                prog = next; cur++;
+            }
+            // update the iterator
+			color_t color;
+            if (isAmino) { // if the amino table is used, update the amino iterator
+                if (amino_it == singleton_kmer_tableAmino[i].end()){break;} // stop iterating if done
+                else{ // iterate the amino table
+					color_t color = 0b1u;
+					color.set(amino_it.value());
+					amino_it++;
+				}
+			}
+            else { // if the base tables is used update the base iterator
+                // Todo: Get the target hash map index from the kmer bits
+                if (base_it == singleton_kmer_table[i].end()){break;} // stop itearating if done
+                else {// iterate the base table
+					color_t color = 0b1u;
+					color.set(base_it.value());
+					base_it++;
+				}
+			}
+            // process
+            // add_weight(color, mean, min_value, pos);
+			array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
+			weight[0]++; // update the weight or the inverse weight of the current color set
+		}
+    }
+}
+
+
+
 /**
  * This function calculates the weight for all splits and puts them into the split_ölist
  * @param mean weight function
@@ -1466,9 +1558,7 @@ void graph::output_core(ostream& file, bool& verbose)
     }
 	if (verbose) { 
 		cout  << endl << core_count << " core k-mers found. ("<< (100*core_count/all_count) <<"%)"<< endl << flush;
-		cout  << endl << singletons_count << " singleton k-mers found. ("<< (100*singletons_count/all_count) <<"%)"<< endl << flush;
 	}
-
 }
 
 
@@ -1486,6 +1576,22 @@ uint64_t graph::number_kmers(){
 	}
 	return num;
 }
+
+
+/**
+ * Get the number of singleton k-mers in all tables.
+ * @return number of k-mers in all singleton kmer tables.
+ */
+uint64_t graph::number_singleton_kmers(){
+	uint64_t num=0;
+	if (isAmino){ // use the sum of amino table sizes
+		for (auto table: singleton_kmer_tableAmino){num += table.size();}
+	} else { // use the sum of base table sizeskmer_table.size(); 
+		for (auto table: singleton_kmer_table){num+=table.size();}
+	}
+	return num;
+}
+
 
 /**
  * This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.
