@@ -55,8 +55,8 @@ void kmerAmino::shift_right(kmerAmino_t& kmer, char& chr) {
  * @param chr right character
  */
 void kmerAmino::unshift(kmerAmino_t& kmer, char& chr) {
-	chr=util::amino_bits_to_char(kmer & 0b11u);    // return the rightmost character
-    kmer >>= 02u;    // shift all current bits to the right by two positions
+	chr=util::amino_bits_to_char(kmer & 0b11111u;);    // return the rightmost character
+    kmer >>= 05u;    // shift all current bits to the right by two positions
 }
 
 

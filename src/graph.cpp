@@ -600,7 +600,6 @@ void graph::fill_blacklist(string& str, bool& reverse) {
         
         // Amino processing
         } else {
-            right = util::amino_char_to_bits(str[pos]);
             #if maxK <= 12
                 kmerAmino::shift_right(kmerAmino, str[pos]);    // shift each base into the bit sequence
             #else
@@ -1415,7 +1414,7 @@ void graph::output_core(ostream& file, bool& verbose)
 			kmerAmino_t kmerAmino;
             if (isAmino) { // if the amino table is used, update the amino iterator
                 if (amino_it == kmer_tableAmino[i].end()){break;} // stop iterating if done
-                else{kmerAmino = amino_it->first; color_ref = &amino_it.value(); ++amino_it;} // iterate the amino table
+                else{kmerAmino = amino_it.key(); color_ref = &amino_it.value(); ++amino_it;} // iterate the amino table
             }
             else { // if the base tables is used update the base iterator
                 // Todo: Get the target hash map index from the kmer bits
