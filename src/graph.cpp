@@ -67,6 +67,14 @@ vector<hash_map<kmer_t, uint64_t>> graph::quality_map;
 hash_set<kmer_t> graph::blacklist;
 hash_set<kmerAmino_t> graph::blacklist_amino;
 
+
+/**
+ * This is vector of hash tables mapping k-mers to genomes to buffer a k-mer before adding to the kmer_table. If it is seen a second time, it is added. Otherwise the singleton k-mer is ignored
+ */
+vector<hash_map<kmer_t, uint64_t>> graph::singleton_kmer_table;
+vector<hash_map<kmerAmino_t, uint64_t>> graph::singleton_kmer_tableAmino;
+
+
 /**
  * This is a hash set used to filter k-mers for coverage (q > 1).
  */
@@ -149,6 +157,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
 
         // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
+	    singleton_kmer_table = vector<hash_map<kmer_t, uint64_t>> (table_count);
 
         // Init the lock vector
 	    lock = vector<spinlock> (table_count);
@@ -176,6 +185,8 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
 
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
+        singleton_kmer_tableAmino = vector<hash_map<kmerAmino_t, uint64_t>> (table_count);
+		
         // Init the mutex lock vector
         lock = vector<spinlock> (table_count);
 
@@ -457,8 +468,25 @@ uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 */
 void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color)
 {
-    lock[bin].lock(); 
-    kmer_table[bin][kmer].set(color);
+    lock[bin].lock();
+	hash_map<kmer_t,color_t>::iterator entry=kmer_table[bin].find(kmer); 
+	// already in the kmer table? -> add
+	if(entry != kmer_table[bin].end()){
+		entry.value().set(color);
+	}
+	// not yet in the kmer table?
+	else{
+		hash_map<kmer_t,uint64_t>::iterator s_entry = singleton_kmer_table[bin].find(kmer);
+ 		//seen once before? -> add to kmer table / remove from singleton table
+		if(s_entry != singleton_kmer_table[bin].end()){
+			kmer_table[bin][kmer].set(color);
+			singleton_kmer_table[bin].erase(s_entry);
+		}
+		// not seen before -> add to singleton_table
+		else{
+			singleton_kmer_table[bin][kmer]=color;
+		}
+	}	
     lock[bin].unlock();
 }
 

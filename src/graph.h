@@ -156,6 +156,11 @@ private:
     static vector<hash_set<kmer_t>> quality_set;
     static vector<hash_set<kmerAmino_t>> quality_setAmino;
 
+	static vector<hash_map<kmer_t, uint64_t>> singleton_kmer_table;
+	static vector<hash_map<kmerAmino_t, uint64_t>> singleton_kmer_tableAmino;
+
+	
+	
     /**
      * This is a hash map used to filter k-mers for coverage (q > 2).
      */
