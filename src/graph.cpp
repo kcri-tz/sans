@@ -1436,7 +1436,7 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
             if (isAmino) { // if the amino table is used, update the amino iterator
                 if (amino_it == singleton_kmer_tableAmino[i].end()){break;} // stop iterating if done
                 else{ // iterate the amino table
-					color_t color = 0b0u;
+					color = 0b0u;
 					color.set(amino_it.value());
 					amino_it++;
 				}
@@ -1445,7 +1445,7 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
                 // Todo: Get the target hash map index from the kmer bits
                 if (base_it == singleton_kmer_table[i].end()){break;} // stop itearating if done
                 else {// iterate the base table
-					color_t color = 0b0u;
+					color = 0b0u;
 					color.set(base_it.value());
 					base_it++;
 				}
