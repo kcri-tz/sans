@@ -101,3 +101,14 @@ bool color::is_complete(const color_t& c){
 	return (~c & mask)==0b0u;
 }
 
+
+/**
+	* This function tests whether a given color set is only a single color.
+	* 
+	* @param c color set to test
+	* @return true, if color set contains exactly one color
+	*/
+bool color::is_singleton(const color_t& c){
+	return color.popcnt()==1;
+}
+

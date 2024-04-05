@@ -1380,7 +1380,7 @@ void graph::compile_split_list(double mean(uint32_t&, uint32_t&), double min_val
  */
 void graph::output_core(ostream& file, bool& verbose)
 {
-    uint64_t cur=0, prog=0, next, core_count=0, all_count=0;
+    uint64_t cur=0, prog=0, next, core_count=0, all_count=0; singletons_count=0;
 
     // check table (Amino or base)
     uint64_t max = 0; // table size
@@ -1431,10 +1431,14 @@ void graph::output_core(ostream& file, bool& verbose)
 				file << ">" << endl;
  				file << (isAmino?(kmerAmino::kmer_to_string(kmerAmino)):(kmer::kmer_to_string(kmer))) << endl;
 			}
+			if(color::is_singleton(color)){
+				singletons_count++;
+			}
 		}
     }
 	if (verbose) { 
 		cout  << endl << core_count << " core k-mers found. ("<< (100*core_count/all_count) <<"%)"<< endl << flush;
+		cout  << endl << singletons_count << " singleton k-mers found. ("<< (100*singletons_count/all_count) <<"%)"<< endl << flush;
 	}
 
 }
