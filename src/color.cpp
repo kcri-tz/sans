@@ -109,6 +109,6 @@ bool color::is_complete(const color_t& c){
 	* @return true, if color set contains exactly one color
 	*/
 bool color::is_singleton(const color_t& c){
-	return color.popcnt()==1;
+	return c.popcnt()==1;
 }
 

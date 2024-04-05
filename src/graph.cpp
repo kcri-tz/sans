@@ -1380,7 +1380,7 @@ void graph::compile_split_list(double mean(uint32_t&, uint32_t&), double min_val
  */
 void graph::output_core(ostream& file, bool& verbose)
 {
-    uint64_t cur=0, prog=0, next, core_count=0, all_count=0; singletons_count=0;
+    uint64_t cur=0, prog=0, next, core_count=0, all_count=0, singletons_count=0;
 
     // check table (Amino or base)
     uint64_t max = 0; // table size
