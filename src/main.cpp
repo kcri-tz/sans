@@ -1159,8 +1159,9 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 #endif
 
 	if(verbose){
-		cout << graph::number_kmers() << " k-mers read." << endl << flush;
-		cout << graph::number_singleton_kmers() << " singleton k-mers read." << endl << flush;
+		uint64_t s=graph::number_singleton_kmers();
+		cout << (s+graph::number_kmers()) << " k-mers read." << endl << flush;
+		cout << s << " singleton k-mers read." << endl << flush;
 	}
 
 

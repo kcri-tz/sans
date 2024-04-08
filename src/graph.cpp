@@ -1457,7 +1457,6 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
 			c++;
 		}
     }
-    cerr << endl << to_string(c) << " singleton k-mers added to splits." << endl << flush;
 }
 
 
