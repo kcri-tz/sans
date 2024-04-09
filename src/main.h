@@ -6,6 +6,7 @@
 #include <regex>
 #include <mutex>
 
+#include "color.h"
 #include "util.h"
 #include "translator.h"
 #include "cleanliness.h"
