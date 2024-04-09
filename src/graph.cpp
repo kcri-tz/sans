@@ -1416,7 +1416,6 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
     // The iterators for the tables
     hash_map<kmer_t, uint64_t>::iterator base_it;
     hash_map<kmerAmino_t, uint64_t>::iterator amino_it;
-	uint64_t c=0;
 	color_t color;
 		
     // Iterate the tables
@@ -1454,7 +1453,6 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
             // add_weight(color, mean, min_value, pos);
 			array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
 			weight[0]++; // update the weight or the inverse weight of the current color set
-			c++;
 		}
     }
 }
