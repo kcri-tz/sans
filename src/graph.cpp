@@ -229,6 +229,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         graph::allowedChars.push_back('*');
     }
 
+    graph::quality = quality;
     graph::q_table = q_table;
 	graph::blacklist = blacklist;
 	graph::blacklist_amino = blacklist_amino;
