@@ -325,7 +325,14 @@ public:
 	* @param min_value the minimal weight represented in the top list
 	*/
 	static void compile_split_list(double mean(uint32_t&, uint32_t&), double min_value);
-
+	
+	
+	/**
+	* Get the number of k-mers in all tables.
+	* @return number of k-mers in all tables.
+	*/
+	static uint64_t number_kmers();
+	
     /**
      * This function iterates over the hash table and calculates the split weights.
      *
