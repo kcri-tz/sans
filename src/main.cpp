@@ -135,7 +135,6 @@ int main(int argc, char* argv[]) {
     // show the help page if SANS is run from autoN-script without further arguments or --help
     if ((strcmp(argv[1],"-M") == 0 ) && (argc <= 3 || strcmp(argv[3], "-h") == 0 || strcmp(argv[3], "--help") == 0 )) { show_help_page(); return(0);}
 
-    
 
     /**
     * [argument and meta variable initialization]
@@ -195,6 +194,7 @@ int main(int argc, char* argv[]) {
 
     // qol
     bool verbose = false;    // print messages during execution
+	chrono::high_resolution_clock::time_point end;
 
     // simple nexus, colored nexus, pdf
     bool nexus_wanted = false;
@@ -998,6 +998,8 @@ int main(int argc, char* argv[]) {
 
     if (!input.empty() && splits.empty()) {
         if (verbose) {
+			end = chrono::high_resolution_clock::now();
+			cout << " (" << util::format_time(end - begin) << ")" << endl;
             cout << "Reading input files..." << flush;
         }
 
@@ -1020,7 +1022,7 @@ int main(int argc, char* argv[]) {
 
 				igzstream file(c_name, ios::in);    // input file stream
 				if (verbose) {     // print progress
-					cout << "\33[2K\r" << file_name;
+// 					cout << "\33[2K\r" << file_name;
 					if (q_table.size()>0) {
 						cout <<" q="<<q_table[genome_ids[i]];
 					}
@@ -1087,9 +1089,9 @@ int main(int argc, char* argv[]) {
 				sequence.clear();
 
 				
-				if (verbose) {
-					cout << "\33[2K\r" << flush;
-				}
+// 				if (verbose) {
+// 					cout << "\33[2K\r" << flush;
+// 				}
 				file.close();
                 graph::clear_thread(T);
                 i = index_lambda();
@@ -1108,6 +1110,8 @@ int main(int argc, char* argv[]) {
 		vector<thread> thread_holder(threads);
         for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda, thread_id, genome_ids, file_ids);}
         for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
+        
+
     }
 
     /**
@@ -1160,8 +1164,9 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 	if(verbose){
 		uint64_t s=graph::number_singleton_kmers();
-		cout << (s+graph::number_kmers()) << " k-mers read." << endl << flush;
-		cout << s << " singleton k-mers read." << endl << flush;
+		uint64_t all=s+graph::number_kmers();
+		end = chrono::high_resolution_clock::now();
+		cout << all << " k-mers read. (" << s << " / "<< (100*s/all) <<"% singleton k-mers)" << " (" << util::format_time(end - begin) << ")" << endl << flush;
 	}
 
 
@@ -1173,6 +1178,9 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		ofstream core_file(core);
 		ostream core_stream(core_file.rdbuf());
 		graph::output_core(core_stream,verbose);
+		if(verbose){
+			cout << " (" << util::format_time(end - begin) << ")" << endl << flush;
+		}
 	}
 	
 
@@ -1193,10 +1201,19 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		};
 
 		if (verbose) {
-			cout << "Processing splits..." << flush;
+			cout << "Accumulating splits from non-singleton k-mers..."  << flush;
 		}
 		graph::add_weights(mean, min_value, verbose);  // accumulate split weights
+		if (verbose) {
+			end = chrono::high_resolution_clock::now();
+			cout << "\33[2K\r" << "Accumulating splits from non-singleton k-mers... (" << util::format_time(end - begin) << ")" << endl;
+			cout << "Accumulating splits from singleton k-mers..."  << flush;
+		}
 		graph::add_singleton_weights(mean, min_value, verbose);  // accumulate split weights
+		if (verbose) {
+			end = chrono::high_resolution_clock::now();
+			cout << "\33[2K\r"  << "Accumulating splits from singleton k-mers... (" << util::format_time(end - begin) << ")" << endl;
+		}
 
 
 
@@ -1204,7 +1221,14 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		* - compute the splits
 		*/ 
 
+		if (verbose) {
+			cout << "Compile split list..."  << flush;
+		}
 		graph::compile_split_list(mean, min_value);
+		if (verbose) {
+			end = chrono::high_resolution_clock::now();
+			cout << " (" << util::format_time(end - begin) << ")" << endl;
+		}
 
 
 
@@ -1216,13 +1240,17 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		hash_map<color_t, uint32_t> support_values;
 		if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
 			
-		// NO BOOTSTRAPPING
-			
+			// NO BOOTSTRAPPING
+				
 			if(verbose){
-				cout << "\33[2K\r" << "Filtering splits..." << flush;
+				cout << "Filtering splits..." << flush;
 			}
 			apply_filter(filter,newick, map, graph::split_list,verbose);
-			
+			if (verbose) {
+				end = chrono::high_resolution_clock::now();
+				cout << "\33[2K\r" << "Filtering splits... (" << util::format_time(end - begin) << ")" << endl;
+			}
+
 		}else{
 			
 		// BOOTSTRAPPING
@@ -1230,7 +1258,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 			bool verbose_orig=verbose;
 			if(verbose){
-				cout << "\n" << flush;
+// 				cout << "\n" << flush;
 				verbose=false; // switch off output of filtering
 			}
 			
@@ -1278,7 +1306,8 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 			
 			if(verbose_orig){
-				cout << "\n" << flush;
+				end = chrono::high_resolution_clock::now();
+				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl;
 			}
 			verbose=verbose_orig; //switch back to verbose if originally set
 
@@ -1306,6 +1335,10 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 					graph::add_split(orig_weights[colors],colors);
 				}
 			}
+			if (verbose) {
+				end = chrono::high_resolution_clock::now();
+				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl;
+			}
 
 		}
 
@@ -1314,7 +1347,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		*/ 
 
 		if (verbose) {
-			cout << "\33[2K\r" << "Please wait..." << flush << endl;
+			cout << "Writing output..." << endl << flush;
 		}
 
 		ofstream file(output);    // output file stream
@@ -1433,7 +1466,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 				//nexus_color::open_in_splitstree(nexus, pdf, verbose, true, modded_file);
 				nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
 
-				if(verbose) cout << "Adding color\n";
+				if(verbose) cout << "Adding color..." << endl << flush;
 				//nexus_color::color_nexus(modded_file, groups, coloring);
 				nexus_color::color_nexus(nexus, groups, coloring);
 				if(pdf_wanted){
@@ -1453,13 +1486,14 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		}
 	}
 
-	chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();    // time measurement
+// time measurement
     if (verbose) {
         if (!filter.empty()) {
           // cleanliness.reportCleanliness();
         }
-        cout << " Done!" << flush << endl;    // print progress and time
-        cout << " (" << util::format_time(end - begin) << ")" << endl;
+        cout << " Done!" << flush;    // print progress and time
+		end = chrono::high_resolution_clock::now();
+		cout << " (" << util::format_time(end - begin) << ")" << endl;
     }
     return 0;
 }

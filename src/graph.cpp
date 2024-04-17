@@ -1364,7 +1364,7 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
             // show progress
             if (verbose) { 
                 next = 100*cur/max;
-                if (prog < next)  cout << "\33[2K\r" << "Processing splits... " << next << "%" << flush;
+                if (prog < next)  cout << "\33[2K\r" << "Accumulating splits from non-singleton k-mers... " << next << "%" << flush;
                 prog = next; cur++;
             }
             // update the iterator
@@ -1429,7 +1429,7 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
             // show progress
             if (verbose) { 
                 next = 100*cur/max;
-                if (prog < next)  cout << "\33[2K\r" << "Adding singleton k-mers to splits... " << next << "%" << flush;
+                if (prog < next)  cout << "\33[2K\r" << "Accumulating splits from singleton k-mers... " << next << "%" << flush;
                 prog = next; cur++;
             }
             // update the iterator
@@ -1557,7 +1557,7 @@ void graph::output_core(ostream& file, bool& verbose)
 		}
     }
 	if (verbose) { 
-		cout  << endl << core_count << " core k-mers found. ("<< (100*core_count/all_count) <<"%)"<< endl << flush;
+		cout  << "\33[2K\r" << "Collecting core k-mers... (" << core_count << " / "<< (100*core_count/all_count) << "%)"<< flush;
 	}
 }
 
