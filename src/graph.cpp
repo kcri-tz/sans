@@ -1420,7 +1420,9 @@ void graph::add_weights(double mean(uint32_t&, uint32_t&), double min_value, boo
  */
 void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_value, bool& verbose) {
 	
-	
+	// not needed anymore
+	singleton_kmer_table.clear();
+	singleton_kmer_tableAmino.clear();	
 	
     //double min_value = numeric_limits<double>::min(); // current min. weight in the top list (>0)
     uint64_t cur=0, prog=0, next;
