@@ -1168,12 +1168,14 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id] = thread(lambda_bootstrap, thread_id, bootstrap_no);}
 		for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
 
-			
-// 			if(verbose_orig){
-// 				end = chrono::high_resolution_clock::now();
-// 				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl;
-// 			}
 			verbose=verbose_orig; //switch back to verbose if originally set
+			
+			if (verbose) {
+				end = chrono::high_resolution_clock::now();
+				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl << flush;
+ 				cout << "Filtering splits... "<< flush;
+			}
+			
 
 			if(consensus_filter.empty()) {
 				// filter original splits by weight
@@ -1201,7 +1203,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			}
 			if (verbose) {
 				end = chrono::high_resolution_clock::now();
-				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl;
+				cout << "\33[2K\r" << "Filtering splits... (" << util::format_time(end - begin) << ")" << endl << flush;
 			}
 
 		}
