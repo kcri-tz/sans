@@ -73,6 +73,8 @@ hash_set<kmerAmino_t> graph::blacklist_amino;
  */
 vector<hash_map<kmer_t, uint64_t>> graph::singleton_kmer_table;
 vector<hash_map<kmerAmino_t, uint64_t>> graph::singleton_kmer_tableAmino;
+uint64_t graph::singleton_counters[maxN];
+spinlock graph::singleton_counters_locks[maxN];
 
 
 /**
@@ -479,16 +481,24 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
 	else{
 		hash_map<kmer_t,uint64_t>::iterator s_entry = singleton_kmer_table[bin].find(kmer);
  		//seen once before? -> add to kmer table / remove from singleton table
-		if(s_entry != singleton_kmer_table[bin].end() && s_entry.value() != color){
-			kmer_table[bin][kmer].set(s_entry.value());
-			kmer_table[bin][kmer].set(color);
-			singleton_kmer_table[bin].erase(s_entry);
+		if(s_entry != singleton_kmer_table[bin].end()){
+			if(s_entry.value() != color){
+				kmer_table[bin][kmer].set(s_entry.value());
+				kmer_table[bin][kmer].set(color);
+				singleton_counters_locks[s_entry.value()].lock();
+				singleton_counters[s_entry.value()]--;
+				singleton_counters_locks[s_entry.value()].unlock();
+				singleton_kmer_table[bin].erase(s_entry);
+			}
 		}
 		// not seen before -> add to singleton_table
 		else{
 			singleton_kmer_table[bin][kmer]=color;
+			singleton_counters_locks[color].lock();
+			singleton_counters[color]++;
+			singleton_counters_locks[color].unlock();
 		}
-	}	
+	}
     lock[bin].unlock();
 }
 
@@ -511,14 +521,22 @@ void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const u
 	else{
 		hash_map<kmerAmino_t,uint64_t>::iterator s_entry = singleton_kmer_tableAmino[bin].find(kmer);
  		//seen once before? -> add to kmer table / remove from singleton table
-		if(s_entry != singleton_kmer_tableAmino[bin].end() && s_entry.value() != color){
-			kmer_tableAmino[bin][kmer].set(s_entry.value());
-			kmer_tableAmino[bin][kmer].set(color);
-			singleton_kmer_tableAmino[bin].erase(s_entry);
+		if(s_entry != singleton_kmer_tableAmino[bin].end()){
+			if(s_entry.value() != color){
+				kmer_tableAmino[bin][kmer].set(s_entry.value());
+				kmer_tableAmino[bin][kmer].set(color);
+				singleton_counters_locks[s_entry.value()].lock();
+				singleton_counters[s_entry.value()]--;
+				singleton_counters_locks[s_entry.value()].unlock();
+				singleton_kmer_tableAmino[bin].erase(s_entry);
+			}
 		}
 		// not seen before -> add to singleton_table
 		else{
 			singleton_kmer_tableAmino[bin][kmer]=color;
+			singleton_counters_locks[color].lock();
+			singleton_counters[color]++;
+			singleton_counters_locks[color].unlock();
 		}
 	}	
     lock[bin].unlock();
@@ -1414,47 +1432,27 @@ void graph::add_singleton_weights(double mean(uint32_t&, uint32_t&), double min_
     if (max==0){
         return;
     }
+    
     // The iterators for the tables
-    hash_map<kmer_t, uint64_t>::iterator base_it;
-    hash_map<kmerAmino_t, uint64_t>::iterator amino_it;
 	color_t color;
 		
-    // Iterate the tables
-    for (int i = 0; i < graph::table_count; i++) // Iterate all tables
+    // Iterate the counters
+    for (int i = 0; i < maxN; i++) // Iterate all tables
     {
-        if (!isAmino){base_it = singleton_kmer_table[i].begin();} // base table iterator
-        else {amino_it = singleton_kmer_tableAmino[i].begin();} // amino table iterator
-
-        while (true) { // process splits
             // show progress
             if (verbose) { 
                 next = 100*cur/max;
                 if (prog < next)  cout << "\33[2K\r" << "Accumulating splits from singleton k-mers... " << next << "%" << flush;
-                prog = next; cur++;
+                prog = next; cur+=singleton_counters[i];
             }
-            // update the iterator
-            if (isAmino) { // if the amino table is used, update the amino iterator
-                if (amino_it == singleton_kmer_tableAmino[i].end()){break;} // stop iterating if done
-                else{ // iterate the amino table
-					color = 0b0u;
-					color.set(amino_it.value());
-					amino_it++;
-				}
-			}
-            else { // if the base tables is used update the base iterator
-                // Todo: Get the target hash map index from the kmer bits
-                if (base_it == singleton_kmer_table[i].end()){break;} // stop itearating if done
-                else {// iterate the base table
-					color = 0b0u;
-					color.set(base_it.value());
-					base_it++;
-				}
-			}
+            if (singleton_counters[i]==0) continue;
+// 			cerr << i << ": " << singleton_counters[i] << " " << endl << flush;
+			color = 0b0u;
+			color.set(i);
             // process
             // add_weight(color, mean, min_value, pos);
 			array<uint32_t,2>& weight = color_table[color];    // get the weight and inverse weight for the color set
-			weight[0]++; // update the weight or the inverse weight of the current color set
-		}
+			weight[0]+=singleton_counters[i]; // update the weight or the inverse weight of the current color set
     }
 }
 
@@ -1584,11 +1582,7 @@ uint64_t graph::number_kmers(){
  */
 uint64_t graph::number_singleton_kmers(){
 	uint64_t num=0;
-	if (isAmino){ // use the sum of amino table sizes
-		for (auto table: singleton_kmer_tableAmino){num += table.size();}
-	} else { // use the sum of base table sizeskmer_table.size(); 
-		for (auto table: singleton_kmer_table){num+=table.size();}
-	}
+	for (uint64_t g=0;g<maxN-1;g++){num += singleton_counters[g];}
 	return num;
 }
 

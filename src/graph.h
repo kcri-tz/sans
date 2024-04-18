@@ -158,6 +158,8 @@ private:
 
 	static vector<hash_map<kmer_t, uint64_t>> singleton_kmer_table;
 	static vector<hash_map<kmerAmino_t, uint64_t>> singleton_kmer_tableAmino;
+	static uint64_t singleton_counters[];
+	static spinlock singleton_counters_locks[];
 
 	
 	
