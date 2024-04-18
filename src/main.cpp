@@ -998,9 +998,7 @@ int main(int argc, char* argv[]) {
 
     if (!input.empty() && splits.empty()) {
         if (verbose) {
-			end = chrono::high_resolution_clock::now();
-			cout << " (" << util::format_time(end - begin) << ")" << endl;
-            cout << "Reading input files..." << flush;
+            cout << "Reading input files..." << endl<< flush;
         }
 
         // Thread safe implementation of getting the index of the next input to preocess
@@ -1305,11 +1303,14 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			for (uint64_t thread_id = 0; thread_id < threads; ++thread_id){thread_holder[thread_id].join();}
 
 			
-			if(verbose_orig){
-				end = chrono::high_resolution_clock::now();
-				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl;
-			}
 			verbose=verbose_orig; //switch back to verbose if originally set
+			
+			if (verbose) {
+				end = chrono::high_resolution_clock::now();
+				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl << flush;
+ 				cout << "Filtering splits... "<< flush;
+			}
+			
 
 			if(consensus_filter.empty()) {
 				// filter original splits by weight
@@ -1337,7 +1338,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			}
 			if (verbose) {
 				end = chrono::high_resolution_clock::now();
-				cout << "\33[2K\r" << "Bootstrapping... (" << util::format_time(end - begin) << ")" << endl;
+				cout << "\33[2K\r" << "Filtering splits... (" << util::format_time(end - begin) << ")" << endl << flush;
 			}
 
 		}
