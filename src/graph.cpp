@@ -59,7 +59,7 @@ vector<hash_set<kmer_t>> graph::quality_set;
 /**
  * This is a hash map used to filter k-mers for coverage (q > 2).
  */
-vector<hash_map<kmer_t, uint64_t>> graph::quality_map;
+vector<hash_map<kmer_t, uint16_t>> graph::quality_map;
 
 /**
  * Look-up set for k-mers that are ignored, i.e., not stored, counted etc.
@@ -71,8 +71,8 @@ hash_set<kmerAmino_t> graph::blacklist_amino;
 /**
  * This is vector of hash tables mapping k-mers to genomes to buffer a k-mer before adding to the kmer_table. If it is seen a second time, it is added. Otherwise the singleton k-mer is ignored
  */
-vector<hash_map<kmer_t, uint64_t>> graph::singleton_kmer_table;
-vector<hash_map<kmerAmino_t, uint64_t>> graph::singleton_kmer_tableAmino;
+vector<hash_map<kmer_t, uint16_t>> graph::singleton_kmer_table;
+vector<hash_map<kmerAmino_t, uint16_t>> graph::singleton_kmer_tableAmino;
 uint64_t graph::singleton_counters[maxN];
 spinlock graph::singleton_counters_locks[maxN];
 
@@ -85,7 +85,7 @@ vector<hash_set<kmerAmino_t>> graph::quality_setAmino;
 /**
  * This is a hash map used to filter k-mers for coverage (q > 2).
  */
-vector<hash_map<kmerAmino_t, uint64_t>> graph::quality_mapAmino;
+vector<hash_map<kmerAmino_t, uint16_t>> graph::quality_mapAmino;
 
 /**
  * This is an ordered tree collecting the splits [O(log n)].
@@ -102,10 +102,10 @@ vector<char> graph::allowedChars;
 /**
  * This function qualifies a k-mer and places it into the hash table.
  */
-function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint64_t&)> graph::emplace_kmer;
-function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint64_t&)> graph::emplace_kmer_tmp;
-function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint64_t&)> graph::emplace_kmer_amino;
-function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint64_t&)> graph::emplace_kmer_amino_tmp;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint16_t&)> graph::emplace_kmer;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmer_t&, const uint16_t&)> graph::emplace_kmer_tmp;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint16_t&)> graph::emplace_kmer_amino;
+function<void(const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t&, const uint16_t&)> graph::emplace_kmer_amino_tmp;
 
 /**
  * This is a comparison function extending std::bitset.
@@ -159,7 +159,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
 
         // Init base tables
 	    kmer_table = vector<hash_map<kmer_t, color_t>> (table_count);
-	    singleton_kmer_table = vector<hash_map<kmer_t, uint64_t>> (table_count);
+	    singleton_kmer_table = vector<hash_map<kmer_t, uint16_t>> (table_count);
 
         // Init the lock vector
 	    lock = vector<spinlock> (table_count);
@@ -187,7 +187,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
 
         // Init amino tables
         kmer_tableAmino = vector<hash_map<kmerAmino_t, color_t>> (table_count);
-        singleton_kmer_tableAmino = vector<hash_map<kmerAmino_t, uint64_t>> (table_count);
+        singleton_kmer_tableAmino = vector<hash_map<kmerAmino_t, uint16_t>> (table_count);
 		
         // Init the mutex lock vector
         lock = vector<spinlock> (table_count);
@@ -238,10 +238,10 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
     switch (quality) {
     case 1:
 	case 0: /* no quality check */
-        emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+        emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color) {
             hash_kmer(bin, kmer, color);
         };
-        emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+        emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color) {
             hash_kmer_amino(bin, kmer, color);
         };
         break;
@@ -249,7 +249,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
     case 2:
         isAmino ? quality_setAmino.resize(thread_count) : quality_set.resize(thread_count);
         if (q_table.size()>0){
-            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color) {
                 if (q_table[color]==1){
                     hash_kmer(bin, kmer, color);
                 } else if (quality_set[T].find(kmer) == quality_set[T].end()) {
@@ -259,7 +259,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color) {
                 if (q_table[color]==1){
                     hash_kmer_amino(bin, kmer, color);
                 } else if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
@@ -270,7 +270,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                 }
             };
         } else { // global quality value (one if-clause fewer)
-            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color) {
                 if (quality_set[T].find(kmer) == quality_set[T].end()) {
                     quality_set[T].emplace(kmer);
                 } else {
@@ -278,7 +278,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color) {
                 if (quality_setAmino[T].find(kmer) == quality_setAmino[T].end()) {
                     quality_setAmino[T].emplace(kmer);
                 } else {
@@ -291,7 +291,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
     default:
         isAmino ? quality_mapAmino.resize(thread_count) : quality_map.resize(thread_count);
         if (q_table.size()>0){
-            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color) {
                 if (quality_map[T][kmer] < q_table[color]-1) {
                     quality_map[T][kmer]++;
                 } else {
@@ -299,7 +299,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color) {
                 if (quality_mapAmino[T][kmer] < q_table[color]-1) {
                     quality_mapAmino[T][kmer]++;
                 } else {
@@ -308,7 +308,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                 }
             };
         }else { // global quality value
-            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+            emplace_kmer_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color) {
                 if (quality_map[T][kmer] < quality-1) {
                     quality_map[T][kmer]++;
                 } else {
@@ -316,7 +316,7 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
                     hash_kmer(bin, kmer, color);
                 }
             };
-            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+            emplace_kmer_amino_tmp = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color) {
                 if (quality_mapAmino[T][kmer] < quality-1) {
                     quality_mapAmino[T][kmer]++;
                 } else {
@@ -328,10 +328,10 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
         }
         break;
     }
-	emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+	emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color) {
 		emplace_kmer_tmp(T, bin, kmer, color);
 	};
-	emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+	emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color) {
 		emplace_kmer_amino_tmp(T, bin, kmer, color);
 	};
 }
@@ -342,13 +342,13 @@ void graph::init(uint64_t& top_size, bool amino, vector<int>& q_table, int& qual
 void graph::activate_blacklist(){
     // Black list for kmers given?
     if ((!isAmino && !blacklist.empty()) || (isAmino && !blacklist_amino.empty())) {
-		emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color) {
+		emplace_kmer = [&] (const uint64_t& T, uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color) {
 			// only add if kmer not in blacklist
 			if (graph::blacklist.find(kmer)==graph::blacklist.end()) {
 				emplace_kmer_tmp(T, bin, kmer, color);
 			}
 		};
-		emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color) {
+		emplace_kmer_amino = [&] (const uint64_t& T, uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color) {
 			// only add if kmer not in blacklist
 			if (graph::blacklist_amino.find(kmer)==graph::blacklist_amino.end()) {
 				emplace_kmer_amino_tmp(T, bin, kmer, color);
@@ -469,7 +469,7 @@ uint_fast32_t graph::compute_bin(const kmer_t& kmer)
 *  @param kmer The kmer to store
 *  @param color The color to store 
 */
-void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& color)
+void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint16_t& color)
 {
     lock[bin].lock();
 	hash_map<kmer_t,color_t>::iterator entry=kmer_table[bin].find(kmer); 
@@ -479,7 +479,7 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
 	}
 	// not yet in the kmer table?
 	else{
-		hash_map<kmer_t,uint64_t>::iterator s_entry = singleton_kmer_table[bin].find(kmer);
+		hash_map<kmer_t,uint16_t>::iterator s_entry = singleton_kmer_table[bin].find(kmer);
  		//seen once before? -> add to kmer table / remove from singleton table
 		if(s_entry != singleton_kmer_table[bin].end()){
 			if(s_entry.value() != color){
@@ -509,7 +509,7 @@ void graph::hash_kmer(uint_fast32_t& bin, const kmer_t& kmer, const uint64_t& co
  * @param kmer The kmer to store
  * @param color The color to store
  */
-void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const uint64_t& color)
+void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const uint16_t& color)
 {
     lock[bin].lock();
 	hash_map<kmerAmino_t,color_t>::iterator entry=kmer_tableAmino[bin].find(kmer); 
@@ -519,7 +519,7 @@ void graph::hash_kmer_amino(uint_fast32_t& bin, const kmerAmino_t& kmer, const u
 	}
 	// not yet in the kmer table?
 	else{
-		hash_map<kmerAmino_t,uint64_t>::iterator s_entry = singleton_kmer_tableAmino[bin].find(kmer);
+		hash_map<kmerAmino_t,uint16_t>::iterator s_entry = singleton_kmer_tableAmino[bin].find(kmer);
  		//seen once before? -> add to kmer table / remove from singleton table
 		if(s_entry != singleton_kmer_tableAmino[bin].end()){
 			if(s_entry.value() != color){
@@ -696,7 +696,7 @@ uint64_t graph::size_blacklist(){
  * @param color color flag
  * @param reverse merge complements
  */
-void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) {
+void graph::add_kmers(uint64_t& T, string& str, uint16_t& color, bool& reverse) {
     if (str.length() < kmer::k) return;    // not enough characters
 
     uint_fast32_t bin = 0; // current hash_map vector index
@@ -788,7 +788,7 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse) 
  * @param reverse merge complements
  * @param m number of k-mers to minimize
  */
-void graph::add_minimizers(uint64_t& T, string& str, uint64_t& color, bool& reverse, uint64_t& m) {
+void graph::add_minimizers(uint64_t& T, string& str, uint16_t& color, bool& reverse, uint64_t& m) {
     if (str.length() < (!isAmino ? kmer::k : kmerAmino::k)) return;    // not enough characters
 
     vector<kmer_t> sequence_order;    // k-mers ordered by their position in sequence
@@ -884,7 +884,7 @@ bool graph::isAllowedChar(uint64_t pos, string &str) {
  * @param reverse merge complements
  * @param max_iupac allowed number of ambiguous k-mers per position
  */
-void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse, uint64_t& max_iupac) {
+void graph::add_kmers(uint64_t& T, string& str, uint16_t& color, bool& reverse, uint64_t& max_iupac) {
     if (str.length() < (!isAmino ? kmer::k : kmerAmino::k)) return;    // not enough characters
 
     uint_fast32_t bin = 0;
@@ -990,7 +990,7 @@ void graph::add_kmers(uint64_t& T, string& str, uint64_t& color, bool& reverse, 
  * @param m number of k-mers to minimize
  * @param max_iupac allowed number of ambiguous k-mers per position
  */
-void graph::add_minimizers(uint64_t& T, string& str, uint64_t& color, bool& reverse, uint64_t& m, uint64_t& max_iupac) {
+void graph::add_minimizers(uint64_t& T, string& str, uint16_t& color, bool& reverse, uint64_t& m, uint64_t& max_iupac) {
     if (str.length() < (!isAmino ? kmer::k : kmerAmino::k)) return;    // not enough characters
 
     uint_fast32_t bin = 0;
@@ -1584,7 +1584,7 @@ uint64_t graph::number_kmers(){
  */
 uint64_t graph::number_singleton_kmers(){
 	uint64_t num=0;
-	for (uint64_t g=0;g<maxN-1;g++){num += singleton_counters[g];}
+	for (uint16_t g=0;g<maxN-1;g++){num += singleton_counters[g];}
 	return num;
 }
 
@@ -1695,7 +1695,7 @@ void graph::filter_strict(multimap_<double, color_t>& split_list, bool& verbose)
     filter_strict(nullptr, split_list, nullptr, 0, verbose);
 }
 
-string graph::filter_strict(std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
+string graph::filter_strict(std::function<string(const uint16_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto tree = vector<color_t>();    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
@@ -1766,7 +1766,7 @@ void graph::filter_n_tree(uint64_t n, multimap_<double, color_t>& split_list, bo
     filter_n_tree(n, nullptr, split_list, nullptr, 0, verbose);
 }
 
-string graph::filter_n_tree(uint64_t n, std::function<string(const uint64_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
+string graph::filter_n_tree(uint64_t n, std::function<string(const uint16_t&)> map, multimap_<double, color_t>& split_list, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no, bool& verbose) {
     auto forest = vector<vector<color_t>>(n);    // create a set for compatible splits
     color_t col;
     auto it = split_list.begin();
@@ -1921,7 +1921,7 @@ node* graph::build_tree(vector<color_t>& color_set) {
     vector<node*> subsets = {};
     color_t allTaxa = 0b0u;
 
-    for (uint64_t i = 0; i < color::n; i++) {
+    for (uint16_t i = 0; i < color::n; i++) {
         color_t leaf = 0b0u;
         leaf.set(i);
         allTaxa.set(i);
@@ -1960,11 +1960,11 @@ node* graph::build_tree(vector<color_t>& color_set) {
  * (@param bootstrap_no the number of bootstrap replicates for computing the per centage support)
  * @return newick string
  */
-string graph::print_tree(node* root, std::function<string(const uint64_t&)> map) {
+string graph::print_tree(node* root, std::function<string(const uint16_t&)> map) {
 	return print_tree(root, map,nullptr,0);
 }
 
-string graph::print_tree(node* root, std::function<string(const uint64_t&)> map, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no) {
+string graph::print_tree(node* root, std::function<string(const uint16_t&)> map, hash_map<color_t, uint32_t>* support_values, const uint32_t& bootstrap_no) {
     vector<node*> subsets = root->subsets;
     color_t taxa = root->taxa;
 

@@ -1006,7 +1006,7 @@ int main(int argc, char* argv[]) {
         std::mutex index_mutex;
         auto index_lambda = [&] () { std::lock_guard<mutex> lg(index_mutex); return index++;};
 
-        auto lambda = [&] (uint64_t T, vector<uint64_t> genome_ids, vector<uint64_t> file_ids){ // This lambda expression wraps the sequence-kmer hashing
+        auto lambda = [&] (uint64_t T, vector<uint16_t> genome_ids, vector<uint16_t> file_ids){ // This lambda expression wraps the sequence-kmer hashing
             string sequence;    // read in the sequence files and extract the k-mers
             uint64_t i = index_lambda();
             while (i < genome_ids.size()) {
@@ -1097,8 +1097,8 @@ int main(int argc, char* argv[]) {
         }; // End of lambda expression
 
         // Driver code for multithreaded kmer hashing
-		vector<uint64_t> genome_ids; //unfold multiple files per genome to two flat lists, one listing the genome ids and one listing the file ids.
-		vector<uint64_t> file_ids;
+		vector<uint16_t> genome_ids; //unfold multiple files per genome to two flat lists, one listing the genome ids and one listing the file ids.
+		vector<uint16_t> file_ids;
 		for (int g=0;g<gen_files.size();g++){
 			for (int f=0;f<gen_files[g].size();f++){
 				genome_ids.push_back(g);
