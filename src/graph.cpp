@@ -1589,6 +1589,8 @@ uint64_t graph::number_singleton_kmers(){
 }
 
 
+
+
 /**
  * This function generates a bootstrap replicate. We mimic drawing n k-mers at random with replacement from all n observed k-mers. Say a k-mer would be drawn x times. Instead, we calculate x for each k-mer (in each split in color_table) from a binomial distribution (n repetitions, 1/n success rate) and calculate a new split weight according to the new number of k-mers.
  * @param mean weight function
@@ -1597,7 +1599,6 @@ uint64_t graph::number_singleton_kmers(){
 multimap_<double, color_t> graph::bootstrap(double mean(uint32_t&, uint32_t&)) {
 
 	uint64_t max = graph::number_kmers();
-	
 
 	std::random_device rd;
 	std::mt19937 gen(rd());

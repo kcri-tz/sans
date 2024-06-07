@@ -41,7 +41,7 @@ ALL: makefile start SANS done
 SANS: makefile $(BUILDDIR)/main.o
 	$(CC) -o SANS $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(BUILDDIR)/nexus_color.o $(XX)
 
-$(BUILDDIR)/main.o: makefile $(SRCDIR)/main.cpp $(SRCDIR)/main.h $(BUILDDIR)/translator.o $(BUILDDIR)/graph.o $(BUILDDIR)/util.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(BUILDDIR)/nexus_color.o
+$(BUILDDIR)/main.o: makefile $(SRCDIR)/main.cpp $(SRCDIR)/main.h $(BUILDDIR)/color.o $(BUILDDIR)/translator.o $(BUILDDIR)/graph.o $(BUILDDIR)/util.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(BUILDDIR)/nexus_color.o
 	$(CC) -c $(SRCDIR)/main.cpp -o $(BUILDDIR)/main.o
 
 $(BUILDDIR)/graph.o: makefile $(SRCDIR)/graph.cpp $(SRCDIR)/graph.h $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o

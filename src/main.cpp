@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
         cout << "                 \t Requires SplitsTree in the PATH" << endl;
         cout << "                 \t Warning: Already existing files will be overwritten" << endl;
         cout << endl;
-        cout << "    -r, --core  \t\t Output core k-mers in fasta file" << endl;
+        cout << "    -r, --core  \t Output core k-mers in fasta file" << endl;
         cout << endl;
         cout << "    (at least --output, --newick, --nexus, --pdf, or --core must be provided)" << endl;
         cout << endl;
@@ -114,9 +114,9 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -l, --label\t\t Color taxa according to given groups" << endl;
         cout << "                  \t (Requires SplitsTree in the PATH)" << endl;
-        cout << "                  \t required file:  file with name of taxon and group (tab separated)" << endl;
+        cout << "                  \t required file: file with name of taxon and group (tab separated)" << endl;
         cout << "                  \t optional: additional file with group and " << endl;
-        cout << "                  \t   color (rgb values, e.g. 90 0 255) (tab separated)" << endl;
+        cout << "                  \t color (rgb values, e.g. 90 0 255) (tab separated)" << endl;
         cout << "                  \t Only applicable together with -X or -p " << endl;
         cout << endl;
         cout << "    -v, --verbose \t Print information messages during execution" << endl;
@@ -998,7 +998,7 @@ int main(int argc, char* argv[]) {
 
     if (!input.empty() && splits.empty()) {
         if (verbose) {
-            cout << "Reading input files..." << endl<< flush;
+            cout << "Reading input files..." << endl << flush;
         }
 
         // Thread safe implementation of getting the index of the next input to preocess
@@ -1168,6 +1168,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	}
 
 
+
 	/*
 	 * [core k-mers]
 	 */
@@ -1229,7 +1230,6 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		}
 
 
-
 		/*
 		* [bootstrap handling]
 		*/
@@ -1268,6 +1268,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 				orig_weights.insert({it.second,it.first});
 			}
 			
+
 
 		// Thread safe implementation of getting the index of the next run
 			uint64_t index = 0;
@@ -1342,6 +1343,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			}
 
 		}
+
 
 		/**
 		* [write to output]
