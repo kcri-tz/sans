@@ -11,6 +11,8 @@
 * **NEW:** Bootstrapping
 * **NEW:** Multi-threading
 * **NEW:** Labeled PDF and Nexus output
+* **NEW:** Better performance by handling singleton k-mers separately
+* **NEW:** Output core k-mers
 
 ### Dos and Don'ts
 
