@@ -1160,7 +1160,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
     }
 #endif
 
-	if(verbose & (!input.empty() || !graph.empty())){
+	if(verbose & ((!input.empty() && splits.empty()) || !graph.empty())){
 		uint64_t s=graph::number_singleton_kmers();
 		uint64_t all=s+graph::number_kmers();
 		end = chrono::high_resolution_clock::now(); 
