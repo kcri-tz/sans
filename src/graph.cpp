@@ -1299,10 +1299,6 @@ void graph::clear_thread(uint64_t& T) {
  */
 void graph::add_cdbg_colored_kmer(string kmer_seq, const uint16_t& kmer_color){
     
-    bool has_kmers = false; 
-    for (auto table : kmer_table){if(!table.empty()){has_kmers = true; break;}} // Check if any entries exist
-
-    if (has_kmers){ // check if the kmer is already stored
         kmer_t kmer; // create a kmer to search in the set of tables
 
         for (int pos=0; pos < kmer_seq.length(); ++pos) // collect the bases from the k-mer sequence.
@@ -1314,7 +1310,7 @@ void graph::add_cdbg_colored_kmer(string kmer_seq, const uint16_t& kmer_color){
 
 		uint_fast32_t bin = compute_bin(kmer);
 		hash_kmer(bin, kmer, kmer_color);    // update the k-mer with the current color
-	}
+
 }
 
 /*
