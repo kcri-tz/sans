@@ -108,6 +108,7 @@ int main(int argc, char* argv[]) {
         cout << "                  \t Add path/to/makefile (default is makefile in current working directory)." << endl;
         cout << endl;
         cout << "    -b, --bootstrap \t Perform bootstrapping with the specified number of replicates" << endl;
+        cout << "                  \t optional: provide threshold to filter low support splits (e.g. 0.75)" << endl;
         cout << endl;
         cout << "    -C, --consensus\t Apply final filter w.r.t. support values" << endl;
         cout << "                  \t else: final filter w.r.t. split weights" << endl;
@@ -193,6 +194,7 @@ int main(int argc, char* argv[]) {
     // bootsrapping
     string consensus_filter; // filter function for filtering after bootstrapping
 	uint32_t bootstrap_no=0; // = no bootstrapping
+	float bootstrap_threshold=0; // threshold to filter low support splits
 
     // qol
     bool verbose = false;    // print messages during execution
@@ -469,6 +471,20 @@ int main(int argc, char* argv[]) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             catch_failed_stoi_cast(argv[i + 1], argv[i]);
             bootstrap_no = stoi(argv[++i]);
+			if (i+1 < argc && argv[i+1][0]!='-') { // optional filter threshold
+				try {
+					bootstrap_threshold = std::stof(argv[++i]);
+					if (bootstrap_threshold<0 || bootstrap_threshold>1){
+					 cerr << "Error: bootstrap filter threshold must be between 0 and 1." << endl;
+					 exit(1);
+					}
+				} catch (const std::exception& e) {
+					 cerr << "Error: Could not read bootstrap filter threshold: " << argv[i] << endl;
+					 exit(1);
+				}
+                
+            }
+
         }
         else if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--consensus") == 0) {
 			if (i+1 < argc && argv[i+1][0]!='-') {
@@ -1343,6 +1359,17 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
  				cout << "Filtering splits... "<< flush;
 			}
 			
+			
+			if(bootstrap_threshold>0){
+				//erase low support splits
+				auto it = graph::split_list.begin();
+				while (it != graph::split_list.end()) {
+					double conf=(1.0*support_values[it->second])/bootstrap_no;
+					if (conf<bootstrap_threshold) {
+						it = graph::split_list.erase(it);
+					}
+				}
+			}
 
 			if(consensus_filter.empty()) {
 				// filter original splits by weight
