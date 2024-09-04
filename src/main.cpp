@@ -1367,6 +1367,8 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 					double conf=(1.0*support_values[it->second])/bootstrap_no;
 					if (conf<bootstrap_threshold) {
 						it = graph::split_list.erase(it);
+					} else {
+						++it;
 					}
 				}
 			}
