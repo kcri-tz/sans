@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
         cout << "                  \t Or: kmtricks input format (see https://github.com/tlemane/kmtricks)" << endl;
         cout << endl;
         cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
+        cout << "                  \t optional: provide additional input file (format as for -i) to filter the graph" << endl;
         #ifndef useBF
         cout << "                  \t (requires compiler flag -DuseBF, please edit makefile)" << endl;
         #endif
@@ -144,6 +145,7 @@ int main(int argc, char* argv[]) {
     // file definitions
     string input;    // name of input file
     string graph;    // name of graph file
+    string graph_filter;    // name of graph filter file
     string splits;    // name of splits file
     string blacklistfile; // name of blacklist file
     string output;    // name of output file
@@ -254,6 +256,9 @@ int main(int argc, char* argv[]) {
                 cerr << "Error: requires compiler flag -DuseBF" << endl;
                 return 1;
             #endif
+            if (i+1 < argc && argv[i+1][0]!='-') { // optional filter file
+                graph_filter = argv[++i];
+            }
         }
         else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--splits") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
@@ -679,6 +684,7 @@ int main(int argc, char* argv[]) {
 
     // parse the list of input sequence files
     hash_map<string, uint64_t> name_table; // the name to color map
+    unordered_set<string> graph_filter_names; // storing the colors to filter a graph
     vector<string> denom_names; // storing the representative name per color
     vector<vector<string>> gen_files; // genome file collection
     vector<int> q_table; // q value (k-mer occurrence threshold) per genome/color
@@ -818,13 +824,13 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
             cerr << "Warning: setting k-mer length to match the given Bifrost graph. New lenght: " << kmer << endl;
-	}
+		}
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
         for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
         
 
-	    if (name_table.find(col_name) == name_table.end()){
+			if (name_table.find(col_name) == name_table.end()){
                             name_table[col_name] = num++;
                             denom_names.push_back(col_name);
 			    vector<string> dummy;	
@@ -838,7 +844,33 @@ int main(int argc, char* argv[]) {
 
         if (verbose) {
             cout << endl;
-	}
+		}
+	
+
+	    if (!graph_filter.empty()) {
+			// check the input file 
+			ifstream file(graph_filter);
+			if (!file.good()) {
+				cerr << "Error: could not read graph filter file: " << input << endl;
+				return 1;
+			}
+
+			// parse the list of input sequence files
+			string line; // the iterated input line
+			
+			while (getline(file, line)) {  // Lies die Datei Zeile für Zeile ein
+				string entry;
+				istringstream stream(line);
+				
+				if (stream >> entry) {  // Extrahiere das erste "Wort" bis zum ersten Whitespace
+					graph_filter_names.insert(entry);  // Speichere das Wort im Vektor
+				}
+				
+				if (name_table.find(entry) == name_table.end()) {
+					cerr << "\nWarning: Filter entry " << entry << " not observed in bifrost graph.\n" << endl;
+				}
+			}
+		}
     }
 
 #endif
@@ -1141,8 +1173,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 			for (auto it = matrix->begin(unitig); it != matrix->end(); ++it) {
 				auto kmer_sequence = sequence.substr(it.getKmerPosition(), kmer);
-				const uint16_t& color = name_table[cdbg.getColorName(it.getColorID())]; // set the k-mer color
-				graph::add_cdbg_colored_kmer(kmer_sequence, color);
+				auto c = cdbg.getColorName(it.getColorID());
+				if(graph_filter.empty() || graph_filter_names.find(c)!=graph_filter_names.end()){ //
+					const uint16_t& color = name_table[c]; // set the k-mer color
+					graph::add_cdbg_colored_kmer(kmer_sequence, color);
+				}
 			}
 		}
 		if (verbose) {
