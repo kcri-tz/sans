@@ -654,8 +654,8 @@ int main(int argc, char* argv[]) {
         cerr << "Note: Newick output from a list of splits, some taxa could be missing" << endl;
         cerr << "      --input can be used to provide the original list of taxa" << endl;
     }
-    if (input.empty() && bootstrap_no>0){
-        cerr << "Error: Bootstrapping can only be applied with given sequence data (--input)" << endl;
+    if (input.empty() && graph.empty() && bootstrap_no>0){
+        cerr << "Error: Bootstrapping can only be applied with given sequence data (--input or --graph)" << endl;
 		return 1;
 	}
     if (bootstrap_no>0 && filter.empty()){
