@@ -1,4 +1,5 @@
 #include "main.h"
+#include <algorithm>
 #include <regex>
 // gzstream imports
 #include "gz/gzstream.h"
@@ -31,6 +32,7 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -g, --graph   \t Graph file: load a Bifrost graph, file name prefix" << endl;
         cout << "                  \t optional: provide additional input file (format as for -i) to filter the graph" << endl;
+        cout << "                  \t           (multiple colors in graph can be assigned to one genome ID)" << endl;
         #ifndef useBF
         cout << "                  \t (requires compiler flag -DuseBF, please edit makefile)" << endl;
         #endif
@@ -818,7 +820,6 @@ int main(int argc, char* argv[]) {
     /**
      * --- [indexing CDBG input] --- 
      * - Collect all target sequence names from the Bifrost-CDBG
-     * - // TODO disabled due to bugs
      */ 
 
 #ifdef useBF
@@ -843,50 +844,153 @@ int main(int argc, char* argv[]) {
 		}
 
         vector<string> cdbg_names = cdbg.getColorNames(); // color names of the cdbg compacted genomes.
-        for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
-        
 
-			if (name_table.find(col_name) == name_table.end()){
-                            name_table[col_name] = num++;
-                            denom_names.push_back(col_name);
-			    vector<string> dummy;	
-			    gen_files.push_back(dummy);
-	        }
-            else
-            {
-                cout << "Warning: " << col_name << " exists in input and graph. It is treated as one sequence" << endl;
-            }
-        }
-
-        if (verbose) {
-            cout << endl;
-		}
-	
-
-	    if (!graph_filter.empty()) {
+		// read filter cdbg
+		if (!graph_filter.empty()) {
 			// check the input file 
 			ifstream file(graph_filter);
 			if (!file.good()) {
-				cerr << "Error: could not read graph filter file: " << input << endl;
+				cerr << "Error: could not read graph filter file: " << graph_filter << endl;
 				return 1;
 			}
 
 			// parse the list of input sequence files
 			string line; // the iterated input line
+			string file_name; // the current file name
+			bool is_first; // indicating the first filename of a line (For file list)
+			bool has_files; // indicating if a line contains filenames
 			
-			while (getline(file, line)) {  // Lies die Datei Zeile für Zeile ein
-				string entry;
-				istringstream stream(line);
-				
-				if (stream >> entry) {  // Extrahiere das erste "Wort" bis zum ersten Whitespace
-					graph_filter_names.insert(entry);  // Speichere das Wort im Vektor
+			getline(file, line);
+			// check the file format
+			std::smatch matches;
+
+			// parse file of files
+			while(true){
+				std::regex_search(line, matches, std::regex("(:)"));
+				vector<string> target_files; // container of the current target files
+				if (!matches.empty()){ // parse kmt format
+					// ensure the terminal signs " !" exists.
+					if (line.find_first_of('!') != line.npos){
+						int p=line.find_first_of('!');
+						line = line.substr(0, line.find_first_of('!') + 1); // cut off tail
+					}
+					else if (line.back() == ' '){line += '!';} // append terminal sign if missing
+					else {line += " !";} // append both terminal signs if missing
+
+					string denom = line.substr(0, line.find_first_of(" ")); // get the dataset-id
+					if (find(denom_names.begin(),denom_names.end(),denom) == denom_names.end()){
+						denom_names.push_back(denom); // add id to denominators
+						name_table[denom] = num;
+					}
+					else
+					{
+						cout << "Warning: " << denom << " exists in input and graph. It is treated as one sequence" << endl;
+					}
+
+					line = line.substr(line.find_first_of(":") + 2, line.npos); // cut off the dataset-id
+
+					std::smatch matches; // Match files
+					while (std::regex_search(line, matches, std::regex("[ ; ]|[ !]"))){
+						file_name = matches.prefix().str(); // get filename from match
+						line=matches.suffix().str(); // update the line
+						if (file_name.length() == 0){continue;} // skip empty file name
+						else {
+							if (name_table.find(file_name) == name_table.end()){
+								name_table[file_name] = num;
+								target_files.push_back(file_name);
+							}
+							else
+							{
+								// compatible mapping?
+ 								if(denom_names[name_table[file_name]] != denom){
+									cerr << "Error: Incompatible mapping of " << file_name << " in graph and sequence kmtricks file." << endl;
+									exit(1);
+								}
+							}
+						} // add the file name to target files and name table
+						if (find(cdbg_names.begin(),cdbg_names.end(),file_name)==cdbg_names.end()){
+								cerr << "Error: " << file_name << " in graph filter file but not in graph." << endl;
+								exit(1);
+						}
+						graph_filter_names.insert(file_name);
+					}
+					num ++;
 				}
-				
-				if (name_table.find(entry) == name_table.end()) {
-					cerr << "\nWarning: Filter entry " << entry << " not observed in bifrost graph.\n" << endl;
+
+				else{ // parse file list format
+					is_first = true;
+					has_files = false;
+					string file_name = "";
+					string denom="";
+					size_t it = 0;
+					size_t line_length = line.length();
+					for (auto x: line){ // iterate the line
+						it ++;
+						if (x == ' ' | it == line_length){ // checkout the file name if a space occurs or the line ends
+							if (it == line_length){file_name += x;} // add the last character to the last file name
+							if (file_name.length() == 0){file_name = ""; continue;} // skip continuous spaces
+							if (is_first){ // use first file name as denom name
+								has_files = true;
+								denom = file_name;
+								if (find(denom_names.begin(),denom_names.end(),denom)==denom_names.end()){
+									denom_names.push_back(denom); // set denom name
+								} else
+								{
+									cout << "Warning: " << denom << " exists in input and graph. It is treated as one sequence" << endl;
+								}
+								is_first = false;
+							}
+							if (name_table.find(file_name) == name_table.end()){
+								name_table[file_name] = num;
+								target_files.push_back(file_name);
+							}
+							else
+							{
+								// compatible mapping?
+ 								if(denom_names[name_table[file_name]] != denom){
+									cerr << "Error: Incompatible mapping of " << file_name << " in graph and sequence kmtricks file." << endl;
+									exit(1);
+								}
+							}
+							if (find(cdbg_names.begin(),cdbg_names.end(),file_name)==cdbg_names.end()){
+									cerr << "Error: " << file_name << " in graph filter file but not in graph." << endl;
+									exit(1);
+							}
+							graph_filter_names.insert(file_name);
+							file_name = "";
+						}
+						else{file_name += x;}
+					}
+					if (has_files) {num++;}
+				}
+
+				gen_files.push_back(target_files); // add the files of the current genome to the genome collection
+				if (!getline(file, line)) {break;}
+			}// end reading filter
+			
+		} else { //no filter -> read all colors separately
+			
+		
+			for (auto &col_name: cdbg_names){ // iterate the cdbg names and transcribe them to the name table
+				if (name_table.find(col_name) == name_table.end()){
+					name_table[col_name] = num++;
+					denom_names.push_back(col_name);
+					vector<string> dummy;	
+					gen_files.push_back(dummy);
+				}
+				else
+				{
+					cout << "Warning: " << col_name << " exists in input and graph. It is treated as one sequence" << endl;
 				}
 			}
 		}
+		
+        if (verbose) {
+            cout << endl;
+		}
+	
+
+
     }
 
 #endif
@@ -1213,6 +1317,26 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		cout << all << " k-mers read." << flush;
 		cout << " (" << s << " / "<< (100*s/all) <<"% singleton k-mers)" << " (" << util::format_time(end - begin) << ")" << endl << flush;
 	}
+
+
+	///DEBUGING////
+	// 	cout << "\nname_table:" << endl;
+	// 	 for (const auto& pair : name_table) {
+	//         cout << pair.first << " : " << pair.second << endl;
+	//     }
+	// 	
+	// 	cout << "\ndenom_names:" << endl;
+	//     for (const std::string& item : denom_names) {
+	//         std::cout << item << std::endl;
+	//     }
+	// 	
+	// 	cout << "\ngen_files:" << endl;
+	//     for (const auto& row : gen_files) {
+	//         for (const auto& item : row) {
+	//             std::cout << item << " ";
+	//         }
+	//         std::cout << std::endl; // Newline after each row
+	//     }
 
 
 
