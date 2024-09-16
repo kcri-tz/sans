@@ -1,3 +1,5 @@
+#include <cstdint>
+
 #if !defined(CLASS_NAME) // must be defined in the including header
     #error "CLASS_NAME is not defined (byte.h)"
 #endif
