@@ -49,10 +49,12 @@ string nexus_color::modify_filename(string& old_name, string front_extension){
     return new_name;
 }
 
-string nexus_color::remove_extensions(string& filename) {
+string nexus_color::remove_extensions(string& orig_filename) {
 
     vector<string> extensions_fst = {".fa",".fas",".fastq",".mfasta",".fasta",".fsa",".fna"};
     vector<string> extensions_snd {".gz",".gzip",".zip"};
+
+    string filename = orig_filename;
 
     // remove folder prefix
     size_t lastSlash = filename.find_last_of("/\\");
