@@ -1309,7 +1309,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 
 #endif
-
+       if(splits.empty() && (graph::number_singleton_kmers()+graph::number_kmers()==0)){
+		cout << "no k-mers found." << endl;
+	       exit(0);
+       }
+        
 	if(verbose & ((!input.empty() && splits.empty()) || !graph.empty())){
 		uint64_t s=graph::number_singleton_kmers();
 		uint64_t all=s+graph::number_kmers();
@@ -1317,7 +1321,6 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		cout << all << " k-mers read." << flush;
 		cout << " (" << s << " / "<< (100*s/all) <<"% singleton k-mers)" << " (" << util::format_time(end - begin) << ")" << endl << flush;
 	}
-
 
 	///DEBUGING////
 	// 	cout << "\nname_table:" << endl;
