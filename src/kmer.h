@@ -74,7 +74,7 @@ class kmer {
     static void reverse_complement(kmer_t& kmer);
 
     /**
-     * This function constructs the r.c. representative of a given k-mer.
+     * This function constructs the canonical k-mer of a given k-mer.
      *
      * @param kmer bit sequence
      * @return 1 if inverted, 0 otherwise
