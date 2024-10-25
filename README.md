@@ -48,14 +48,18 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 
 ## Requirements
 
-For the main program, there are no strict dependencies other than C++ version 14.
+For the main program, there are no strict dependencies other than C++ version 14.  
+To read in **compressed** fasta/fastq files, it could be necessary to install zlib:
+```
+sudo apt install libz-dev
+```
 
-However, there are some **optional** features:
+In addition, there are some **optional** features:
 * To read in a **colored de Bruijn graph**, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost).
 * To convert the output into NEXUS format, the provided script requires Python 3.
 * To visualize the splits, we recommend the tool [SplitsTree (version 4)](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree).
 
-**Windows** is currently supported with full basic functionaly but limited features only. Confer to branch "windows".
+**Windows** is currently supported with full basic functionality but limited features only. Confer to branch "windows".
 
 ## Compilation
 
@@ -359,6 +363,3 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 * SANS is licensed under the [GNU general public license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/LICENSE).
 
 <img src="https://piwik.cebitec.uni-bielefeld.de/matomo.php?idsite=12&rec=1&action_name=VisitGitLab&url=https://gitlab.ub.uni-bielefeld.de/gi/sans" style="border:0;" alt="" />
-
-
-

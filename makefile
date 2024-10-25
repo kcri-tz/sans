@@ -3,10 +3,10 @@ CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 XX = -lpthread -lz
 
 ## IF DEBUG
-# CC = g++ -g -march=native -DmaxK=33 -DmaxN=64 -std=c++14
+# CC = g++ -g -march=native -DmaxK=32 -DmaxN=64 -std=c++14
 
 ## IF BIFROST LIBRARY SHOULD BE USED
-# CC = g++ -O3 -march=native -DmaxK=64 -DmaxN=64 -DuseBF -std=c++14
+# CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -DuseBF -std=c++14
 # XX = -lbifrost -lpthread -lz
 
 # GZ STREAM LIB
@@ -36,7 +36,7 @@ ifeq ("$(wildcard $(TD))", "")
     RM = @echo ""
 endif
 
-ALL: makefile start SANS done
+all: makefile start SANS done
 
 SANS: makefile $(BUILDDIR)/main.o
 	$(CC) -o SANS $(BUILDDIR)/nexus_color.o $(BUILDDIR)/main.o $(BUILDDIR)/graph.o $(BUILDDIR)/kmer.o $(BUILDDIR)/kmerAmino.o $(BUILDDIR)/color.o $(BUILDDIR)/util.o $(BUILDDIR)/translator.o $(BUILDDIR)/cleanliness.o $(BUILDDIR)/gzstream.o $(XX)
@@ -99,6 +99,3 @@ done:
 # Remove build files
 clean:
 	$(RM)
-
-
-

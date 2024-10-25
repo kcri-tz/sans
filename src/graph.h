@@ -76,7 +76,11 @@ struct spinlock {
       while (lock_.load(std::memory_order_relaxed)) {
         // Issue X86 PAUSE or ARM YIELD instruction to reduce contention between
         // hyper-threads
-        __builtin_ia32_pause();
+        #if defined(__i386__) || defined(__x86_64__)
+          __builtin_ia32_pause();
+        #else
+          std::this_thread::yield();
+        #endif
       }
     }
   }
