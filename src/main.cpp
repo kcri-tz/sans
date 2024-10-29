@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
         cout << endl;
         cout << "    -h, --help    \t Display this help page and quit" << endl;
         cout << endl;
-        cout << "  Contact: sans-service@cebitec.uni-bielefeld.de" << endl;
+        cout << "  Contact: pangenomics-service@cebitec.uni-bielefeld.de" << endl;
         cout << "  Evaluation: https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans" << endl;
         cout << endl;
     };
