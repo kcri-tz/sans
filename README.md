@@ -45,6 +45,7 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 * [Clustering / dereplication of metagenome assembled genomes (MAGs)](#clustering-dereplication-of-metagenome-assembled-genomes-mags)
 * [Contact](#contact)
 * [License](#license)
+* [Privacy](#privacy)
 
 ## Requirements
 
