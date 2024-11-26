@@ -368,5 +368,4 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 We use the open source software Matomo for web analysis in order to collect anonymized usage statistics for this repository. Please refer to our [Privacy Notice](/PrivacyNotice.pdf) for details.
 
 
-<img src="https://piwik.cebitec.uni-bielefeld.de/matomo.php?idsite=12&rec=1&action_name=VisitGitLab&url=https://gitlab.ub.uni-bielefeld.de/gi/sans" style="border:0;" alt="" />
-
+<img src="https://piwik.cebitec.uni-bielefeld.de/matomo.php?idsite=12&rec=1" style="border:0;" alt="" />
