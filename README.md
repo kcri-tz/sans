@@ -10,6 +10,9 @@
 * **NEW:** Abundance-filter
 * **NEW:** Bootstrapping
 * **NEW:** Multi-threading
+* **NEW:** Labeled PDF and Nexus output
+* **NEW:** Better performance by handling singleton k-mers separately
+* **NEW:** Output core k-mers
 
 ### Dos and Don'ts
 
@@ -42,17 +45,22 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 * [Clustering / dereplication of metagenome assembled genomes (MAGs)](#clustering-dereplication-of-metagenome-assembled-genomes-mags)
 * [Contact](#contact)
 * [License](#license)
+* [Privacy](#privacy)
 
 ## Requirements
 
-For the main program, there are no strict dependencies other than C++ version 14.
+For the main program, there are no strict dependencies other than C++ version 14.  
+To read in **compressed** fasta/fastq files, it could be necessary to install zlib:
+```
+sudo apt install libz-dev
+```
 
-However, there are some **optional** features:
+In addition, there are some **optional** features:
 * To read in a **colored de Bruijn graph**, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost).
 * To convert the output into NEXUS format, the provided script requires Python 3.
-* To visualize the splits, we recommend the tool [SplitsTree](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree).
+* To visualize the splits, we recommend the tool [SplitsTree (version 4)](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree).
 
-**Windows** is currently supported with full basic functionaly but limited features only. Confer to branch "windows".
+**Windows** is currently supported with full basic functionality but limited features only. Confer to branch "windows".
 
 ## Compilation
 
@@ -124,8 +132,11 @@ If you want a **network**, use one of the following filters:
 * `2-tree`: two sets of compatible splits (=trees) are maintained. A split is added to the first if possible (compatible); if not to the second if possible.
   `3-tree`: three sets of compatible splits (=trees) are maintained. A split is added to the first if possible (compatible); if not to the second if possible; if not to the third if possible.
 
-To visualize the splits, we recommend the tool [SplitsTree](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree). To open the SANS output in SplitsTree, use `scripts/sans2nexus.py <split-file> <list> > <nexus-file>`. In SplitsTree, after opening the `<nexus-file>`, select "Draw" > "EqualAngle" > "Apply". To produce a PDF using SplitsTree on the command line instead, use `scripts/sans2pdf.py <split-file> <list>`.
+To visualize the splits, we recommend the tool [SplitsTree (version 4)](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree). Make it accessible via your PATH variabble to enable the following options. 
 
+To generate SANS output readable for SplitsTree, use option `-X  <nexus-file>`. In SplitsTree, after opening the `<nexus-file>`, select "Draw" > "EqualAngle" > "Apply". To produce a PDF using SplitsTree, use option `-p <pdf-file>`.
+
+To depict the phylogeny on a higher level, taxa can be assigned to groups. Each group is then represented by a color and individual text labels of taxa are replaced by colored circles accordingly. Use option `-l <groups.tsv>` to provide a mapping of some or all genome identifiers to arbitrary group names. Optionally, provide a second file  `<colors.tsv>` to provide a mapping of group names to custom RGB values, e.g. `255 0 0` for red.
 
 **Further parameters**
 - To observe the progress of SANS during computation, use `-v` to switch to verbose mode.
@@ -148,8 +159,7 @@ See usage information (`SANS --help`) for further options.
 
 1. **Split network from assemblies**
    ```
-   SANS -i list.txt -o sans.splits -t 10n -f weakly
-   scripts/sans2nexus.py sans.splits list.txt > sans.nexus
+   SANS -i list.txt -o sans.splits - X sans.nexus -t 10n -f weakly
    ```
 
    **Tree in newick format from assemblies**
@@ -159,8 +169,7 @@ See usage information (`SANS --help`) for further options.
    
    **Split network (and tree) from read data**
    ```
-   SANS -i list.txt -o sans.splits -t 10n -f weakly -q 2
-   scripts/sans2nexus.py sans.splits list.txt > sans.nexus
+   SANS -i list.txt -o sans.splits -X sans.nexus -t 10n -f weakly -q 2
    (SANS -i list.txt -s sans.splits -f strict -N sans.new)
    ```
 
@@ -175,26 +184,28 @@ See usage information (`SANS --help`) for further options.
    (./download_CDS.sh)
 
    # compute splits
-   ../../SANS -i WG_list.txt -o WG_weakly.splits -f weakly -v
-   (../../SANS -i CDS_list.txt -o CDS_weakly.splits -f weakly -v -c)
+   ../../SANS -i WG_list.kmt -o WG_weakly.splits -f weakly -v
+   (../../SANS -i CDS_list.kmt -o CDS_weakly.splits -f weakly -v -c)
 
    # generate PDF (if SplitsTree installed)
-   ../../scripts/sans2pdf.py WG_weakly.splits WG_list.txt
-   (../../scripts/sans2pdf.py CDS_weakly.splits CDS_list.txt)
-      
+   ../../SANS -i WG_list.kmt -s WG_weakly.splits -p WG_weakly.pdf
+   (../../SANS -i CDS_list.kmt -s CDS_weakly.splits -p CDS_weakly.pdf)
+
+   # generate labeled PDF (if SplitsTree installed)
+   ../../SANS -i WG_list.kmt -s WG_weakly.splits -l groups.tsv -p WG_weakly_groups.pdf
+   (../../SANS -i CDS_list.kmt -s CDS_weakly.splits -l groups.tsv -p CDS_weakly_groups.pdf)
+
    # filter for tree
-   ../../SANS -i WG_list.txt -s WG_weakly.splits -N WG.new -f strict
-   (../../SANS -i CDS_list.txt -s CDS_weakly.splits -N CDS.new -f strict)
+   ../../SANS -i WG_list.kmt -s WG_weakly.splits -N WG.new -f strict
+   (../../SANS -i CDS_list.kmt -s CDS_weakly.splits -N CDS.new -f strict)
    
    # generate consensus network from bootstrapped trees
-   ../../SANS -i WG_list.txt -f strict -b 1000 -C weakly -o WG_weakly.consensus.splits -v
-   ../../scripts/sans2pdf.py WG_consensus.splits WG/list.txt
-   (../../SANS -i CDS_list.txt -f strict -b 1000 -C weakly -o CDS_weakly.consensus.splits -v)
-   (../../scripts/sans2pdf.py CDS_consensus.splits CDS_list.txt)
-
+   ../../SANS -i WG_list.kmt -f strict -b 1000 -C weakly -p WG_weakly.pdf -v
+   (../../SANS -i CDS_list.kmt -f strict -b 1000 -C weakly -p CDS_weakly.pdf -v)
+   
    ```
    
-   <img src="example_data/drosophila/WG_consensus.splits.png" style="border:0;" alt="Example network"/>
+   <img src="example_data/drosophila/WG_weakly_groups.png" style="border:0;" alt="Example network"/>
 
    
 3. **Virus example data**
@@ -208,8 +219,8 @@ See usage information (`SANS --help`) for further options.
    # compute splits
    ../../SANS -i list.txt -o weakly.splits -f weakly -k 11 -v 
    
-   # generate PDF (if SplitsTree installed)
-   ../../scripts/sans2pdf.py weakly.splits list.txt 
+   # compute splits and generate PDF (if SplitsTree installed)
+   ../../SANS -i list.txt -p weakly.pdf -f weakly -k 11 -v 
    ```
 
    <img src="example_data/prasinoviruses/weakly.splits.nexus.png" style="border:0;" alt="Example network"/>
@@ -340,7 +351,7 @@ These per-cluster measures were then averaged (weighted and unweighted). The fol
 
 For any question, feedback, or problem, please feel free to file an issue on this Git repository or write an email and we will get back to you as soon as possible.
 
-[sans-service@cebitec.uni-bielefeld.de](mailto:sans-service@cebitec.uni-bielefeld.de)
+[pangenomics-service@cebitec.uni-bielefeld.de](mailto:pangenomics-service@cebitec.uni-bielefeld.de)
 
 SANS is provided as a service of the [German Network for Bioinformatics Infrastructure (de.NBI)](https://www.denbi.de/). We would appriciate if you would participate in the evaluation of SANS by completing this [very short survey](https://www.surveymonkey.de/r/denbi-service?sc=bigi&tool=sans).
 
@@ -352,7 +363,9 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 * SANS uses gzstream, licensed under the [LGPL license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/src/gz/COPYING.LIB)
 * SANS is licensed under the [GNU general public license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/LICENSE).
 
-<img src="https://piwik.cebitec.uni-bielefeld.de/matomo.php?idsite=12&rec=1&action_name=VisitGitLab&url=https://gitlab.ub.uni-bielefeld.de/gi/sans" style="border:0;" alt="" />
+## Privacy
+
+We use the open source software Matomo for web analysis in order to collect anonymized usage statistics for this repository. Please refer to our [Privacy Notice](/PrivacyNotice.pdf) for details.
 
 
-
+<img src="https://piwik.cebitec.uni-bielefeld.de/matomo.php?idsite=12&rec=1&action_name=VisitGitHub&url=https://github.com/gi-bielefeld/sans" style="border:0;" alt="" />
